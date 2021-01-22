@@ -1,7 +1,0 @@
-/target/
-/out/
-/.idea/
-/*.iml
-dependency-reduced-pom.xml
-copy.bat
-delete.bat

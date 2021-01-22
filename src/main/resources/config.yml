@@ -1,6 +1,0 @@
-###
-# A list of plugins that we should ignore when doing enable, disable, restart, load, reload, and unload.
-#
-# This takes the form of a comma separated list enclosed within the brackets.
-###
-ignored-plugins: [PlugMan]
