@@ -1,4 +1,4 @@
-name: PlugManX
+name: PlugMan
 main: com.rylinaux.plugman.PlugMan
 version: 2.2.5
 description: Plugin manager for Bukkit servers
