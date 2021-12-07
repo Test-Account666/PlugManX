@@ -4,6 +4,6 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.rylinaux</groupId>
   <artifactId>PlugMan</artifactId>
-  <version>2.2.1</version>
+  <version>2.2.6</version>
   <description>POM was created from install:install-file</description>
 </project>
