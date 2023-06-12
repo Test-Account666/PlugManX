@@ -29,8 +29,8 @@ package com.rylinaux.plugman.command;
 import com.rylinaux.plugman.PlugMan;
 import com.rylinaux.plugman.pojo.UpdateResult;
 import com.rylinaux.plugman.util.FlagUtil;
+import com.rylinaux.plugman.util.SchedulerUtil;
 import com.rylinaux.plugman.util.StringUtil;
-import com.rylinaux.plugman.util.ThreadUtil;
 import com.rylinaux.plugman.util.UpdateUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -117,7 +117,7 @@ public class CheckCommand extends AbstractCommand {
 
                 sender.sendMessage(PlugMan.getInstance().getMessageFormatter().format("check.header"));
 
-                ThreadUtil.async(new Runnable() {
+                SchedulerUtil.runAsync(new Runnable() {
 
                     @Override
                     public void run() {
@@ -173,7 +173,7 @@ public class CheckCommand extends AbstractCommand {
 
                         } else {
 
-                            ThreadUtil.sync(new Runnable() {
+                            SchedulerUtil.runSync(new Runnable() {
                                 @Override
                                 public void run() {
                                     sender.sendMessage(PlugMan.getInstance().getMessageFormatter().format("check.up-to-date-player", upToDate.toString()));
@@ -201,14 +201,14 @@ public class CheckCommand extends AbstractCommand {
 
         sender.sendMessage(PlugMan.getInstance().getMessageFormatter().format("check.header"));
 
-        ThreadUtil.async(new Runnable() {
+        SchedulerUtil.runAsync(new Runnable() {
 
             @Override
             public void run() {
 
                 final UpdateResult result = UpdateUtil.checkUpToDate(pluginName);
 
-                ThreadUtil.sync(new Runnable() {
+                SchedulerUtil.runSync(new Runnable() {
 
                     @Override
                     public void run() {

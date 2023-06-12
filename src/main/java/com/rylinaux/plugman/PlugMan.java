@@ -313,7 +313,7 @@ public class PlugMan extends JavaPlugin {
                 if (!new File("plugins").isDirectory()) return;
                 for (File file : Arrays.stream(new File("plugins").listFiles()).filter(File::isFile).filter(file -> file.getName().toLowerCase(Locale.ROOT).endsWith(".jar")).collect(Collectors.toList()))
                     if (!this.fileHashMap.containsKey(file.getName())) {
-                        Bukkit.getScheduler().runTask(this, () -> {
+                        SchedulerUtil.runSync(() -> {
                             Bukkit.getConsoleSender().sendMessage(PlugMan.getInstance().getPluginUtil().load(file.getName().replace(".jar", "")));
                         });
                         String hash = null;
@@ -345,7 +345,7 @@ public class PlugMan extends JavaPlugin {
                         }
                         if (PlugMan.getInstance().getPluginUtil().isIgnored(plugin)) continue;
                         this.fileHashMap.remove(fileName);
-                        Bukkit.getScheduler().runTask(this, () -> {
+                        SchedulerUtil.runSync(() -> {
                             Bukkit.getConsoleSender().sendMessage(PlugMan.getInstance().getPluginUtil().unload(plugin));
                         });
                     }
@@ -383,7 +383,7 @@ public class PlugMan extends JavaPlugin {
                         this.fileHashMap.remove(file.getName());
                         this.fileHashMap.put(file.getName(), hash);
 
-                        Bukkit.getScheduler().runTask(this, () -> {
+                        SchedulerUtil.runSync(() -> {
                             Bukkit.getConsoleSender().sendMessage(PlugMan.getInstance().getPluginUtil().unload(plugin));
                             Bukkit.getConsoleSender().sendMessage(PlugMan.getInstance().getPluginUtil().load(plugin.getName()));
                         });

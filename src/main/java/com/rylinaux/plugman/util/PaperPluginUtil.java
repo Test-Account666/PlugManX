@@ -431,7 +431,7 @@ public class PaperPluginUtil implements PluginUtil {
 
         if (!(PlugMan.getInstance().getBukkitCommandWrap() instanceof BukkitCommandWrap_Useless)) {
             Plugin finalTarget = target;
-            Bukkit.getScheduler().runTaskLater(PlugMan.getInstance(), () -> {
+            SchedulerUtil.runSyncTaskLater(() -> {
                 this.loadCommands(finalTarget);
             }, 10L);
 
