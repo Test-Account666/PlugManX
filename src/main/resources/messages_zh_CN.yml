@@ -1,0 +1,95 @@
+###
+# 自定义消息文件。
+#
+# 消息可以包含在 http://minecraft.gamepedia.com/Formatting_codes 中找到的任何格式代码，必须使用 '&' 字符来表示它们。
+# 请确保在自定义消息周围包含单引号。
+# 随着新版本的发布，此内容可能会发生更改，以前的版本可能无法正确显示信息。更改将在变更日志中说明。
+###
+
+prefix: '&7[&aPlugMan&7] '
+check:
+  header: '&9正在获取插件版本...'
+  not-found: '&9插件未安装 - 最新可用版本为 "{0}"。'
+  not-found-spigot: '&c无法获取插件数据 - 插件是否作为 Spigot 资源存在？'
+  out-of-date: '&c当前版本 (&4{0}&c) 与最新版本 (&2{1}&c) 相比过时了。'
+  out-of-date-player: '&c可能已过时（已安装 -> 最新版本）：{0}'
+  up-to-date: '&9插件似乎是最新版本，使用版本 "{0}"。'
+  up-to-date-player: '&a似乎是最新版本（已安装）：{0}'
+  file-done: '&9文件转储完成：{0}'
+  unknown: '&c版本信息未知。'
+  unknown-player: '&c未知（已安装）：{0}'
+  not-available: '&c无法获取 {0} 的版本信息。'
+disable:
+  all: '&9所有插件已被禁用（除 PlugMan 外）。'
+  already-disabled: '&c{0} 已被禁用。'
+  disabled: '&9已禁用 {0}。'
+dump:
+  dumped: '&9插件已转储至 {0}。'
+  error: '&4无法转储到文件。'
+enable:
+  all: '&9所有插件已启用。'
+  already-enabled: '&c{0} 已启用。'
+  enabled: '&9已启用 {0}。'
+error:
+  ignored: '&cPlugMan 配置为忽略该插件。'
+  invalid-plugin: '&c这不是有效的插件。'
+  no-permission: '&c您没有执行此操作的权限。'
+  specify-plugin: '&c您必须指定一个插件。'
+  specify-command: '&c您必须指定一个命令。'
+  paper-plugin: "&c不支持 Paper 插件，很抱歉。"
+  usage:
+    command: '&7- &9命令：&7{0}'
+    description: '&7- &9描述：&7{0}'
+    usage: '&7- &9用法：&7{0}'
+help:
+  header: '&7------------------ [&a PlugMan &7] ------------------'
+  help: '&7- &a/plugman help &f- &7显示此帮助。'
+  list: '&7- &a/plugman list [-v] &f- &7列出所有插件（-v 显示版本）。'
+  dump: '&7- &a/plugman dump &f- &7将插件名称和版本转储到文件。'
+  info: '&7- &a/plugman info <插件> &f- &7获取插件信息。'
+  usage: '&7- &a/plugman usage <插件> &f- &7列出插件已注册的命令。'
+  lookup: '&7- &a/plugman lookup <命令> &f- &7查找命令已被哪个插件注册。'
+  enable: '&7- &a/plugman enable <插件|all> &f- &7启用插件。'
+  disable: '&7- &a/plugman disable <插件|all> &f- &7禁用插件。'
+  restart: '&7- &a/plugman restart <插件|all> &f- &7重启插件。'
+  load: '&7- &a/plugman load <插件> &f- &7加载插件。'
+  download: '&7- &a/plugman download <direct|spigot> <ID|URL> &f- &7下载并加载插件。'
+  reload: '&7- &a/plugman reload <插件|all> &f- &7重新加载插件。'
+  unload: '&7- &a/plugman unload <插件> &f- &7卸载插件。'
+  check: '&7- &a/plugman check <插件|all> [-f] &f- &7检查插件是否为最新版本（-f 转储到文件）。'
+info:
+  header: '插件信息：{0}'
+  version: '&7- 版本：&a{0}'
+  authors: '&7- 作者：&a{0}'
+  status: '&7- 状态：{0}'
+  depends: '&7- 依赖：{0}'
+  softdepends: '&7- 软依赖：&a{0}'
+list:
+  list: '&9插件（{0}）：{1}'
+load:
+  already-loaded: '&c{0} 已加载。'
+  cannot-find: '&c无法找到文件并未能搜索描述。'
+  invalid-description: '&c该插件具有无效的描述。'
+  invalid-plugin: '&c该文件不是有效的插件。'
+  loaded: '&9{0} 已加载并已启用。'
+  plugin-dir: '&c未找到插件目录。'
+download:
+  invalid-id: '&c插件ID必须是一个数字。'
+  invalid-type: '&c插件类型必须是 "direct" 或 "spigot"。'
+  invalid-url: '&c您必须指定以 http:// 或 https:// 开头的有效 URL。'
+  malformed-url: '&c指定的 URL 格式不正确。'
+  download-failed: '&c下载失败。查看控制台以获取更多信息。'
+lookup:
+  found: '&9/{0} 已注册到 {1}。'
+  not-found: '&c命令 "/{0}" 未在任何 plugin.yml 中注册。'
+reload:
+  all: '&9所有插件已重新加载。'
+  reloaded: '&9{0} 已重新加载。'
+restart:
+  all: '&9所有插件已重新启动。'
+  restarted: '&9{0} 已重新启动。'
+unload:
+  failed: '&c无法卸载 {0}。'
+  unloaded: '&9{0} 已卸载。'
+usage:
+  usage: '&9命令：&7{0}'
