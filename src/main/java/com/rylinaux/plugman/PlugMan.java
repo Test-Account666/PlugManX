@@ -245,6 +245,9 @@ public class PlugMan extends JavaPlugin {
 
         if (!new File(getDataFolder(), "messages_de.yml").exists())
             saveResource("messages_de.yml", true);
+        //add zh_CN
+        if (!new File(getDataFolder(), "messages_zh_CN.yml").exists())
+            saveResource("messages_zh_CN.yml", true);
 
         FileConfiguration messageConfiguration = YamlConfiguration.loadConfiguration(messagesFile);
 
