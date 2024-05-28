@@ -6,7 +6,7 @@
 
     <groupId>com.rylinaux</groupId>
     <artifactId>PlugManX</artifactId>
-    <version>2.3.8</version>
+    <version>2.3.9</version>
     <packaging>jar</packaging>
 
     <name>PlugManX</name>

@@ -1,6 +1,6 @@
 name: PlugManX
 main: com.rylinaux.plugman.PlugMan
-version: 2.3.8
+version: 2.3.9
 description: Plugin manager for Bukkit servers
 authors: [rylinaux, Entity303]
 api-version: 1.13

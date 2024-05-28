@@ -462,7 +462,7 @@ public class PaperPluginUtil implements PluginUtil {
         this.bukkitPluginUtil.loadCommands(target);
     }
 
-    private void unloadCommands(Plugin target) {
+    protected void unloadCommands(Plugin target) {
         this.bukkitPluginUtil.unloadCommands(target);
     }
 

@@ -219,8 +219,12 @@ public class PlugMan extends JavaPlugin {
 
         try {
             Class.forName("io.papermc.paper.plugin.manager.PaperPluginManagerImpl");
-
-            this.pluginUtil = new PaperPluginUtil(new BukkitPluginUtil());
+            String[] version = Bukkit.getBukkitVersion().split("-")[0].split("\\.");
+            if (Integer.parseInt(version[1]) * 100 + Integer.parseInt(version[2]) >= 2005) {
+                this.pluginUtil = new ModernPaperPluginUtil(new BukkitPluginUtil());
+            } else {
+                this.pluginUtil = new PaperPluginUtil(new BukkitPluginUtil());
+            }
         } catch (Throwable ignored) {
             this.pluginUtil = new BukkitPluginUtil();
         }
