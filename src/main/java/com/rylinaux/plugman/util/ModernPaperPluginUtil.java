@@ -13,7 +13,6 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredListener;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URLClassLoader;
@@ -36,7 +35,6 @@ public class ModernPaperPluginUtil extends PaperPluginUtil {
             Map<String, Plugin> names;
             Map<String, Command> commands;
             Map<Event, SortedSet<RegisteredListener>> listeners = null;
-            Map<String, Command> bukkitBrigMap;
             boolean reloadlisteners = true;
 
             pluginManager.disablePlugin(plugin);
@@ -83,14 +81,8 @@ public class ModernPaperPluginUtil extends PaperPluginUtil {
                 knownCommandsField.setAccessible(true);
                 commands = (Map<String, Command>) knownCommandsField.get(commandMap);
 
-                Class<?> bukkitBrigMapC = Class.forName("io.papermc.paper.command.brigadier.bukkit.BukkitBrigForwardingMap");
-                Field bukkitMapInsF = bukkitBrigMapC.getDeclaredField("INSTANCE");
-                bukkitMapInsF.setAccessible(true);
-                Constructor<?> bukkitMapCt = bukkitBrigMapC.getConstructor();
-                bukkitBrigMap = (Map<String, Command>) bukkitMapCt.newInstance();
-
             } catch (ClassNotFoundException | NoSuchMethodException | NoSuchFieldException | IllegalAccessException |
-                     InvocationTargetException | InstantiationException e) {
+                     InvocationTargetException e) {
                 e.printStackTrace();
                 return PlugMan.getInstance().getMessageFormatter().format("unload.failed", name);
             }
