@@ -27,6 +27,8 @@ package com.rylinaux.plugman.command;
  */
 
 import com.rylinaux.plugman.PlugMan;
+import com.rylinaux.plugman.api.event.PreDisablePluginEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
@@ -95,6 +97,9 @@ public class DisableCommand extends AbstractCommand {
 
         if (args[1].equalsIgnoreCase("all") || args[1].equalsIgnoreCase("*")) {
             if (this.hasPermission("all")) {
+                PreDisablePluginEvent preDisableEvent = new PreDisablePluginEvent(null, true);
+                Bukkit.getPluginManager().callEvent(preDisableEvent);
+                if (preDisableEvent.isCancelled()) return;
                 PlugMan.getInstance().getPluginUtil().disableAll();
                 sender.sendMessage(PlugMan.getInstance().getMessageFormatter().format("disable.all"));
             } else sender.sendMessage(PlugMan.getInstance().getMessageFormatter().format("error.no-permission"));
@@ -123,6 +128,10 @@ public class DisableCommand extends AbstractCommand {
             sender.sendMessage(PlugMan.getInstance().getMessageFormatter().format("disable.already-disabled", target.getName()));
             return;
         }
+
+        PreDisablePluginEvent preDisableEvent = new PreDisablePluginEvent(target, false);
+        Bukkit.getPluginManager().callEvent(preDisableEvent);
+        if (preDisableEvent.isCancelled()) return;
 
         PlugMan.getInstance().getPluginUtil().disable(target);
 

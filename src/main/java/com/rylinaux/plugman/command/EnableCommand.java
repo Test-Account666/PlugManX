@@ -27,6 +27,8 @@ package com.rylinaux.plugman.command;
  */
 
 import com.rylinaux.plugman.PlugMan;
+import com.rylinaux.plugman.api.event.PreEnablePluginEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
@@ -126,6 +128,10 @@ public class EnableCommand extends AbstractCommand {
             sender.sendMessage(PlugMan.getInstance().getMessageFormatter().format("enable.already-enabled", target.getName()));
             return;
         }
+
+        PreEnablePluginEvent preEnableEvent = new PreEnablePluginEvent(target);
+        Bukkit.getPluginManager().callEvent(preEnableEvent);
+        if (preEnableEvent.isCancelled()) return;
 
         PlugMan.getInstance().getPluginUtil().enable(target);
 

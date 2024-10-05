@@ -1,10 +1,13 @@
 package me.entity303.plugmanbungee.commands.cmd;
 
+import me.entity303.plugmanbungee.api.event.PreUnloadPluginEvent;
+import me.entity303.plugmanbungee.main.PlugManBungee;
 import me.entity303.plugmanbungee.util.BungeePluginUtil;
 import me.entity303.plugmanbungee.util.PluginResult;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.plugin.PluginManager;
 
 import java.util.ArrayList;
@@ -29,7 +32,11 @@ public class UnloadCommand {
             return;
         }
 
-        PluginResult pluginResult = BungeePluginUtil.unloadPlugin(pluginManager.getPlugin(pluginName));
+        Plugin plugin = pluginManager.getPlugin(pluginName);
+        PreUnloadPluginEvent result = PlugManBungee.getInstance().getProxy().getPluginManager().callEvent(new PreUnloadPluginEvent(plugin, pluginName));
+        if (result.isCancelled()) return;
+
+        PluginResult pluginResult = BungeePluginUtil.unloadPlugin(plugin);
         sendMessage(sender, pluginResult.getMessage());
     }
 

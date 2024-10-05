@@ -279,7 +279,8 @@ public class PlugMan extends JavaPlugin {
                 for (File file : Arrays.stream(new File("plugins").listFiles()).filter(File::isFile).filter(file -> file.getName().toLowerCase(Locale.ROOT).endsWith(".jar")).collect(Collectors.toList()))
                     if (!this.fileHashMap.containsKey(file.getName())) {
                         Bukkit.getScheduler().runTask(this, () -> {
-                            Bukkit.getConsoleSender().sendMessage(PlugMan.getInstance().getPluginUtil().load(file.getName().replace(".jar", "")));
+                            String message = PlugMan.getInstance().getPluginUtil().load(file.getName().replace(".jar", ""));
+                            if (message != null) Bukkit.getConsoleSender().sendMessage(message);
                         });
                         String hash = null;
                         try {
@@ -311,7 +312,8 @@ public class PlugMan extends JavaPlugin {
                         if (PlugMan.getInstance().getPluginUtil().isIgnored(plugin)) continue;
                         this.fileHashMap.remove(fileName);
                         Bukkit.getScheduler().runTask(this, () -> {
-                            Bukkit.getConsoleSender().sendMessage(PlugMan.getInstance().getPluginUtil().unload(plugin));
+                            String message = PlugMan.getInstance().getPluginUtil().unload(plugin);
+                            if (message != null) Bukkit.getConsoleSender().sendMessage(message);
                         });
                     }
             }, this.getConfig().getLong("auto-unload.check-every-seconds") * 20, this.getConfig().getLong("auto-unload.check-every-seconds") * 20);
@@ -349,8 +351,10 @@ public class PlugMan extends JavaPlugin {
                         this.fileHashMap.put(file.getName(), hash);
 
                         Bukkit.getScheduler().runTask(this, () -> {
-                            Bukkit.getConsoleSender().sendMessage(PlugMan.getInstance().getPluginUtil().unload(plugin));
-                            Bukkit.getConsoleSender().sendMessage(PlugMan.getInstance().getPluginUtil().load(plugin.getName()));
+                            String message1 = PlugMan.getInstance().getPluginUtil().unload(plugin);
+                            if (message1 != null) Bukkit.getConsoleSender().sendMessage(message1);
+                            String message2 = PlugMan.getInstance().getPluginUtil().load(plugin.getName());
+                            if (message2 != null) Bukkit.getConsoleSender().sendMessage(message2);
                         });
                     }
                 }

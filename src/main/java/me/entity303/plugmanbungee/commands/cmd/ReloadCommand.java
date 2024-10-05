@@ -1,10 +1,13 @@
 package me.entity303.plugmanbungee.commands.cmd;
 
+import me.entity303.plugmanbungee.api.event.PreReloadPluginEvent;
+import me.entity303.plugmanbungee.main.PlugManBungee;
 import me.entity303.plugmanbungee.util.BungeePluginUtil;
 import me.entity303.plugmanbungee.util.PluginResult;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.plugin.PluginManager;
 
 import java.util.ArrayList;
@@ -30,7 +33,11 @@ public class ReloadCommand {
             return;
         }
 
-        Map.Entry<PluginResult, PluginResult> pluginResults = BungeePluginUtil.reloadPlugin(pluginManager.getPlugin(pluginName));
+        Plugin plugin = pluginManager.getPlugin(pluginName);
+        PreReloadPluginEvent result = PlugManBungee.getInstance().getProxy().getPluginManager().callEvent(new PreReloadPluginEvent(plugin, pluginName));
+        if (result.isCancelled()) return;
+
+        Map.Entry<PluginResult, PluginResult> pluginResults = BungeePluginUtil.reloadPlugin(plugin);
         this.sendMessage(sender, pluginResults.getKey().getMessage());
         this.sendMessage(sender, pluginResults.getValue().getMessage());
     }

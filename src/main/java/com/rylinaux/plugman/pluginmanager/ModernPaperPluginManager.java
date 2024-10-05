@@ -3,6 +3,7 @@ package com.rylinaux.plugman.pluginmanager;
 import com.rylinaux.plugman.PlugMan;
 import com.rylinaux.plugman.api.GentleUnload;
 import com.rylinaux.plugman.api.PlugManAPI;
+import com.rylinaux.plugman.api.event.PreUnloadPluginEvent;
 import com.rylinaux.plugman.util.BukkitCommandWrapUseless;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -25,6 +26,10 @@ public class ModernPaperPluginManager extends PaperPluginManager {
 
     @Override
     public String unload(Plugin plugin) {
+        PreUnloadPluginEvent preUnloadEvent = new PreUnloadPluginEvent(plugin);
+        Bukkit.getPluginManager().callEvent(preUnloadEvent);
+        if (preUnloadEvent.isCancelled()) return null;
+
         String name = plugin.getName();
 
         if (PlugManAPI.getGentleUnloads().containsKey(plugin)) {

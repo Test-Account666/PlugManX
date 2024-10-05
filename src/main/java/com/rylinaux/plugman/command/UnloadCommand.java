@@ -111,6 +111,7 @@ public class UnloadCommand extends AbstractCommand {
             return;
         }
 
-        sender.sendMessage(PlugMan.getInstance().getPluginUtil().unload(target));
+        String message = PlugMan.getInstance().getPluginUtil().unload(target);
+        if (message != null) sender.sendMessage(message);
     }
 }

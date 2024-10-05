@@ -1,5 +1,7 @@
 package me.entity303.plugmanbungee.commands.cmd;
 
+import me.entity303.plugmanbungee.api.event.PreLoadPluginEvent;
+import me.entity303.plugmanbungee.main.PlugManBungee;
 import me.entity303.plugmanbungee.util.BungeePluginUtil;
 import me.entity303.plugmanbungee.util.PluginResult;
 import net.md_5.bungee.api.CommandSender;
@@ -35,6 +37,9 @@ public class LoadCommand {
             this.sendMessage(sender, "§cThere is no plugin file named §4" + filename + "§c!");
             return;
         }
+
+        PreLoadPluginEvent result = PlugManBungee.getInstance().getProxy().getPluginManager().callEvent(new PreLoadPluginEvent(file.toPath(), filename));
+        if (result.isCancelled()) return;
 
         PluginResult pluginResult = BungeePluginUtil.loadPlugin(file);
 
