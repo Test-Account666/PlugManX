@@ -34,6 +34,7 @@ import com.rylinaux.plugman.api.event.PreReloadPluginEvent;
 import com.rylinaux.plugman.api.event.PreUnloadPluginEvent;
 import com.rylinaux.plugman.util.BukkitCommandWrapUseless;
 import com.rylinaux.plugman.util.StringUtil;
+import com.tcoded.folialib.FoliaLib;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -376,6 +377,7 @@ public class PaperPluginManager implements PluginManager {
             return PlugMan.getInstance().getMessageFormatter().format("load.plugin-directory");
 
         File pluginFile = new File(pluginDir, name + ".jar");
+        PluginDescriptionFile description = null;
 
         if (!pluginFile.isFile())
             for (File f : pluginDir.listFiles())
@@ -383,13 +385,22 @@ public class PaperPluginManager implements PluginManager {
                     PluginDescriptionFile desc = this.getPluginDescription(f);
                     if (desc.getName().equalsIgnoreCase(name)) {
                         pluginFile = f;
+                        description = desc;
                         break;
                     }
                 } catch (InvalidDescriptionException e) {
                     return PlugMan.getInstance().getMessageFormatter().format("load.cannot-find");
                 }
 
-        PreLoadPluginEvent preloadEvent = new PreLoadPluginEvent(pluginFile.toPath(), name);
+        if (description == null) {
+            try {
+                description = this.getPluginDescription(pluginFile);
+            } catch (InvalidDescriptionException e) {
+                return PlugMan.getInstance().getMessageFormatter().format("load.cannot-find");
+            }
+        }
+
+        PreLoadPluginEvent preloadEvent = new PreLoadPluginEvent(pluginFile.toPath(), description);
         Bukkit.getPluginManager().callEvent(preloadEvent);
         if (preloadEvent.isCancelled())
             return null;
@@ -433,7 +444,7 @@ public class PaperPluginManager implements PluginManager {
             Plugin finalTarget = target;
 
             if (this.isFolia()) {
-                com.tcoded.folialib.FoliaLib foliaLib = new com.tcoded.folialib.FoliaLib(PlugMan.getInstance());
+                FoliaLib foliaLib = new FoliaLib(PlugMan.getInstance());
 
                 foliaLib.getImpl().runLater(() -> {
                     this.loadCommands(finalTarget);

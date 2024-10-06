@@ -359,19 +359,29 @@ public class BukkitPluginManager implements PluginManager {
             return PlugMan.getInstance().getMessageFormatter().format("load.plugin-directory");
 
         File pluginFile = new File(pluginDir, name + ".jar");
+        PluginDescriptionFile description = null;
 
         if (!pluginFile.isFile()) for (File f : pluginDir.listFiles())
             if (f.getName().endsWith(".jar")) try {
                 PluginDescriptionFile desc = PlugMan.getInstance().getPluginLoader().getPluginDescription(f);
                 if (desc.getName().equalsIgnoreCase(name)) {
                     pluginFile = f;
+                    description = desc;
                     break;
                 }
             } catch (InvalidDescriptionException e) {
                 return PlugMan.getInstance().getMessageFormatter().format("load.cannot-find");
             }
 
-        PreLoadPluginEvent preloadEvent = new PreLoadPluginEvent(pluginFile.toPath(), name);
+        if (description == null) {
+            try {
+                description = PlugMan.getInstance().getPluginLoader().getPluginDescription(pluginFile);
+            } catch (InvalidDescriptionException e) {
+                return PlugMan.getInstance().getMessageFormatter().format("load.cannot-find");
+            }
+        }
+
+        PreLoadPluginEvent preloadEvent = new PreLoadPluginEvent(pluginFile.toPath(), description);
         Bukkit.getPluginManager().callEvent(preloadEvent);
         if (preloadEvent.isCancelled())
             return null;
