@@ -1,14 +1,19 @@
 package com.rylinaux.plugman.api.event;
 
+import com.rylinaux.plugman.PlugMan;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class PreEnablePluginEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS_LIST = new HandlerList();
+
     private @NotNull final Plugin plugin;
+
+    private String cancelledReason;
     private boolean isCancelled;
 
     public PreEnablePluginEvent(@NotNull Plugin plugin) {
@@ -33,6 +38,18 @@ public class PreEnablePluginEvent extends Event implements Cancellable {
 
     public static HandlerList getHandlerList() {
         return HANDLERS_LIST;
+    }
+
+    public void setCancelledReason(@NotNull String reason) {
+        this.cancelledReason = reason;
+    }
+
+    public @NotNull String getCancelledReason() {
+        if (this.cancelledReason == null) {
+            // default message
+            return PlugMan.getInstance().getMessageFormatter().format("cancel.enable", plugin.getName());
+        }
+        return cancelledReason;
     }
 
     public @NotNull Plugin getPlugin() {

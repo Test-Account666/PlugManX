@@ -34,7 +34,10 @@ public class UnloadCommand {
 
         Plugin plugin = pluginManager.getPlugin(pluginName);
         PreUnloadPluginEvent result = PlugManBungee.getInstance().getProxy().getPluginManager().callEvent(new PreUnloadPluginEvent(plugin, pluginName));
-        if (result.isCancelled()) return;
+        if (result.isCancelled()) {
+            sendMessage(sender, result.getCancelledReason());
+            return;
+        };
 
         PluginResult pluginResult = BungeePluginUtil.unloadPlugin(plugin);
         sendMessage(sender, pluginResult.getMessage());

@@ -34,7 +34,6 @@ import com.rylinaux.plugman.api.event.PreReloadPluginEvent;
 import com.rylinaux.plugman.api.event.PreUnloadPluginEvent;
 import com.rylinaux.plugman.util.BukkitCommandWrapUseless;
 import com.rylinaux.plugman.util.StringUtil;
-import com.tcoded.folialib.FoliaLib;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -402,8 +401,7 @@ public class PaperPluginManager implements PluginManager {
 
         PreLoadPluginEvent preloadEvent = new PreLoadPluginEvent(pluginFile.toPath(), description);
         Bukkit.getPluginManager().callEvent(preloadEvent);
-        if (preloadEvent.isCancelled())
-            return null;
+        if (preloadEvent.isCancelled()) return preloadEvent.getCancelledReason();
 
         try {
             Class paper = Class.forName("io.papermc.paper.plugin.manager.PaperPluginManagerImpl");
@@ -444,7 +442,7 @@ public class PaperPluginManager implements PluginManager {
             Plugin finalTarget = target;
 
             if (this.isFolia()) {
-                FoliaLib foliaLib = new FoliaLib(PlugMan.getInstance());
+                com.tcoded.folialib.FoliaLib foliaLib = new com.tcoded.folialib.FoliaLib(PlugMan.getInstance());
 
                 foliaLib.getImpl().runLater(() -> {
                     this.loadCommands(finalTarget);
@@ -488,6 +486,7 @@ public class PaperPluginManager implements PluginManager {
             PreReloadPluginEvent preReloadEvent = new PreReloadPluginEvent(plugin);
             Bukkit.getPluginManager().callEvent(preReloadEvent);
             if (preReloadEvent.isCancelled()) return;
+
             this.unload(plugin);
             this.load(plugin);
         }
@@ -513,7 +512,7 @@ public class PaperPluginManager implements PluginManager {
     public String unload(Plugin plugin) {
         PreUnloadPluginEvent preUnloadEvent = new PreUnloadPluginEvent(plugin);
         Bukkit.getPluginManager().callEvent(preUnloadEvent);
-        if (preUnloadEvent.isCancelled()) return null;
+        if (preUnloadEvent.isCancelled()) return preUnloadEvent.getCancelledReason();
 
         String name = plugin.getName();
 

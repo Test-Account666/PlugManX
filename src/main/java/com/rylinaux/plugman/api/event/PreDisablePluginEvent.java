@@ -1,5 +1,6 @@
 package com.rylinaux.plugman.api.event;
 
+import com.rylinaux.plugman.PlugMan;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
@@ -9,13 +10,18 @@ import org.jetbrains.annotations.Nullable;
 
 public class PreDisablePluginEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS_LIST = new HandlerList();
+
+    /**If all plugin, then this item is null*/
     private @Nullable final Plugin plugin;
-    private final boolean disableAll;
+    /**Determine whether you are ready to disable all plugin*/
+    private final boolean isDisableAll;
+
+    private String cancelledReason;
     private boolean isCancelled;
 
-    public PreDisablePluginEvent(@Nullable Plugin plugin, boolean disableAll) {
+    public PreDisablePluginEvent(@Nullable Plugin plugin, boolean isDisableAll) {
         this.plugin = plugin;
-        this.disableAll = disableAll;
+        this.isDisableAll = isDisableAll;
         this.isCancelled = false;
     }
 
@@ -38,12 +44,28 @@ public class PreDisablePluginEvent extends Event implements Cancellable {
         return HANDLERS_LIST;
     }
 
+    public void setCancelledReason(@NotNull String reason) {
+        this.cancelledReason = reason;
+    }
 
+    public @NotNull String getCancelledReason() {
+        if (this.cancelledReason == null) {
+            // default message
+            if (plugin != null) {
+                return PlugMan.getInstance().getMessageFormatter().format("cancel.disable.one", plugin.getName());
+            }
+            return PlugMan.getInstance().getMessageFormatter().format("cancel.disable.all");
+        }
+        return cancelledReason;
+    }
+
+    /**If all plugin, then this item is null*/
     public @Nullable Plugin getPlugin() {
         return plugin;
     }
 
-    public boolean getDisableAll() {
-        return disableAll;
+    /**Determine whether you are ready to disable all plugin*/
+    public boolean isDisableAll() {
+        return isDisableAll;
     }
 }

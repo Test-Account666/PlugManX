@@ -131,7 +131,10 @@ public class EnableCommand extends AbstractCommand {
 
         PreEnablePluginEvent preEnableEvent = new PreEnablePluginEvent(target);
         Bukkit.getPluginManager().callEvent(preEnableEvent);
-        if (preEnableEvent.isCancelled()) return;
+        if (preEnableEvent.isCancelled()) {
+            sender.sendMessage(preEnableEvent.getCancelledReason());
+            return;
+        };
 
         PlugMan.getInstance().getPluginUtil().enable(target);
 

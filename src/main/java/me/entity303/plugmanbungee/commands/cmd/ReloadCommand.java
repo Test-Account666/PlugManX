@@ -35,7 +35,10 @@ public class ReloadCommand {
 
         Plugin plugin = pluginManager.getPlugin(pluginName);
         PreReloadPluginEvent result = PlugManBungee.getInstance().getProxy().getPluginManager().callEvent(new PreReloadPluginEvent(plugin, pluginName));
-        if (result.isCancelled()) return;
+        if (result.isCancelled()) {
+            sendMessage(sender, result.getCancelledReason());
+            return;
+        };
 
         Map.Entry<PluginResult, PluginResult> pluginResults = BungeePluginUtil.reloadPlugin(plugin);
         this.sendMessage(sender, pluginResults.getKey().getMessage());

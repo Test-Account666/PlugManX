@@ -19,6 +19,14 @@ check:
   unknown: '&cVersionsinformationen sind unbekannt.'
   unknown-player: '&cUnbekannt (Installiert): {0}'
   not-available: '&cVersionsinformationen für {0} sind nicht verfügbar.'
+cancel:
+  disable:
+    one: '§9Das Deaktivieren des Plugins §4"{0}"§9 wurde abgebrochen.'
+    all: '§9Das Deaktivieren aller Plugins wurde abgebrochen.'
+  enable: '§9Das Aktivieren des Plugins §4"{0}"§9 wurde abgebrochen.'
+  load: '§9Das Laden des Plugins §4"{0}"§9 wurde abgebrochen.'
+  reload: '§9Das Neuladen des Plugins §4"{0}"§9 wurde abgebrochen.'
+  unload: '§9Das Entladen des Plugins §4"{0}"§9 wurde abgebrochen.'
 disable:
   all: '&9Alle Plugins wurden deaktiviert (außer PlugMan).'
   already-disabled: '&c{0} ist bereits deaktiviert.'

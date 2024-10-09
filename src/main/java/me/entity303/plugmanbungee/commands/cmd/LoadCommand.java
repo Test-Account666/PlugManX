@@ -39,7 +39,10 @@ public class LoadCommand {
         }
 
         PreLoadPluginEvent result = PlugManBungee.getInstance().getProxy().getPluginManager().callEvent(new PreLoadPluginEvent(file.toPath(), filename));
-        if (result.isCancelled()) return;
+        if (result.isCancelled()) {
+            sendMessage(sender, result.getCancelledReason());
+            return;
+        };
 
         PluginResult pluginResult = BungeePluginUtil.loadPlugin(file);
 

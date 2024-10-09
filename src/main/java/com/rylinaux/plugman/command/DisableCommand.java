@@ -99,7 +99,10 @@ public class DisableCommand extends AbstractCommand {
             if (this.hasPermission("all")) {
                 PreDisablePluginEvent preDisableEvent = new PreDisablePluginEvent(null, true);
                 Bukkit.getPluginManager().callEvent(preDisableEvent);
-                if (preDisableEvent.isCancelled()) return;
+                if (preDisableEvent.isCancelled()) {
+                    sender.sendMessage(preDisableEvent.getCancelledReason());
+                    return;
+                };
                 PlugMan.getInstance().getPluginUtil().disableAll();
                 sender.sendMessage(PlugMan.getInstance().getMessageFormatter().format("disable.all"));
             } else sender.sendMessage(PlugMan.getInstance().getMessageFormatter().format("error.no-permission"));
@@ -131,7 +134,10 @@ public class DisableCommand extends AbstractCommand {
 
         PreDisablePluginEvent preDisableEvent = new PreDisablePluginEvent(target, false);
         Bukkit.getPluginManager().callEvent(preDisableEvent);
-        if (preDisableEvent.isCancelled()) return;
+        if (preDisableEvent.isCancelled()) {
+            sender.sendMessage(preDisableEvent.getCancelledReason());
+            return;
+        }
 
         PlugMan.getInstance().getPluginUtil().disable(target);
 

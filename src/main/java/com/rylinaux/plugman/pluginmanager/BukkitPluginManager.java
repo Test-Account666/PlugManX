@@ -383,8 +383,7 @@ public class BukkitPluginManager implements PluginManager {
 
         PreLoadPluginEvent preloadEvent = new PreLoadPluginEvent(pluginFile.toPath(), description);
         Bukkit.getPluginManager().callEvent(preloadEvent);
-        if (preloadEvent.isCancelled())
-            return null;
+        if (preloadEvent.isCancelled()) return preloadEvent.getCancelledReason();
 
         try {
             target = Bukkit.getPluginManager().loadPlugin(pluginFile);
@@ -500,6 +499,7 @@ public class BukkitPluginManager implements PluginManager {
             PreReloadPluginEvent preReloadEvent = new PreReloadPluginEvent(plugin);
             Bukkit.getPluginManager().callEvent(preReloadEvent);
             if (preReloadEvent.isCancelled()) return;
+
             this.unload(plugin);
             this.load(plugin);
         }
@@ -525,7 +525,7 @@ public class BukkitPluginManager implements PluginManager {
     public synchronized String unload(Plugin plugin) {
         PreUnloadPluginEvent preUnloadEvent = new PreUnloadPluginEvent(plugin);
         Bukkit.getPluginManager().callEvent(preUnloadEvent);
-        if (preUnloadEvent.isCancelled()) return null;
+        if (preUnloadEvent.isCancelled()) return preUnloadEvent.getCancelledReason();
 
         String name = plugin.getName();
 

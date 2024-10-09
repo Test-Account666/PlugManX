@@ -8,6 +8,8 @@ import org.jetbrains.annotations.NotNull;
 public class PreReloadPluginEvent extends Event implements Cancellable {
     private @NotNull final Plugin plugin;
     private @NotNull final String pluginName;
+
+    private String cancelledReason;
     private boolean isCancelled;
 
     public PreReloadPluginEvent(@NotNull Plugin plugin, @NotNull String pluginName) {
@@ -32,5 +34,17 @@ public class PreReloadPluginEvent extends Event implements Cancellable {
 
     public @NotNull String getPluginName() {
         return pluginName;
+    }
+
+    public void setCancelledReason(@NotNull String reason) {
+        this.cancelledReason = reason;
+    }
+
+    public @NotNull String getCancelledReason() {
+        if (this.cancelledReason == null) {
+            // default message
+            return "§cPlugin §4"+pluginName+"§c reload has been canceled.";
+        }
+        return cancelledReason;
     }
 }

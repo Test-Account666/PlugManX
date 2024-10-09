@@ -1,5 +1,6 @@
 package com.rylinaux.plugman.api.event;
 
+import com.rylinaux.plugman.PlugMan;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
@@ -10,8 +11,11 @@ import java.nio.file.Path;
 
 public class PreLoadPluginEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS_LIST = new HandlerList();
+
     private final @NotNull Path pluginPath;
     private final @NotNull PluginDescriptionFile desc;
+
+    private String cancelledReason;
     private boolean isCancelled;
 
     public PreLoadPluginEvent(@NotNull Path pluginPath, @NotNull PluginDescriptionFile desc) {
@@ -37,6 +41,18 @@ public class PreLoadPluginEvent extends Event implements Cancellable {
     @Override
     public @NotNull HandlerList getHandlers() {
         return HANDLERS_LIST;
+    }
+
+    public void setCancelledReason(@NotNull String reason) {
+        this.cancelledReason = reason;
+    }
+
+    public @NotNull String getCancelledReason() {
+        if (this.cancelledReason == null) {
+            // default message
+            return PlugMan.getInstance().getMessageFormatter().format("cancel.load");
+        }
+        return cancelledReason;
     }
 
     public @NotNull Path getPluginPath() {

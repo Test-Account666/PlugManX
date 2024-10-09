@@ -28,7 +28,7 @@ public class ModernPaperPluginManager extends PaperPluginManager {
     public String unload(Plugin plugin) {
         PreUnloadPluginEvent preUnloadEvent = new PreUnloadPluginEvent(plugin);
         Bukkit.getPluginManager().callEvent(preUnloadEvent);
-        if (preUnloadEvent.isCancelled()) return null;
+        if (preUnloadEvent.isCancelled()) return preUnloadEvent.getCancelledReason();
 
         String name = plugin.getName();
 

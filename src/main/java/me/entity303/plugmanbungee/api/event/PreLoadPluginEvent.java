@@ -9,6 +9,8 @@ import java.nio.file.Path;
 public class PreLoadPluginEvent extends Event implements Cancellable {
     private @NotNull final Path pluginPath;
     private @NotNull final String pluginName;
+
+    private String cancelledReason;
     private boolean isCancelled;
 
     public PreLoadPluginEvent(@NotNull Path pluginPath, @NotNull String pluginName) {
@@ -23,6 +25,18 @@ public class PreLoadPluginEvent extends Event implements Cancellable {
 
     public @NotNull String getPluginName() {
         return pluginName;
+    }
+
+    public void setCancelledReason(@NotNull String reason) {
+        this.cancelledReason = reason;
+    }
+
+    public @NotNull String getCancelledReason() {
+        if (this.cancelledReason == null) {
+            // default message
+            return "§cPlugin §4"+pluginName+"§c load has been canceled.";
+        }
+        return cancelledReason;
     }
 
     @Override

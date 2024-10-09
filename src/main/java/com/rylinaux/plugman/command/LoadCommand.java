@@ -111,7 +111,6 @@ public class LoadCommand extends AbstractCommand {
             return;
         }
 
-        String message = PlugMan.getInstance().getPluginUtil().load(name);
-        if (message != null) sender.sendMessage(message);
+        sender.sendMessage(PlugMan.getInstance().getPluginUtil().load(name));
     }
 }
