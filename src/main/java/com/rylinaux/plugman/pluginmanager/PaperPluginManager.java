@@ -29,6 +29,9 @@ package com.rylinaux.plugman.pluginmanager;
 import com.rylinaux.plugman.PlugMan;
 import com.rylinaux.plugman.api.GentleUnload;
 import com.rylinaux.plugman.api.PlugManAPI;
+import com.rylinaux.plugman.api.event.PreLoadPluginEvent;
+import com.rylinaux.plugman.api.event.PreReloadPluginEvent;
+import com.rylinaux.plugman.api.event.PreUnloadPluginEvent;
 import com.rylinaux.plugman.util.BukkitCommandWrapUseless;
 import com.rylinaux.plugman.util.StringUtil;
 import io.papermc.paper.plugin.configuration.PluginMeta;
@@ -373,6 +376,7 @@ public class PaperPluginManager implements PluginManager {
             return PlugMan.getInstance().getMessageFormatter().format("load.plugin-directory");
 
         File pluginFile = new File(pluginDir, name + ".jar");
+        PluginDescriptionFile description = null;
 
         if (!pluginFile.isFile())
             for (File f : pluginDir.listFiles())
@@ -380,11 +384,24 @@ public class PaperPluginManager implements PluginManager {
                     PluginDescriptionFile desc = this.getPluginDescription(f);
                     if (desc.getName().equalsIgnoreCase(name)) {
                         pluginFile = f;
+                        description = desc;
                         break;
                     }
                 } catch (InvalidDescriptionException e) {
                     return PlugMan.getInstance().getMessageFormatter().format("load.cannot-find");
                 }
+
+        if (description == null) {
+            try {
+                description = this.getPluginDescription(pluginFile);
+            } catch (InvalidDescriptionException e) {
+                return PlugMan.getInstance().getMessageFormatter().format("load.cannot-find");
+            }
+        }
+
+        PreLoadPluginEvent preloadEvent = new PreLoadPluginEvent(pluginFile.toPath(), description);
+        Bukkit.getPluginManager().callEvent(preloadEvent);
+        if (preloadEvent.isCancelled()) return preloadEvent.getCancelledReason();
 
         try {
             Class paper = Class.forName("io.papermc.paper.plugin.manager.PaperPluginManagerImpl");
@@ -466,6 +483,10 @@ public class PaperPluginManager implements PluginManager {
     @Override
     public void reload(Plugin plugin) {
         if (plugin != null) {
+            PreReloadPluginEvent preReloadEvent = new PreReloadPluginEvent(plugin);
+            Bukkit.getPluginManager().callEvent(preReloadEvent);
+            if (preReloadEvent.isCancelled()) return;
+
             this.unload(plugin);
             this.load(plugin);
         }
@@ -489,6 +510,10 @@ public class PaperPluginManager implements PluginManager {
      */
     @Override
     public String unload(Plugin plugin) {
+        PreUnloadPluginEvent preUnloadEvent = new PreUnloadPluginEvent(plugin);
+        Bukkit.getPluginManager().callEvent(preUnloadEvent);
+        if (preUnloadEvent.isCancelled()) return preUnloadEvent.getCancelledReason();
+
         String name = plugin.getName();
 
         if (PlugManAPI.getGentleUnloads().containsKey(plugin)) {
