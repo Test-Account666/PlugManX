@@ -29,6 +29,10 @@ package com.rylinaux.plugman.pluginmanager;
 import com.rylinaux.plugman.PlugMan;
 import com.rylinaux.plugman.api.GentleUnload;
 import com.rylinaux.plugman.api.PlugManAPI;
+import com.rylinaux.plugman.api.events.PlugmanLoadPluginEvent;
+import com.rylinaux.plugman.api.events.PlugmanDisablePluginEvent;
+import com.rylinaux.plugman.api.events.PlugmanEnablePluginEvent;
+import com.rylinaux.plugman.api.events.PlugmanUnloadPluginEvent;
 import com.rylinaux.plugman.util.BukkitCommandWrap;
 import com.rylinaux.plugman.util.BukkitCommandWrapUseless;
 import com.rylinaux.plugman.util.StringUtil;
@@ -82,7 +86,15 @@ public class BukkitPluginManager implements PluginManager {
      */
     @Override
     public void enable(Plugin plugin) {
-        if (plugin != null && !plugin.isEnabled()) Bukkit.getPluginManager().enablePlugin(plugin);
+        this.enableImpl(plugin, false);
+    }
+
+    public void enableImpl(Plugin plugin, boolean isPaperPlugin) {
+        if (plugin != null && !plugin.isEnabled()) {
+            Bukkit.getPluginManager().enablePlugin(plugin);
+            PlugmanEnablePluginEvent event = new PlugmanEnablePluginEvent(plugin, isPaperPlugin);
+            Bukkit.getPluginManager().callEvent(event);
+        }
     }
 
     /**
@@ -102,7 +114,16 @@ public class BukkitPluginManager implements PluginManager {
      */
     @Override
     public void disable(Plugin plugin) {
-        if (plugin != null && plugin.isEnabled()) Bukkit.getPluginManager().disablePlugin(plugin);
+        this.disableImpl(plugin, false);
+    }
+
+
+    public void disableImpl(Plugin plugin, boolean isPaperPlugin) {
+        if (plugin != null && plugin.isEnabled()) {
+            Bukkit.getPluginManager().disablePlugin(plugin);
+            PlugmanDisablePluginEvent event = new PlugmanDisablePluginEvent(plugin, isPaperPlugin);
+            Bukkit.getPluginManager().callEvent(event);
+        }
     }
 
     /**
@@ -390,6 +411,9 @@ public class BukkitPluginManager implements PluginManager {
             PlugMan.getInstance().getFilePluginMap().put(pluginFile.getName(), target.getName());
         }
 
+        PlugmanLoadPluginEvent event = new PlugmanLoadPluginEvent(target, false);
+        Bukkit.getPluginManager().callEvent(event);
+
         return PlugMan.getInstance().getMessageFormatter().format("load.loaded", target.getName());
 
     }
@@ -631,6 +655,9 @@ public class BukkitPluginManager implements PluginManager {
         // Will not work on processes started with the -XX:+DisableExplicitGC flag, but lets try it anyway.
         // This tries to get around the issue where Windows refuses to unlock jar files that were previously loaded into the JVM.
         System.gc();
+
+        PlugmanUnloadPluginEvent event = new PlugmanUnloadPluginEvent(plugin, false);
+        Bukkit.getPluginManager().callEvent(event);
 
         return PlugMan.getInstance().getMessageFormatter().format("unload.unloaded", name);
 

@@ -3,6 +3,7 @@ package com.rylinaux.plugman.pluginmanager;
 import com.rylinaux.plugman.PlugMan;
 import com.rylinaux.plugman.api.GentleUnload;
 import com.rylinaux.plugman.api.PlugManAPI;
+import com.rylinaux.plugman.api.events.PlugmanUnloadPluginEvent;
 import com.rylinaux.plugman.util.BukkitCommandWrapUseless;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -151,6 +152,9 @@ public class ModernPaperPluginManager extends PaperPluginManager {
         // Will not work on processes started with the -XX:+DisableExplicitGC flag, but lets try it anyway.
         // This tries to get around the issue where Windows refuses to unlock jar files that were previously loaded into the JVM.
         System.gc();
+
+        PlugmanUnloadPluginEvent event = new PlugmanUnloadPluginEvent(plugin, true);
+        Bukkit.getPluginManager().callEvent(event);
 
         return PlugMan.getInstance().getMessageFormatter().format("unload.unloaded", name);
 

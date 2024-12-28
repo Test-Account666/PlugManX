@@ -29,6 +29,8 @@ package com.rylinaux.plugman.pluginmanager;
 import com.rylinaux.plugman.PlugMan;
 import com.rylinaux.plugman.api.GentleUnload;
 import com.rylinaux.plugman.api.PlugManAPI;
+import com.rylinaux.plugman.api.events.PlugmanLoadPluginEvent;
+import com.rylinaux.plugman.api.events.PlugmanUnloadPluginEvent;
 import com.rylinaux.plugman.util.BukkitCommandWrapUseless;
 import com.rylinaux.plugman.util.StringUtil;
 import io.papermc.paper.plugin.configuration.PluginMeta;
@@ -136,7 +138,7 @@ public class PaperPluginManager implements PluginManager {
      */
     @Override
     public void enable(Plugin plugin) {
-        this._bukkitPluginManager.enable(plugin);
+        this._bukkitPluginManager.enableImpl(plugin, true);
     }
 
     /**
@@ -158,7 +160,7 @@ public class PaperPluginManager implements PluginManager {
      */
     @Override
     public void disable(Plugin plugin) {
-        this._bukkitPluginManager.disable(plugin);
+        this._bukkitPluginManager.disableImpl(plugin, true);
     }
 
     /**
@@ -437,6 +439,9 @@ public class PaperPluginManager implements PluginManager {
             PlugMan.getInstance().getFilePluginMap().put(pluginFile.getName(), target.getName());
         }
 
+        PlugmanLoadPluginEvent event = new PlugmanLoadPluginEvent(target, true);
+        Bukkit.getPluginManager().callEvent(event);
+
         return PlugMan.getInstance().getMessageFormatter().format("load.loaded", target.getName());
     }
 
@@ -619,6 +624,9 @@ public class PaperPluginManager implements PluginManager {
         // Will not work on processes started with the -XX:+DisableExplicitGC flag, but lets try it anyway.
         // This tries to get around the issue where Windows refuses to unlock jar files that were previously loaded into the JVM.
         System.gc();
+
+        PlugmanUnloadPluginEvent event = new PlugmanUnloadPluginEvent(plugin, false);
+        Bukkit.getPluginManager().callEvent(event);
 
         return PlugMan.getInstance().getMessageFormatter().format("unload.unloaded", name);
     }
