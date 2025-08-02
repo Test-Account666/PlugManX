@@ -1,0 +1,8 @@
+name: PlugManBungee
+version: ${plugman.version}
+main: bungee.com.rylinaux.plugman.PlugManBungee
+libraries:
+  - systems.manifold:manifold-rt:${manifold.version}
+  - systems.manifold:manifold-tuple-rt:${manifold.version}
+  - com.fasterxml.jackson.core:jackson-databind:${jackson.version}
+  - org.yaml:snakeyaml:2.0

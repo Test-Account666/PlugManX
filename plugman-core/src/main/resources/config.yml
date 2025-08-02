@@ -1,0 +1,19 @@
+###
+# A list of plugins that we should ignore when doing enable, disable, restart, load, reload, and unload.
+#
+# This takes the form of a comma separated list enclosed within the brackets.
+###
+ignored-plugins: [ PlugMan,PlugManX,PlugManBungee,ViaVersion,ViaBackwards,ViaRewind,ProtocolSupport,ProtocolLib ]
+notify-on-broken-command-removal: true
+auto-load:
+  enabled: false
+  check-every-seconds: 10
+auto-unload:
+  enabled: false
+  check-every-seconds: 10
+auto-reload:
+  enabled: false
+  check-every-seconds: 10
+showPaperWarning: true
+# Do not change this value
+version: 3

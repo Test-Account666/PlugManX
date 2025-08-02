@@ -1,0 +1,92 @@
+package bungee.com.rylinaux.plugman.config;
+
+/*
+ * #%L
+ * PlugManBungee
+ * %%
+ * Copyright (C) 2010 - 2024 PlugMan
+ * %%
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ * #L%
+ */
+
+import bungee.com.rylinaux.plugman.PlugManBungee;
+import core.com.rylinaux.plugman.config.YamlConfigurationProvider;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.experimental.Delegate;
+import net.md_5.bungee.config.Configuration;
+import net.md_5.bungee.config.ConfigurationProvider;
+import net.md_5.bungee.config.YamlConfiguration;
+
+import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * BungeeCord implementation of YamlConfigurationProvider.
+ * Bridges the core configuration interface with BungeeCord's configuration system.
+ *
+ * @author rylinaux
+ */
+@RequiredArgsConstructor
+public class BungeeConfigurationProvider implements YamlConfigurationProvider {
+    @Delegate
+    private final Configuration config;
+
+    @SneakyThrows
+    @Override
+    public YamlConfigurationProvider loadConfiguration(File file) {
+        var loadedConfig = ConfigurationProvider.getProvider(YamlConfiguration.class).load(file);
+        return new BungeeConfigurationProvider(loadedConfig);
+    }
+
+    @Override
+    public YamlConfigurationSection getConfigurationSection(String path) {
+        var section = config.getSection(path);
+        if (section == null) return null;
+
+        return new YamlConfigurationSection() {
+            @Override
+            public Set<String> getKeys(boolean deep) {
+                return new HashSet<>(section.getKeys());
+            }
+
+            @Override
+            public String getName() {
+                return path.substring(path.lastIndexOf('.') + 1);
+            }
+        };
+    }
+
+    @Override
+    public boolean isSet(String key) {
+        return config.get(key, null) != null;
+    }
+
+    @Override
+    public void saveDefaultConfig() {
+        PlugManBungee.getInstance().saveDefaultConfig();
+    }
+
+    @Override
+    public File getDataFolder() {
+        return PlugManBungee.getInstance().getDataFolder();
+    }
+}
