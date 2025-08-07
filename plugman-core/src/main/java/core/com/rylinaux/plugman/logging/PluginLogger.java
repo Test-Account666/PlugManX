@@ -42,6 +42,14 @@ public interface PluginLogger {
     void info(String message);
 
     /**
+     * Log an info message
+     *
+     * @param message   the message to log
+     * @param throwable error that was thrown
+     */
+    void info(String message, Throwable throwable);
+
+    /**
      * Log a warning message
      *
      * @param message the message to log
@@ -49,9 +57,25 @@ public interface PluginLogger {
     void warning(String message);
 
     /**
+     * Log a warning message
+     *
+     * @param message   the message to log
+     * @param throwable error that was thrown
+     */
+    void warning(String message, Throwable throwable);
+
+    /**
      * Log a severe/error message
      *
      * @param message the message to log
      */
     void severe(String message);
+
+    /**
+     * Log a severe/error message
+     *
+     * @param message   the message to log
+     * @param throwable error that was thrown
+     */
+    void severe(String message, Throwable throwable);
 }

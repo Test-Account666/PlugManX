@@ -29,14 +29,13 @@ package core.com.rylinaux.plugman.commands.executables;
 
 import core.com.rylinaux.plugman.commands.AbstractCommand;
 import core.com.rylinaux.plugman.commands.CommandSender;
+import core.com.rylinaux.plugman.logging.PluginLogger;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Command that dumps plugin names and versions to file.
@@ -44,8 +43,6 @@ import java.util.logging.Logger;
  * @author rylinaux
  */
 public class DumpCommand extends AbstractCommand {
-    private static final Logger LOGGER = Logger.getLogger(DumpCommand.class.getName());
-
     /**
      * The name of the command.
      */
@@ -104,8 +101,9 @@ public class DumpCommand extends AbstractCommand {
 
             sender.sendMessage("dump.dumped", dumpFile.getName());
         } catch (IOException exception) {
+            var logger = get(PluginLogger.class);
             sender.sendMessage("dump.error");
-            LOGGER.log(Level.SEVERE, "Failed to write dump file: " + dumpFile.getPath(), exception);
+            logger.severe("Failed to write dump file: " + dumpFile.getPath(), exception);
         }
     }
 
