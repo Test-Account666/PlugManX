@@ -87,3 +87,4 @@ unload:
   unloaded: '&9{0}がアンロードされました。'
 usage:
   usage: '&9コマンド: &7{0}'
+  no-commands: '登録されたコマンドがありません。'

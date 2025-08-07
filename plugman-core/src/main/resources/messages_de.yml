@@ -88,3 +88,4 @@ unload:
   unloaded: '&9{0} wurde entladen.'
 usage:
   usage: '&9Befehle: &7{0}'
+  no-commands: '&cKeine Befehle registriert.'

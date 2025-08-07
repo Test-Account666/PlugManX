@@ -91,6 +91,10 @@ public class UsageCommand extends AbstractCommand {
         }
 
         var usages = getPluginManager().getUsages(target);
+        if (usages.equalsIgnoreCase("usage.no-commands")) {
+            sender.sendMessage("usage.no-commands", target.getName());
+            return;
+        }
 
         sender.sendMessage("usage.usage", usages);
     }

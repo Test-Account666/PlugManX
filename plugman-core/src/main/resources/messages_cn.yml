@@ -88,3 +88,4 @@ unload:
   unloaded: '&9已解除挂载 {0}。'
 usage:
   usage: '&9插件命令：&7{0}'
+  no-commands: '没有注册的命令。'

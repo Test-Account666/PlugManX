@@ -88,3 +88,4 @@ unload:
   unloaded: '&9{0} has been unloaded.'
 usage:
   usage: '&9Commands: &7{0}'
+  no-commands: '&cNo commands registered.'

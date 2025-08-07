@@ -57,9 +57,7 @@ public class BungeePluginManager implements PluginManager {
         if (plugin == null) return new PluginResult(false, "plugin.null");
         if (!plugin.isEnabled()) return new PluginResult(false, "plugin.already-disabled");
         var result = unload(plugin);
-        if (result.success()) {
-            return new PluginResult(true, "plugin.disabled");
-        }
+        if (result.success()) return new PluginResult(true, "plugin.disabled");
         return result;
     }
 
@@ -197,9 +195,7 @@ public class BungeePluginManager implements PluginManager {
         var file = findPluginFile(name);
         if (file == null) return new PluginResult(false, "load.cannot-find");
         var result = loadPluginFromFile(file);
-        if (result.success()) {
-            return new PluginResult(true, "load.loaded");
-        }
+        if (result.success()) return new PluginResult(true, "load.loaded");
         return new PluginResult(false, "load.invalid-plugin");
     }
 

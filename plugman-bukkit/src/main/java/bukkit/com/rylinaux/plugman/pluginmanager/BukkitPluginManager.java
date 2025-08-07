@@ -258,10 +258,9 @@ public class BukkitPluginManager extends BasePluginManager {
         }).collect(Collectors.joining(", "));
 
 
-        if (parsedCommands.isEmpty()) return "No commands registered.";
+        if (parsedCommands.isEmpty()) return "usage.no-commands";
 
         return parsedCommands;
-
     }
 
     private List<Map.Entry<String, Command>> getCommandsFromPlugin(Plugin plugin) {
