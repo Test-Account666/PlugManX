@@ -113,7 +113,6 @@ public abstract class BasePlugManInitializer {
      * Setup message files in the data folder
      */
     protected void setupMessageFiles() {
-        var dataFolder = getDataFolder();
         if (!dataFolder.exists()) dataFolder.mkdirs();
 
         var messagesFile = new File(dataFolder, "messages.yml");
