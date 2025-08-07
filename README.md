@@ -1,5 +1,4 @@
 <h1 style="text-align: center;"> This is a PlugMan *Fork*</h1>
-<h1 style="text-align: center;">Original PlugMan: https://github.com/r-clancy/PlugMan</h1>
 
 # PlugMan
 
@@ -64,9 +63,9 @@ the need to restart the server.
 
 ## Configuration
 
-| File       | URL                                                                                  |
-|------------|--------------------------------------------------------------------------------------|
-| config.yml | https://github.com/Test-Account666/PlugMan/blob/master/src/main/resources/config.yml |
+| File       | URL                                                                                                |
+|------------|----------------------------------------------------------------------------------------------------|
+| config.yml | https://github.com/Test-Account666/PlugManX/blob/master/plugman-core/src/main/resources/config.yml |
 
 ## Building
 
@@ -145,5 +144,5 @@ dependencies {
 
 ## License
 
-This project is a fork of [PlugMan](https://github.com/r-clancy/PlugMan) and is distributed under the same
-license: [LICENSE](license/mit/license.txt).
+This project is a fork of [PlugMan](https://github.com/r-clancy/PlugMan) (Link no longer works) and is distributed under
+the same license: [LICENSE](license/mit/license.txt).
