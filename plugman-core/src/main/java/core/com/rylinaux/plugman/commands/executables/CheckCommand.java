@@ -41,7 +41,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -50,32 +49,27 @@ import java.util.logging.Logger;
  * @author rylinaux
  */
 public class CheckCommand extends AbstractCommand {
-    private static final Logger LOGGER = Logger.getLogger(CheckCommand.class.getName());
-
     /**
      * The name of the command.
      */
     public static final String NAME = "Check";
-
     /**
      * The description of the command.
      */
     public static final String DESCRIPTION = "Check if a plugin is up-to-date.";
-
     /**
      * The main permission of the command.
      */
     public static final String PERMISSION = "plugman.check";
-
     /**
      * The proper usage of the command.
      */
     public static final String USAGE = "/plugman check <plugin>";
-
     /**
      * The sub permissions of the command.
      */
     public static final String[] SUB_PERMISSIONS = {"all"};
+    private static final Logger LOGGER = Logger.getLogger(CheckCommand.class.getName());
 
     /**
      * Construct out object.
@@ -118,7 +112,9 @@ public class CheckCommand extends AbstractCommand {
             threadUtil.async(() -> {
                 var results = UpdateUtil.checkUpToDate(getPluginManager(), get(PlugManConfigurationManager.class).getResourceMappingsConfig());
 
-                StringBuilder upToDate = new StringBuilder(), outOfDate = new StringBuilder(), unknown = new StringBuilder();
+                var upToDate = new StringBuilder();
+                var outOfDate = new StringBuilder();
+                var unknown = new StringBuilder();
 
                 for (var entry : results.entrySet()) {
 
@@ -160,7 +156,7 @@ public class CheckCommand extends AbstractCommand {
                     writer.println("Unknown (Installed):");
                     writer.println(unknown);
                 } catch (IOException exception) {
-                    LOGGER.log(Level.SEVERE, "Failed to write updates file: " + outFile.getPath(), exception);
+                    exception.printStackTrace();
                 }
 
                 sender.sendMessage("check.file-done", outFile.getPath());
