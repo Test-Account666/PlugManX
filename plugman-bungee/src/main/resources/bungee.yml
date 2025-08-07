@@ -1,6 +1,7 @@
-name: PlugManBungee
+name: PlugManX
 version: ${plugman.version}
 main: bungee.com.rylinaux.plugman.PlugManBungee
+author: "rylinaux, TestAccount666"
 libraries:
   - systems.manifold:manifold-rt:${manifold.version}
   - systems.manifold:manifold-tuple-rt:${manifold.version}

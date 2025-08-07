@@ -8,3 +8,4 @@ delete.bat
 .attach*
 /.paper-nms/*
 target/
+/plugman-velocity/temp/

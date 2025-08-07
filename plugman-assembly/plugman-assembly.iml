@@ -4,9 +4,6 @@
     <facet type="minecraft" name="Minecraft">
       <configuration>
         <autoDetectTypes>
-          <platformType>SPIGOT</platformType>
-          <platformType>PAPER</platformType>
-          <platformType>BUNGEECORD</platformType>
           <platformType>VELOCITY</platformType>
         </autoDetectTypes>
         <projectReimportVersion>1</projectReimportVersion>

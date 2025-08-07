@@ -68,6 +68,34 @@ the need to restart the server.
 |------------|--------------------------------------------------------------------------------------|
 | config.yml | https://github.com/Test-Account666/PlugMan/blob/master/src/main/resources/config.yml |
 
+## Building
+
+### Build Instructions
+
+Building PlugManX is simple:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Test-Account666/PlugManX.git
+   cd PlugManX
+   ```
+2. **First Build**
+   ```bash
+   mvn install -N
+   cd plugman-paper
+   mvn paper-nms:init
+   cd ..
+   ```
+
+3. **Build the project:**
+   ```bash
+   mvn clean install
+   ```
+
+4. **Find the built artifacts:**
+    - Individual module JARs will be in each module's `target/` directory
+    - The assembled distribution will be in `plugman-assembly/target/`
+
 ## Version Management
 
 PlugManX uses a centralized version property for easy version management across all modules. To update the version:
@@ -114,3 +142,8 @@ dependencies {
     compileOnly 'com.rylinaux:PlugManX:${plugman.version}'
 }
 ```
+
+## License
+
+This project is a fork of [PlugMan](https://github.com/r-clancy/PlugMan) and is distributed under the same
+license: [LICENSE](license/mit/license.txt).

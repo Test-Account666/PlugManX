@@ -19,8 +19,8 @@ public class BungeePlugManConfigurationManager extends PlugManConfigurationManag
     }
 
     public static PlugManConfigurationManager of(PlugManBungee plugin) {
-        var configProvider = new BungeeConfigurationProvider(plugin.getConfig());
-        var logger = new BungeePluginLogger(plugin);
+        var configProvider = new BungeeConfigurationProvider(plugin.getConfig(), plugin.getDataFolder().toPath().resolve("config.yml").toFile());
+        var logger = new BungeePluginLogger(plugin.getLogger());
         var jacksonConfigService = new JacksonConfigurationService();
 
         return new BungeePlugManConfigurationManager(configProvider, logger, jacksonConfigService);

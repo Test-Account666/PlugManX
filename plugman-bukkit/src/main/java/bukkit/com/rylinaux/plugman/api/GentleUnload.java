@@ -4,7 +4,7 @@ package bukkit.com.rylinaux.plugman.api;
  * #%L
  * PlugManX Core
  * %%
- * Copyright (C) 2010 - 2025 plugmanx-core
+ * Copyright (C) 2010 - 2025 plugman-core
  * %%
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal

@@ -26,14 +26,15 @@ package bukkit.com.rylinaux.plugman.config;
  * #L%
  */
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import core.com.rylinaux.plugman.config.YamlConfigurationProvider;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Set;
 
 /**
@@ -42,14 +43,16 @@ import java.util.Set;
  *
  * @author rylinaux
  */
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class BukkitConfigurationProvider implements YamlConfigurationProvider {
     @Delegate
     private final FileConfiguration config;
+    private File file;
 
     @SneakyThrows
     @Override
     public YamlConfigurationProvider loadConfiguration(File file) {
+        this.file = file;
         config.load(file);
         return this;
     }
@@ -73,6 +76,15 @@ public class BukkitConfigurationProvider implements YamlConfigurationProvider {
 
     @Override
     public void saveDefaultConfig() {
-        PlugMan.getInstance().saveDefaultConfig();
+        PlugManBukkit.getInstance().saveDefaultConfig();
+    }
+
+    @Override
+    public void save() {
+        try {
+            config.save(file);
+        } catch (IOException exception) {
+            exception.printStackTrace();
+        }
     }
 }

@@ -26,7 +26,7 @@ package bukkit.com.rylinaux.plugman.config;
  * #L%
  */
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import bukkit.com.rylinaux.plugman.logging.BukkitPluginLogger;
 import core.com.rylinaux.plugman.config.JacksonConfigurationService;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
@@ -44,9 +44,9 @@ public class BukkitPlugManConfigurationManager extends PlugManConfigurationManag
         super(configProvider, logger, jacksonConfigService);
     }
 
-    public static PlugManConfigurationManager of(PlugMan plugin) {
-        var configProvider = new BukkitConfigurationProvider(plugin.getConfig());
-        var logger = new BukkitPluginLogger(plugin);
+    public static PlugManConfigurationManager of(PlugManBukkit plugin) {
+        var configProvider = new BukkitConfigurationProvider(plugin.getConfig(), plugin.getDataFolder().toPath().resolve("config.yml").toFile());
+        var logger = new BukkitPluginLogger(plugin.getLogger());
         var jacksonConfigService = new JacksonConfigurationService();
 
         return new BukkitPlugManConfigurationManager(configProvider, logger, jacksonConfigService);

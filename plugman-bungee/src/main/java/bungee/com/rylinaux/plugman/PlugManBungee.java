@@ -26,25 +26,12 @@ package bungee.com.rylinaux.plugman;
  * #L%
  */
 
-import bungee.com.rylinaux.plugman.auto.BungeeAutoFeatureManager;
 import bungee.com.rylinaux.plugman.commands.PlugManCommandHandler;
-import bungee.com.rylinaux.plugman.config.BungeeConfigurationProvider;
-import bungee.com.rylinaux.plugman.config.BungeePlugManConfigurationManager;
 import bungee.com.rylinaux.plugman.logging.BungeePluginLogger;
-import bungee.com.rylinaux.plugman.messaging.BungeeColorFormatter;
-import bungee.com.rylinaux.plugman.pluginmanager.BungeePluginManager;
-import bungee.com.rylinaux.plugman.util.BungeeThreadUtil;
-import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
-import core.com.rylinaux.plugman.file.messaging.MessageFormatter;
-import core.com.rylinaux.plugman.logging.PluginLogger;
-import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
-import core.com.rylinaux.plugman.util.ThreadUtil;
-import core.com.rylinaux.plugman.util.reflection.ClassAccessor;
-import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
-import core.com.rylinaux.plugman.util.reflection.MethodAccessor;
 import lombok.Getter;
 import lombok.experimental.Delegate;
+import manifold.rt.api.NoBootstrap;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
@@ -62,6 +49,7 @@ import java.util.logging.Level;
  *
  * @author rylinaux
  */
+@NoBootstrap
 public final class PlugManBungee extends Plugin implements Listener {
 
     @Getter
@@ -80,37 +68,15 @@ public final class PlugManBungee extends Plugin implements Listener {
         saveDefaultConfig();
 
         serviceRegistry = new ServiceRegistry();
+        var logger = new BungeePluginLogger(getLogger());
+        var initializer = new BungeePlugManInitializer(this, serviceRegistry, logger);
 
-        serviceRegistry.register(PluginLogger.class, new BungeePluginLogger(this));
-
-        var configurationManager = BungeePlugManConfigurationManager.of(this);
-        serviceRegistry.register(PlugManConfigurationManager.class, configurationManager);
-
-        configurationManager.getIgnoredPlugins().add("PlugManBungee");
-
-        var pluginManager = new BungeePluginManager();
-        serviceRegistry.register(PluginManager.class, pluginManager);
-
-        setupMessageFiles();
-
-        try {
-            var messagesFile = new File(getDataFolder(), "messages.yml");
-            var config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(messagesFile);
-            var configProvider = new BungeeConfigurationProvider(config);
-            var colorFormatter = new BungeeColorFormatter();
-            var messageFormatter = new MessageFormatter(configProvider, colorFormatter);
-            serviceRegistry.register(MessageFormatter.class, messageFormatter);
-        } catch (IOException e) {
-            getLogger().severe("Failed to load message formatter: " + e.getMessage());
-        }
-
-        serviceRegistry.register(ThreadUtil.class, new BungeeThreadUtil());
-        serviceRegistry.register(PluginManager.class, new BungeePluginManager());
+        initializer.initializeCoreServices();
+        initializer.setupMessaging();
 
         ProxyServer.getInstance().getPluginManager().registerCommand(this, new PlugManCommandHandler());
 
-        var autoFeatureManager = new BungeeAutoFeatureManager(serviceRegistry);
-        autoFeatureManager.setupAutoFeatures();
+        initializer.setupAutoFeatures();
     }
 
     public void saveDefaultConfig() {
@@ -132,24 +98,9 @@ public final class PlugManBungee extends Plugin implements Listener {
     @Override
     public void onDisable() {
         instance = null;
-        serviceRegistry.clear();
-        ClassAccessor.clearCache();
-        FieldAccessor.clearCache();
-        MethodAccessor.clearCache();
+        var logger = new BungeePluginLogger(getLogger());
+        var initializer = new BungeePlugManInitializer(this, serviceRegistry, logger);
+        initializer.cleanup();
         ProxyServer.getInstance().getPluginManager().unregisterCommands(this);
-    }
-
-    /**
-     * Setup message files
-     */
-    private void setupMessageFiles() {
-        if (!getDataFolder().exists()) getDataFolder().mkdirs();
-
-        var messagesFile = new File(getDataFolder(), "messages.yml");
-        if (!messagesFile.exists()) try (var in = getResourceAsStream("messages.yml")) {
-            if (in != null) Files.copy(in, messagesFile.toPath());
-        } catch (IOException e) {
-            getLogger().severe("Failed to create messages.yml: " + e.getMessage());
-        }
     }
 }

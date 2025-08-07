@@ -26,14 +26,15 @@ package paper.com.rylinaux.plugman;
  * #L%
  */
 
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import bukkit.com.rylinaux.plugman.pluginmanager.BukkitPluginManager;
-import paper.com.rylinaux.plugman.pluginmanager.ModernPaperPluginManager;
-import paper.com.rylinaux.plugman.pluginmanager.PaperPluginManager;
+import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.util.reflection.ClassAccessor;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
+import paper.com.rylinaux.plugman.pluginmanager.ModernPaperPluginManager;
+import paper.com.rylinaux.plugman.pluginmanager.PaperPluginManager;
 
 /**
  * Handles paper-specific initialization logic for PlugMan.
@@ -43,13 +44,16 @@ import org.bukkit.plugin.java.JavaPlugin;
 @RequiredArgsConstructor
 public class PaperInitializer {
 
-    private final JavaPlugin plugin;
+    private final PlugManBukkit plugin;
 
     /**
      * Initialize the plugin manager based on server type, returning paper plugin manager if on paper
      */
     public PluginManager initializePaperPluginManager(BukkitPluginManager bukkitPluginManager) {
-        if (!ClassAccessor.classExists("io.papermc.paper.plugin.manager.PaperPluginManagerImpl")) return bukkitPluginManager;
+        if (!ClassAccessor.classExists("io.papermc.paper.plugin.manager.PaperPluginManagerImpl")) {
+            plugin.getLogger().warning("We're in a paper environment, but cannot find Paper's plugin manager?!");
+            return bukkitPluginManager;
+        }
 
         var version = Bukkit.getBukkitVersion().split("-")[0].split("\\.");
 
@@ -66,13 +70,15 @@ public class PaperInitializer {
      */
     public void showPaperWarningIfNeeded(PluginManager pluginManager) {
         if (!(pluginManager instanceof PaperPluginManager)) return;
-        if (!plugin.getConfig().getBoolean("showPaperWarning", true)) return;
+
+        var config = plugin.getServiceRegistry().get(PlugManConfigurationManager.class);
+        if (!config.getPlugManConfig().isShowPaperWarning()) return;
 
         plugin.getLogger().warning("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         plugin.getLogger().warning("It seems like you're running on paper.");
         plugin.getLogger().warning("PlugManX cannot interact with paper-plugins, yet.");
         plugin.getLogger().warning("Also, if you encounter any issues, please join my discord: https://discord.gg/GxEFhVY6ff");
-        plugin.getLogger().warning("Or create an issue on GitHub: https://github.com/TheBlackEntity/PlugMan");
+        plugin.getLogger().warning("Or create an issue on GitHub: https://github.com/Test-Account666/PlugMan");
         plugin.getLogger().warning("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
         plugin.getLogger().info("You can disable this warning by setting 'showPaperWarning' to false in the config.yml");

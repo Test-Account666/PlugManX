@@ -4,7 +4,7 @@ package bukkit.com.rylinaux.plugman.api;
  * #%L
  * PlugManX Core
  * %%
- * Copyright (C) 2010 - 2025 plugmanx-core
+ * Copyright (C) 2010 - 2025 plugman-core
  * %%
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ package bukkit.com.rylinaux.plugman.api;
  * #L%
  */
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
 import org.bukkit.plugin.Plugin;
 
@@ -66,9 +66,9 @@ public class PlugManAPI {
      * @return = Whether the method was executed successfully
      */
     public static boolean iDoNotWantToBeUnOrReloaded(String plugin) {
-        if (PlugMan.getInstance() == null) return false;
+        if (PlugManBukkit.getInstance() == null) return false;
 
-        var config = PlugMan.getInstance().<PlugManConfigurationManager>get(PlugManConfigurationManager.class);
+        var config = PlugManBukkit.getInstance().<PlugManConfigurationManager>get(PlugManConfigurationManager.class);
 
         if (config.getIgnoredPlugins() == null) return false;
 

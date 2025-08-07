@@ -1,6 +1,6 @@
 package paper.com.rylinaux.plugman.commands;
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import bukkit.com.rylinaux.plugman.commands.CommandCreator;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -15,8 +15,8 @@ public class PaperCommandCreator extends CommandCreator {
 
     @Override
     public void registerCommand(String commandName, CommandExecutor executor, TabCompleter tabCompleter, String... aliases) {
-        PlugMan.getInstance().registerCommand(commandName, createCommand(executor, tabCompleter, commandName));
-        Arrays.stream(aliases).forEach(alias -> PlugMan.getInstance().registerCommand(alias, createCommand(executor, tabCompleter, alias)));
+        PlugManBukkit.getInstance().registerCommand(commandName, createCommand(executor, tabCompleter, commandName));
+        Arrays.stream(aliases).forEach(alias -> PlugManBukkit.getInstance().registerCommand(alias, createCommand(executor, tabCompleter, alias)));
     }
 
     private BasicCommand createCommand(CommandExecutor executor, TabCompleter tabCompleter, String label) {

@@ -26,7 +26,7 @@ package bukkit.com.rylinaux.plugman.util;
  * #L%
  */
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import core.com.rylinaux.plugman.util.ThreadUtil;
 import org.bukkit.Bukkit;
 
@@ -44,7 +44,7 @@ public class BukkitThreadUtil implements ThreadUtil {
      */
     @Override
     public void async(Runnable runnable) {
-        Bukkit.getScheduler().runTaskAsynchronously(PlugMan.getInstance(), runnable);
+        Bukkit.getScheduler().runTaskAsynchronously(PlugManBukkit.getInstance(), runnable);
     }
 
     /**
@@ -54,16 +54,16 @@ public class BukkitThreadUtil implements ThreadUtil {
      */
     @Override
     public void sync(Runnable runnable) {
-        Bukkit.getScheduler().runTask(PlugMan.getInstance(), runnable);
+        Bukkit.getScheduler().runTask(PlugManBukkit.getInstance(), runnable);
     }
 
     @Override
     public void syncRepeating(Runnable runnable, long delay, long period) {
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(PlugMan.getInstance(), runnable, delay, period);
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(PlugManBukkit.getInstance(), runnable, delay, period);
     }
 
     @Override
     public void asyncRepeating(Runnable runnable, long delay, long period) {
-        Bukkit.getScheduler().scheduleAsyncRepeatingTask(PlugMan.getInstance(), runnable, delay, period);
+        Bukkit.getScheduler().scheduleAsyncRepeatingTask(PlugManBukkit.getInstance(), runnable, delay, period);
     }
 }

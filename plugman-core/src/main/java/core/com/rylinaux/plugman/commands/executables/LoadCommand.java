@@ -94,7 +94,7 @@ public class LoadCommand extends AbstractCommand {
             return;
         }
 
-        var name = StringUtil.consolidateStrings(args, 1);
+        var name = StringUtil.consolidateStrings(args, 1).trim();
 
         if (getPluginManager().isIgnored(name)) {
             sender.sendMessage("error.ignored");

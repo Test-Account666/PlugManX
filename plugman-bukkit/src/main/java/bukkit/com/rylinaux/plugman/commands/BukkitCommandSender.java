@@ -1,6 +1,6 @@
 package bukkit.com.rylinaux.plugman.commands;
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import core.com.rylinaux.plugman.commands.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -24,7 +24,7 @@ public record BukkitCommandSender(org.bukkit.command.CommandSender bukkitSender)
 
     @Override
     public void sendMessage(boolean prefix, String message, Object... args) {
-        message = PlugMan.getInstance().getMessageFormatter().formatMessage(prefix, message, args);
+        message = PlugManBukkit.getInstance().getMessageFormatter().formatMessage(prefix, message, args);
         bukkitSender.sendMessage(String.format(message, args));
     }
 

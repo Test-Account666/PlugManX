@@ -28,7 +28,9 @@ package bukkit.com.rylinaux.plugman.logging;
 
 import core.com.rylinaux.plugman.logging.PluginLogger;
 import lombok.RequiredArgsConstructor;
-import org.bukkit.plugin.java.JavaPlugin;
+import lombok.experimental.Delegate;
+
+import java.util.logging.Logger;
 
 /**
  * Bukkit implementation of PluginLogger.
@@ -38,21 +40,6 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 @RequiredArgsConstructor
 public class BukkitPluginLogger implements PluginLogger {
-
-    private final JavaPlugin plugin;
-
-    @Override
-    public void info(String message) {
-        plugin.getLogger().info(message);
-    }
-
-    @Override
-    public void warning(String message) {
-        plugin.getLogger().warning(message);
-    }
-
-    @Override
-    public void severe(String message) {
-        plugin.getLogger().severe(message);
-    }
+    @Delegate
+    private final Logger logger;
 }

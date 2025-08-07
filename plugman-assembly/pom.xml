@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.rylinaux</groupId>
         <artifactId>PlugManX</artifactId>
-        <version>2.4.2</version>
+        <version>3.0.0</version>
     </parent>
 
     <artifactId>plugman-assembly</artifactId>
@@ -45,6 +45,68 @@
             <version>${project.version}</version>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>include-velocity</id>
+            <activation>
+                <property>
+                    <name>include.velocity</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.rylinaux</groupId>
+                    <artifactId>plugman-velocity</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>shade</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactSet>
+                                        <includes>
+                                            <include>com.rylinaux:plugman-core</include>
+                                            <include>com.rylinaux:plugman-bukkit</include>
+                                            <include>com.rylinaux:plugman-paper</include>
+                                            <include>com.rylinaux:plugman-bungee</include>
+                                            <include>com.rylinaux:plugman-velocity</include>
+                                            <include>com.tcoded:FoliaLib</include>
+                                        </includes>
+                                    </artifactSet>
+                                    <filters>
+                                        <filter>
+                                            <artifact>*:*</artifact>
+                                            <excludes>
+                                                <exclude>META-INF/**</exclude>
+                                            </excludes>
+                                        </filter>
+                                    </filters>
+                                    <relocations>
+                                        <relocation>
+                                            <pattern>com.tcoded</pattern>
+                                            <shadedPattern>com.rylinaux.folia</shadedPattern>
+                                        </relocation>
+                                    </relocations>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <build>
         <finalName>${project.parent.artifactId}-${project.version}</finalName>

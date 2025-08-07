@@ -26,21 +26,14 @@ package bukkit.com.rylinaux.plugman;
  * #L%
  */
 
-import bukkit.com.rylinaux.plugman.auto.BukkitAutoFeatureManager;
 import bukkit.com.rylinaux.plugman.commands.CommandCreator;
-import bukkit.com.rylinaux.plugman.config.BukkitPlugManConfigurationManager;
+import bukkit.com.rylinaux.plugman.commands.PlugManCommandHandler;
+import bukkit.com.rylinaux.plugman.commands.PlugManTabCompleter;
 import bukkit.com.rylinaux.plugman.logging.BukkitPluginLogger;
-import bukkit.com.rylinaux.plugman.util.BukkitThreadUtil;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
 import core.com.rylinaux.plugman.file.PlugManFileManager;
-import core.com.rylinaux.plugman.file.messaging.MessageFormatter;
-import core.com.rylinaux.plugman.logging.PluginLogger;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
-import core.com.rylinaux.plugman.util.ThreadUtil;
-import core.com.rylinaux.plugman.util.reflection.ClassAccessor;
-import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
-import core.com.rylinaux.plugman.util.reflection.MethodAccessor;
 import lombok.Getter;
 import lombok.experimental.Delegate;
 import manifold.rt.api.NoBootstrap;
@@ -59,10 +52,10 @@ import java.io.InputStream;
  */
 @SuppressWarnings("JavadocDeclaration")
 @NoBootstrap
-public class PlugMan extends JavaPlugin {
+public class PlugManBukkit extends JavaPlugin {
 
     @Getter
-    private static PlugMan instance = null;
+    private static PlugManBukkit instance = null;
     @ApiStatus.Internal
     public CommandCreator commandCreator;
     @Getter
@@ -77,7 +70,7 @@ public class PlugMan extends JavaPlugin {
 
     private static InputStream getResourceStatic(String filename) {
         try {
-            var url = PlugMan.class.getClassLoader().getResource(filename);
+            var url = PlugManBukkit.class.getClassLoader().getResource(filename);
             if (url == null) return null;
             else {
                 var connection = url.openConnection();
@@ -93,7 +86,7 @@ public class PlugMan extends JavaPlugin {
         var dataFolder = new File("plugins");
         if (resourcePath != null && !resourcePath.isEmpty()) {
             resourcePath = resourcePath.replace('\\', '/');
-            var in = PlugMan.getResourceStatic(resourcePath);
+            var in = PlugManBukkit.getResourceStatic(resourcePath);
             if (in == null) throw new IllegalArgumentException("The embedded resource '" + resourcePath + "' cannot be found in PlugManX");
             else {
                 var outFile = new File(dataFolder, resourcePath);
@@ -130,38 +123,29 @@ public class PlugMan extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        PlugMan.instance = this;
+        PlugManBukkit.instance = this;
 
         saveDefaultConfig();
 
         if (commandCreator == null) commandCreator = new CommandCreator();
 
         serviceRegistry = new ServiceRegistry();
+        var logger = new BukkitPluginLogger(getLogger());
+        var initializer = new BukkitPlugManInitializer(this, serviceRegistry, logger);
+        fileManager = new PlugManFileManager(logger);
 
-        serviceRegistry.register(PluginLogger.class, new BukkitPluginLogger(this));
+        initializer.initializeCoreServices();
+        initializer.setupMessaging();
 
-        var initializer = new PlugManInitializer(this);
-        var configurationManager = BukkitPlugManConfigurationManager.of(this);
-        fileManager = new PlugManFileManager(new BukkitPluginLogger(this));
-
-        serviceRegistry.register(PlugManConfigurationManager.class, configurationManager);
-
-        var pluginManager = initializer.initializePluginManager();
-        serviceRegistry.register(PluginManager.class, pluginManager);
-
-        initializer.setupMessageFiles();
-        var messageFormatter = initializer.setupMessageFormatter();
-        serviceRegistry.register(MessageFormatter.class, messageFormatter);
-
-        serviceRegistry.register(ThreadUtil.class, new BukkitThreadUtil());
         serviceRegistry.register(PlugManFileManager.class, fileManager);
+        commandCreator.registerCommand("plugman", new PlugManCommandHandler(), new PlugManTabCompleter(), "plm");
 
-        initializer.setupCommands();
+        // Initialize configuration and scan plugins
+        var configurationManager = serviceRegistry.get(PlugManConfigurationManager.class);
         configurationManager.initializeConfiguration();
         fileManager.scanExistingPlugins();
 
-        var autoFeatureManager = new BukkitAutoFeatureManager(serviceRegistry);
-        autoFeatureManager.setupAutoFeatures();
+        initializer.setupAutoFeatures();
 
         hook.run();
     }
@@ -169,10 +153,9 @@ public class PlugMan extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        PlugMan.instance = null;
-        serviceRegistry.clear();
-        ClassAccessor.clearCache();
-        FieldAccessor.clearCache();
-        MethodAccessor.clearCache();
+        PlugManBukkit.instance = null;
+        var logger = new BukkitPluginLogger(getLogger());
+        var initializer = new BukkitPlugManInitializer(this, serviceRegistry, logger);
+        initializer.cleanup();
     }
 }

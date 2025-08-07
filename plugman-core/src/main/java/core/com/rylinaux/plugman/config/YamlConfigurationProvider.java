@@ -55,6 +55,16 @@ public interface YamlConfigurationProvider {
      */
     YamlConfigurationSection getConfigurationSection(String path);
 
+    default Object get(String path) {
+        return get(path, null);
+    }
+
+    Object get(String path, Object def);
+
+    default String getString(String path) {
+        return getString(path, null);
+    }
+
     /**
      * Get a string value from the configuration
      *
@@ -63,6 +73,10 @@ public interface YamlConfigurationProvider {
      * @return the string value
      */
     String getString(String path, String defaultValue);
+
+    default int getInt(String path) {
+        return getInt(path, 0);
+    }
 
     /**
      * Get an integer value from the configuration
@@ -120,6 +134,8 @@ public interface YamlConfigurationProvider {
     void set(String key, Object value);
 
     void saveDefaultConfig();
+
+    void save();
 
     default File getDataFolder() {
         return Path.of("plugins", "PlugManX").toFile();

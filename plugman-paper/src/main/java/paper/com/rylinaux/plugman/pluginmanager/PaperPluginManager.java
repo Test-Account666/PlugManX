@@ -26,7 +26,7 @@ package paper.com.rylinaux.plugman.pluginmanager;
  * #L%
  */
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import bukkit.com.rylinaux.plugman.plugin.BukkitPlugin;
 import bukkit.com.rylinaux.plugman.pluginmanager.BasePluginManager;
 import bukkit.com.rylinaux.plugman.pluginmanager.BukkitPluginManager;
@@ -153,7 +153,7 @@ public class PaperPluginManager extends BasePluginManager {
         var validationResult = validatePluginFile(pluginFile);
         if (!validationResult.success()) return validationResult;
 
-        PlugMan.getInstance().getLogger().info("Attempting to load " + pluginFile.getPath());
+        PlugManBukkit.getInstance().getLogger().info("Attempting to load " + pluginFile.getPath());
 
         var target = loadPluginWithPaper(pluginFile);
         if (target == null) {
@@ -162,7 +162,7 @@ public class PaperPluginManager extends BasePluginManager {
         }
 
         scheduleCommandLoading();
-        PlugMan.getInstance().getFilePluginMap().put(pluginFile.getName(), target.getName());
+        PlugManBukkit.getInstance().getFilePluginMap().put(pluginFile.getName(), target.getName());
 
         return new PluginResult(true, "load.loaded");
     }
@@ -203,7 +203,7 @@ public class PaperPluginManager extends BasePluginManager {
     @Override
     protected void scheduleCommandLoading() {
         if (isFolia()) {
-            var foliaLib = new com.tcoded.folialib.FoliaLib(PlugMan.getInstance());
+            var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
             foliaLib.getScheduler().runLater(this::syncCommands, 500, TimeUnit.MILLISECONDS);
         } else super.scheduleCommandLoading();
     }
@@ -269,7 +269,7 @@ public class PaperPluginManager extends BasePluginManager {
                 unregisterNonPluginCommands(plugin, data.commandMap(), modifiedKnownCommands, entry);
             } catch (IllegalStateException exception) {
                 if (exception.getMessage().equalsIgnoreCase("zip file closed")) {
-                    var config = PlugMan.getInstance().<PlugManConfigurationManager>get(PlugManConfigurationManager.class);
+                    var config = PlugManBukkit.getInstance().<PlugManConfigurationManager>get(PlugManConfigurationManager.class);
                     if (config.shouldNotifyOnBrokenCommandRemoval())
                         Logger.getLogger(PaperPluginManager.class.getName()).info("Removing broken command '" + entry.getValue().getName() + "'!");
                     entry.getValue().unregister(data.commandMap());

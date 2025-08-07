@@ -35,11 +35,6 @@ public class PlugManConfigurationManager {
     @Getter
     private PlugManConfig plugManConfig;
 
-    /**
-     * Jackson-based resource mappings configuration
-     * -- GETTER --
-     * Get the resource mappings configuration
-     */
     @Getter
     private ResourceMappingsConfig resourceMappingsConfig;
 

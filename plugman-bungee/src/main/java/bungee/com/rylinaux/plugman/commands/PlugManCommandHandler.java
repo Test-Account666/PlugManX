@@ -30,6 +30,7 @@ import bungee.com.rylinaux.plugman.PlugManBungee;
 import core.com.rylinaux.plugman.commands.executables.*;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.plugin.Command;
+import net.md_5.bungee.api.plugin.TabExecutor;
 
 /**
  * BungeeCord command handler for PlugMan commands.
@@ -37,7 +38,12 @@ import net.md_5.bungee.api.plugin.Command;
  *
  * @author rylinaux
  */
-public class PlugManCommandHandler extends Command {
+public class PlugManCommandHandler extends Command implements TabExecutor {
+    /**
+     * Valid command names.
+     */
+    private static final String[] COMMANDS = {"check", "disable", "dump", "enable", "help", "info", "list", "load", "lookup", "reload", "restart", "unload", "usage"};
+    private TabExecutor tabCompleter = new PlugManTabCompleter();
 
     public PlugManCommandHandler() {
         super("plugmanbungee", "plugman.admin", "plmb");
@@ -56,12 +62,9 @@ public class PlugManCommandHandler extends Command {
             case "info" -> new InfoCommand(plugManSender, registry);
             case "lookup" -> new LookupCommand(plugManSender, registry);
             case "usage" -> new UsageCommand(plugManSender, registry);
-            case "enable" -> new EnableCommand(plugManSender, registry);
-            case "disable" -> new DisableCommand(plugManSender, registry);
-            case "restart" -> new RestartCommand(plugManSender, registry);
-            case "load" -> new LoadCommand(plugManSender, registry);
-            case "reload" -> new ReloadCommand(plugManSender, registry);
-            case "unload" -> new UnloadCommand(plugManSender, registry);
+            case "enable", "load" -> new LoadCommand(plugManSender, registry);
+            case "disable", "unload" -> new UnloadCommand(plugManSender, registry);
+            case "restart", "reload" -> new ReloadCommand(plugManSender, registry);
             case "check" -> new CheckCommand(plugManSender, registry);
             default -> new HelpCommand(plugManSender, registry);
         };
@@ -72,5 +75,10 @@ public class PlugManCommandHandler extends Command {
         }
 
         cmd.execute(cmd.getSender(), "plmb", args);
+    }
+
+    @Override
+    public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+        return tabCompleter.onTabComplete(sender, args);
     }
 }

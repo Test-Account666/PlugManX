@@ -1,6 +1,6 @@
 package paper.com.rylinaux.plugman;
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import paper.com.rylinaux.plugman.commands.PaperCommandCreator;
 import bukkit.com.rylinaux.plugman.pluginmanager.BukkitPluginManager;
 import paper.com.rylinaux.plugman.util.PaperThreadUtil;
@@ -21,7 +21,7 @@ public class PaperPlugManBootstrapper implements PluginBootstrap {
 
     @Override
     public JavaPlugin createPlugin(PluginProviderContext context) {
-        var plugMan = new PlugMan();
+        var plugMan = new PlugManBukkit();
         plugMan.commandCreator = new PaperCommandCreator();
 
         plugMan.hook = () -> {

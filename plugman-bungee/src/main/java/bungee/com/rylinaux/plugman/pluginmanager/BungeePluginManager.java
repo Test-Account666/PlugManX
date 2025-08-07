@@ -6,7 +6,6 @@ import bungee.com.rylinaux.plugman.plugin.BungeePlugin;
 import com.google.common.collect.Multimap;
 import core.com.rylinaux.plugman.PluginResult;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
-import core.com.rylinaux.plugman.file.messaging.MessageFormatter;
 import core.com.rylinaux.plugman.plugins.Command;
 import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.plugins.PluginManager;
@@ -27,48 +26,52 @@ import java.util.stream.Collectors;
 
 public class BungeePluginManager implements PluginManager {
 
-    private MessageFormatter getMessageFormatter() {
-        return PlugManBungee.getInstance().get(MessageFormatter.class);
-    }
 
     @Override
     public PluginResult enable(Plugin plugin) {
+        if (plugin == null) return new PluginResult(false, "error.invalid-plugin");
+        if (plugin.isEnabled()) return new PluginResult(false, "enable.already-enabled");
         var bungeePlugin = plugin.<net.md_5.bungee.api.plugin.Plugin>getHandle();
         try {
             bungeePlugin.onEnable();
-            return new PluginResult(true, getMessageFormatter().formatMessage(false, "enable.success"));
+            return new PluginResult(true, "enable.enabled");
         } catch (Exception e) {
             PlugManBungee.getInstance().getLogger().log(Level.SEVERE, "Error enabling plugin " + plugin.getName(), e);
-            return new PluginResult(false, getMessageFormatter().formatMessage(false, "enable.failed", e.getMessage()));
+            return new PluginResult(false, "enable.failed");
         }
     }
 
     @Override
     public PluginResult enableAll() {
         var plugins = getPlugins();
-        var enabled = 0;
-        for (var plugin : plugins) {
-            var result = enable(plugin);
-            if (result.success()) enabled++;
-        }
-        return new PluginResult(true, getMessageFormatter().formatMessage(false, "enable.all-success", enabled));
+        var results = plugins.stream()
+                .filter(plugin -> !isIgnored(plugin))
+                .map(this::enable)
+                .toList();
+        var allSuccessful = results.stream().allMatch(PluginResult::success);
+        return new PluginResult(allSuccessful, "plugins.enabled-all");
     }
 
     @Override
     public PluginResult disable(Plugin plugin) {
-        return unload(plugin);
+        if (plugin == null) return new PluginResult(false, "plugin.null");
+        if (!plugin.isEnabled()) return new PluginResult(false, "plugin.already-disabled");
+        var result = unload(plugin);
+        if (result.success()) {
+            return new PluginResult(true, "plugin.disabled");
+        }
+        return result;
     }
 
     @Override
     public PluginResult disableAll() {
         var plugins = getPlugins();
-        var disabled = 0;
-        for (var plugin : plugins)
-            if (!isIgnored(plugin)) {
-                var result = disable(plugin);
-                if (result.success()) disabled++;
-            }
-        return new PluginResult(true, getMessageFormatter().formatMessage(false, "disable.all-success", disabled));
+        var results = plugins.stream()
+                .filter(plugin -> !isIgnored(plugin))
+                .map(this::disable)
+                .toList();
+        var allSuccessful = results.stream().allMatch(PluginResult::success);
+        return new PluginResult(allSuccessful, "plugins.disabled-all");
     }
 
     @Override
@@ -92,6 +95,8 @@ public class BungeePluginManager implements PluginManager {
 
     @Override
     public Plugin getPluginByName(String name) {
+        name = name.trim();
+
         var bungeePlugin = ProxyServer.getInstance().getPluginManager().getPlugin(name);
         return bungeePlugin != null? new BungeePlugin(bungeePlugin) : null;
     }
@@ -190,8 +195,12 @@ public class BungeePluginManager implements PluginManager {
     @Override
     public PluginResult load(String name) {
         var file = findPluginFile(name);
-        if (file == null) return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.file-not-found", name));
-        return loadPluginFromFile(file);
+        if (file == null) return new PluginResult(false, "load.cannot-find");
+        var result = loadPluginFromFile(file);
+        if (result.success()) {
+            return new PluginResult(true, "load.loaded");
+        }
+        return new PluginResult(false, "load.invalid-plugin");
     }
 
     @Override
@@ -271,15 +280,15 @@ public class BungeePluginManager implements PluginManager {
     private File findPluginFile(String name) {
         var pluginDir = new File("plugins");
         if (!pluginDir.isDirectory()) return null;
+        if (!name.toLowerCase().endsWith(".jar")) name += ".jar";
 
-        var pluginFile = new File(pluginDir, name + ".jar");
+        var pluginFile = new File(pluginDir, name);
         if (pluginFile.isFile()) return pluginFile;
 
         // Search for plugin by name in all jar files
         for (var f : pluginDir.listFiles())
             if (f.getName().endsWith(".jar")) try (var jar = new JarFile(f)) {
                 var pdf = jar.getJarEntry("bungee.yml");
-                if (pdf == null) pdf = jar.getJarEntry("plugin.yml");
                 if (pdf != null) try (var in = jar.getInputStream(pdf)) {
                     var yaml = new Yaml();
                     var desc = yaml.loadAs(in, PluginDescription.class);
@@ -299,17 +308,17 @@ public class BungeePluginManager implements PluginManager {
             yaml = FieldAccessor.getValue(net.md_5.bungee.api.plugin.PluginManager.class, "yaml", pluginManager);
         } catch (IllegalAccessException e) {
             e.printStackTrace();
-            return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.field-error", "load", "get", "yaml"));
+            return new PluginResult(false, "load.invalid-plugin");
         }
 
-        if (yaml == null) return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.field-error", "load", "get", "yaml"));
+        if (yaml == null) return new PluginResult(false, "load.invalid-plugin");
 
         HashMap<String, PluginDescription> toLoad;
         try {
             toLoad = FieldAccessor.getValue(net.md_5.bungee.api.plugin.PluginManager.class, "toLoad", pluginManager);
         } catch (IllegalAccessException e) {
             e.printStackTrace();
-            return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.field-error", "load", "get", "toLoad"));
+            return new PluginResult(false, "load.invalid-plugin");
         }
 
         if (toLoad == null) toLoad = new HashMap<>();
@@ -322,19 +331,19 @@ public class BungeePluginManager implements PluginManager {
                 if (pdf == null) pdf = jar.getJarEntry("plugin.yml");
 
                 if (pdf == null)
-                    return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.no-descriptor"));
+                    return new PluginResult(false, "load.invalid-plugin");
 
                 try (var in = jar.getInputStream(pdf)) {
                     desc = yaml.loadAs(in, PluginDescription.class);
 
                     if (desc.getName() == null)
-                        return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.no-name"));
+                        return new PluginResult(false, "load.invalid-plugin");
 
                     if (desc.getMain() == null)
-                        return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.no-main"));
+                        return new PluginResult(false, "load.invalid-plugin");
 
                     if (pluginManager.getPlugin(desc.getName()) != null)
-                        return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.already-loaded", desc.getName()));
+                        return new PluginResult(false, "load.invalid-plugin");
 
                     desc.setFile(file);
                     toLoad.put(desc.getName(), desc);
@@ -344,31 +353,29 @@ public class BungeePluginManager implements PluginManager {
                     FieldAccessor.setValue(net.md_5.bungee.api.plugin.PluginManager.class, "toLoad", pluginManager, toLoad);
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
-                    return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.field-error", "load", "set", "toLoad"));
+                    return new PluginResult(false, "load.invalid-plugin");
                 }
                 pluginManager.loadPlugins();
 
                 var plugin = pluginManager.getPlugin(desc.getName());
                 if (plugin == null)
-                    return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.unknown-error"));
+                    return new PluginResult(false, "load.invalid-plugin");
                 plugin.onEnable();
             } catch (Exception ex) {
                 ProxyServer.getInstance().getLogger().log(Level.WARNING, "Could not load plugin from file " + file, ex);
-                return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.unknown-error"));
+                return new PluginResult(false, "load.invalid-plugin");
             }
         }
-        return new PluginResult(true, getMessageFormatter().formatMessage(false, "plugin.load-success"));
+        return new PluginResult(true, "load.loaded");
     }
 
     private PluginResult unloadBungeePlugin(net.md_5.bungee.api.plugin.Plugin plugin) {
-        var exception = false;
         var pluginManager = ProxyServer.getInstance().getPluginManager();
         try {
             plugin.onDisable();
             for (var handler : plugin.getLogger().getHandlers()) handler.close();
         } catch (Throwable t) {
             PlugManBungee.getInstance().getLogger().log(Level.SEVERE, "Exception disabling plugin '" + plugin.getDescription().getName() + "'", t);
-            exception = true;
         }
 
         pluginManager.unregisterCommands(plugin);
@@ -381,11 +388,11 @@ public class BungeePluginManager implements PluginManager {
             plugins = FieldAccessor.getValue(net.md_5.bungee.api.plugin.PluginManager.class, "plugins", pluginManager);
         } catch (IllegalAccessException e) {
             e.printStackTrace();
-            return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.field-error", "unload", "get", "plugins"));
+            return new PluginResult(false, "unload.failed");
         }
 
         if (plugins == null)
-            return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.field-error", "unload", "get", "plugins"));
+            return new PluginResult(false, "unload.failed");
 
         plugins.remove(plugin.getDescription().getName());
 
@@ -401,22 +408,21 @@ public class BungeePluginManager implements PluginManager {
 
             } catch (IllegalAccessException ex) {
                 PlugManBungee.getInstance().getLogger().log(Level.SEVERE, null, ex);
-                return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.classloader-error", "unload"));
+                return new PluginResult(false, "unload.failed");
             }
 
             try {
                 ((Closeable) cl).close();
             } catch (IOException ex) {
                 PlugManBungee.getInstance().getLogger().log(Level.SEVERE, null, ex);
-                return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.classloader-error", "close"));
+                return new PluginResult(false, "unload.failed");
             }
         }
 
         // Will not work on processes started with the -XX:+DisableExplicitGC flag, but lets try it anyway.
         // This tries to get around the issue where Windows refuses to unlock jar files that were previously loaded into the JVM.
         System.gc();
-        if (exception) return new PluginResult(false, getMessageFormatter().formatMessage(false, "plugin.disable-exception"));
-        else return new PluginResult(true, getMessageFormatter().formatMessage(false, "plugin.unload-success"));
+        return new PluginResult(true, "unload.unloaded");
     }
 
 }

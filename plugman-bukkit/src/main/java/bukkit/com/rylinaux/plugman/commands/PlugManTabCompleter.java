@@ -26,7 +26,7 @@ package bukkit.com.rylinaux.plugman.commands;
  * #L%
  */
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -146,7 +146,7 @@ public class PlugManTabCompleter implements TabCompleter {
     }
 
     private void completeKnownCommands(String partialCommand, List<String> completions) {
-        var commands = PlugMan.getInstance().getPluginManager().getKnownCommands().keySet()
+        var commands = PlugManBukkit.getInstance().getPluginManager().getKnownCommands().keySet()
                 .stream()
                 .filter(s -> !s.toLowerCase().contains(":"))
                 .collect(Collectors.toList());
@@ -155,17 +155,17 @@ public class PlugManTabCompleter implements TabCompleter {
     }
 
     private void completeDisabledPlugins(String partialPlugin, List<String> completions) {
-        var plugins = PlugMan.getInstance().getPluginManager().getDisabledPluginNames(false);
+        var plugins = PlugManBukkit.getInstance().getPluginManager().getDisabledPluginNames(false);
         StringUtil.copyPartialMatches(partialPlugin, plugins, completions);
     }
 
     private void completeEnabledPlugins(String partialPlugin, List<String> completions) {
-        var plugins = PlugMan.getInstance().getPluginManager().getEnabledPluginNames(false);
+        var plugins = PlugManBukkit.getInstance().getPluginManager().getEnabledPluginNames(false);
         StringUtil.copyPartialMatches(partialPlugin, plugins, completions);
     }
 
     private void completeAllPlugins(String partialPlugin, List<String> completions) {
-        var plugins = PlugMan.getInstance().getPluginManager().getPluginNames(false);
+        var plugins = PlugManBukkit.getInstance().getPluginManager().getPluginNames(false);
         StringUtil.copyPartialMatches(partialPlugin, plugins, completions);
     }
 }

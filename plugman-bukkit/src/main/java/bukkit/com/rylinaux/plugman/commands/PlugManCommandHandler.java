@@ -26,7 +26,7 @@ package bukkit.com.rylinaux.plugman.commands;
  * #L%
  */
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import core.com.rylinaux.plugman.commands.executables.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -44,7 +44,7 @@ public class PlugManCommandHandler implements CommandExecutor {
         var commandName = args.length > 0? args[0].toLowerCase() : "help";
 
         var plugManSender = new BukkitCommandSender(sender);
-        var registry = PlugMan.getInstance().getServiceRegistry();
+        var registry = PlugManBukkit.getInstance().getServiceRegistry();
 
         var cmd = switch (commandName) {
             case "list" -> new ListCommand(plugManSender, registry);

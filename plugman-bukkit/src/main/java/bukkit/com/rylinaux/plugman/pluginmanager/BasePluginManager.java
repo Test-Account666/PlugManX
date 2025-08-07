@@ -4,7 +4,7 @@ package bukkit.com.rylinaux.plugman.pluginmanager;
  * #%L
  * PlugManX Core
  * %%
- * Copyright (C) 2010 - 2025 plugmanx-core
+ * Copyright (C) 2010 - 2025 plugman-core
  * %%
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ package bukkit.com.rylinaux.plugman.pluginmanager;
  * #L%
  */
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import bukkit.com.rylinaux.plugman.api.PlugManAPI;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
 import core.com.rylinaux.plugman.plugins.Plugin;
@@ -117,10 +117,10 @@ public abstract class BasePluginManager implements PluginManager {
         // Search for plugin by name in all jar files
         for (var f : pluginDir.listFiles())
             if (f.getName().endsWith(".jar")) try {
-                var desc = PlugMan.getInstance().getPluginLoader().getPluginDescription(f);
+                var desc = PlugManBukkit.getInstance().getPluginLoader().getPluginDescription(f);
                 if (desc.getName().equalsIgnoreCase(name)) return f;
             } catch (Exception exception) {
-                PlugMan.getInstance().getLogger().warning("Failed to read descriptor for " + f.getName() + " - skipping");
+                PlugManBukkit.getInstance().getLogger().warning("Failed to read descriptor for " + f.getName() + " - skipping");
             }
 
         return null;
@@ -144,7 +144,7 @@ public abstract class BasePluginManager implements PluginManager {
      */
     protected void handleBrokenCommand(Map.Entry<String, Command> entry, SimpleCommandMap commandMap,
                                        Map<String, Command> modifiedKnownCommands, String loggerName) {
-        var config = PlugMan.getInstance().<PlugManConfigurationManager>get(PlugManConfigurationManager.class);
+        var config = PlugManBukkit.getInstance().<PlugManConfigurationManager>get(PlugManConfigurationManager.class);
 
         if (config.shouldNotifyOnBrokenCommandRemoval())
             Logger.getLogger(loggerName).info("Removing broken command '" + entry.getValue().getName() + "'!");
@@ -156,7 +156,7 @@ public abstract class BasePluginManager implements PluginManager {
      * Common command loading logic.
      */
     protected void scheduleCommandLoading() {
-        Bukkit.getScheduler().runTaskLater(PlugMan.getInstance(), this::syncCommands, 10L);
+        Bukkit.getScheduler().runTaskLater(PlugManBukkit.getInstance(), this::syncCommands, 10L);
     }
 
 

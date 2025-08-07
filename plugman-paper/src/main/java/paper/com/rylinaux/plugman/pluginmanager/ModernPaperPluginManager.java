@@ -4,7 +4,7 @@ package paper.com.rylinaux.plugman.pluginmanager;
  * #%L
  * PlugManX Core
  * %%
- * Copyright (C) 2010 - 2025 plugmanx-core
+ * Copyright (C) 2010 - 2025 plugman-core
  * %%
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ package paper.com.rylinaux.plugman.pluginmanager;
  * #L%
  */
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import bukkit.com.rylinaux.plugman.pluginmanager.BukkitPluginManager;
 import core.com.rylinaux.plugman.PluginResult;
 import core.com.rylinaux.plugman.plugins.Plugin;
@@ -123,7 +123,7 @@ public class ModernPaperPluginManager extends PaperPluginManager {
         try {
             var storage = LaunchEntryPointHandler.INSTANCE.get(Entrypoint.PLUGIN);
             if (storage == null) {
-                PlugMan.getInstance().getLogger().warning("Could not get plugin storage for provider removal");
+                PlugManBukkit.getInstance().getLogger().warning("Could not get plugin storage for provider removal");
                 return;
             }
 
@@ -140,8 +140,8 @@ public class ModernPaperPluginManager extends PaperPluginManager {
                     var providers = FieldAccessor.<List<?>>getValue(SimpleProviderStorage.class, "providers", storage);
                     var removed = providers.remove(provider);
 
-                    if (removed) PlugMan.getInstance().getLogger().info("Successfully removed provider for plugin: " + plugin.getName());
-                    else PlugMan.getInstance().getLogger().warning("Failed to remove provider for plugin: " + plugin.getName());
+                    if (removed) PlugManBukkit.getInstance().getLogger().info("Successfully removed provider for plugin: " + plugin.getName());
+                    else PlugManBukkit.getInstance().getLogger().warning("Failed to remove provider for plugin: " + plugin.getName());
 
                     // Also try to clear any internal caches or state that might exist
                     // This is a more aggressive approach to ensure complete cleanup
@@ -160,7 +160,7 @@ public class ModernPaperPluginManager extends PaperPluginManager {
                         }
                     } catch (Exception contextException) {
                         // Context cleanup failed, but this is not critical
-                        PlugMan.getInstance().getLogger().fine("Could not clear provider context for " + plugin.getName() + ": " + contextException.getMessage());
+                        PlugManBukkit.getInstance().getLogger().fine("Could not clear provider context for " + plugin.getName() + ": " + contextException.getMessage());
                     }
 
                     // Try to clear from any identifier tracking
@@ -179,16 +179,16 @@ public class ModernPaperPluginManager extends PaperPluginManager {
                         }
                     } catch (Exception identifierException) {
                         // Identifier cleanup failed, but this is not critical
-                        PlugMan.getInstance().getLogger().fine("Could not clear provider identifiers for " + plugin.getName() + ": " + identifierException.getMessage());
+                        PlugManBukkit.getInstance().getLogger().fine("Could not clear provider identifiers for " + plugin.getName() + ": " + identifierException.getMessage());
                     }
 
                 } catch (Exception exception) {
-                    PlugMan.getInstance().getLogger().severe("Error removing provider for plugin " + plugin.getName() + ": " + exception.getMessage());
+                    PlugManBukkit.getInstance().getLogger().severe("Error removing provider for plugin " + plugin.getName() + ": " + exception.getMessage());
                     exception.printStackTrace();
                 }
             }
         } catch (Exception exception) {
-            PlugMan.getInstance().getLogger().severe("Critical error in removeFromProviderStorage for plugin " + plugin.getName() + ": " + exception.getMessage());
+            PlugManBukkit.getInstance().getLogger().severe("Critical error in removeFromProviderStorage for plugin " + plugin.getName() + ": " + exception.getMessage());
             exception.printStackTrace();
         }
     }
@@ -227,7 +227,7 @@ public class ModernPaperPluginManager extends PaperPluginManager {
 
     private void scheduleCleanupTask() {
         if (isFolia()) {
-            var foliaLib = new com.tcoded.folialib.FoliaLib(PlugMan.getInstance());
+            var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
             foliaLib.getScheduler().runAsync((task) -> {
                 // attempt to do the same thing for folia
             });
@@ -238,7 +238,7 @@ public class ModernPaperPluginManager extends PaperPluginManager {
                 // that field can keep plugin classes loaded, and scheduling an empty runnable
                 // seems nicer and less harmful than clearing that field with reflection
             }
-        }.runTask(PlugMan.getInstance());
+        }.runTask(PlugManBukkit.getInstance());
     }
 
     private record ModernUnloadData(@Delegate CommonUnloadData commonData, Map<String, org.bukkit.plugin.Plugin> lookupNames,

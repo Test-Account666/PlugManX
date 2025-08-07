@@ -28,7 +28,6 @@ package bungee.com.rylinaux.plugman.config;
 
 import bungee.com.rylinaux.plugman.PlugManBungee;
 import core.com.rylinaux.plugman.config.YamlConfigurationProvider;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
 import net.md_5.bungee.config.Configuration;
@@ -36,6 +35,7 @@ import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -45,16 +45,23 @@ import java.util.Set;
  *
  * @author rylinaux
  */
-@RequiredArgsConstructor
 public class BungeeConfigurationProvider implements YamlConfigurationProvider {
     @Delegate
-    private final Configuration config;
+    private Configuration config;
+    private File file;
+
+    public BungeeConfigurationProvider(Configuration config, File file) {
+        this.config = config;
+        this.file = file;
+    }
 
     @SneakyThrows
     @Override
     public YamlConfigurationProvider loadConfiguration(File file) {
-        var loadedConfig = ConfigurationProvider.getProvider(YamlConfiguration.class).load(file);
-        return new BungeeConfigurationProvider(loadedConfig);
+        this.file = file;
+        config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(file);
+
+        return this;
     }
 
     @Override
@@ -76,6 +83,11 @@ public class BungeeConfigurationProvider implements YamlConfigurationProvider {
     }
 
     @Override
+    public Object get(String path, Object def) {
+        return config.get(path, def);
+    }
+
+    @Override
     public boolean isSet(String key) {
         return config.get(key, null) != null;
     }
@@ -83,6 +95,15 @@ public class BungeeConfigurationProvider implements YamlConfigurationProvider {
     @Override
     public void saveDefaultConfig() {
         PlugManBungee.getInstance().saveDefaultConfig();
+    }
+
+    @Override
+    public void save() {
+        try {
+            ConfigurationProvider.getProvider(YamlConfiguration.class).save(config, file);
+        } catch (IOException exception) {
+            exception.printStackTrace();
+        }
     }
 
     @Override

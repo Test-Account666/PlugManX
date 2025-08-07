@@ -26,7 +26,7 @@ package paper.com.rylinaux.plugman.util;
  * #L%
  */
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import bukkit.com.rylinaux.plugman.util.BukkitThreadUtil;
 import paper.com.rylinaux.plugman.pluginmanager.ModernPaperPluginManager;
 
@@ -41,7 +41,7 @@ public class PaperThreadUtil extends BukkitThreadUtil {
      * Check if we should use Folia scheduling for the given plugin manager
      */
     private boolean shouldUseFolia() {
-        var pluginManager = PlugMan.getInstance().getPluginManager();
+        var pluginManager = PlugManBukkit.getInstance().getPluginManager();
 
         return pluginManager instanceof ModernPaperPluginManager paperPluginManager && paperPluginManager.isFolia();
     }
@@ -56,7 +56,7 @@ public class PaperThreadUtil extends BukkitThreadUtil {
             return;
         }
 
-        var foliaLib = new com.tcoded.folialib.FoliaLib(PlugMan.getInstance());
+        var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
         foliaLib.getScheduler().runAsync((ignored) -> runnable.run());
     }
 
@@ -70,7 +70,7 @@ public class PaperThreadUtil extends BukkitThreadUtil {
             return;
         }
 
-        var foliaLib = new com.tcoded.folialib.FoliaLib(PlugMan.getInstance());
+        var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
         foliaLib.getScheduler().runLater(runnable, 0L);
     }
 
@@ -84,7 +84,7 @@ public class PaperThreadUtil extends BukkitThreadUtil {
             return;
         }
 
-        var foliaLib = new com.tcoded.folialib.FoliaLib(PlugMan.getInstance());
+        var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
         foliaLib.getScheduler().runTimer(runnable, delay, period);
     }
 
@@ -98,7 +98,7 @@ public class PaperThreadUtil extends BukkitThreadUtil {
             return;
         }
 
-        var foliaLib = new com.tcoded.folialib.FoliaLib(PlugMan.getInstance());
+        var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
         foliaLib.getScheduler().runTimerAsync(runnable, delay, period);
     }
 }

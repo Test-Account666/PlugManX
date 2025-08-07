@@ -8,9 +8,6 @@
       <configuration>
         <autoDetectTypes>
           <platformType>BUNGEECORD</platformType>
-          <platformType>SPIGOT</platformType>
-          <platformType>PAPER</platformType>
-          <platformType>VELOCITY</platformType>
         </autoDetectTypes>
         <projectReimportVersion>1</projectReimportVersion>
       </configuration>

@@ -26,8 +26,10 @@ package core.com.rylinaux.plugman.util;
  * #L%
  */
 
+import com.google.common.base.Preconditions;
 import lombok.experimental.UtilityClass;
 
+import java.util.Collection;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -50,5 +52,23 @@ public class StringUtil {
         if (start < 0 || start > args.length) throw new IllegalArgumentException("Argument index out of bounds: " + start + "/" + args.length);
 
         return Stream.of(args).skip(start).collect(Collectors.joining(" "));
+    }
+
+    public static <T extends Collection<? super String>> T copyPartialMatches(String token, Iterable<String> originals, T collection) throws UnsupportedOperationException, IllegalArgumentException {
+        Preconditions.checkArgument(token != null, "Search token cannot be null");
+        Preconditions.checkArgument(collection != null, "Collection cannot be null");
+        Preconditions.checkArgument(originals != null, "Originals cannot be null");
+
+        for (var string : originals) {
+            if (!startsWithIgnoreCase(string, token)) continue;
+            collection.add(string);
+        }
+
+        return collection;
+    }
+
+    public static boolean startsWithIgnoreCase(String string, String prefix) throws IllegalArgumentException, NullPointerException {
+        Preconditions.checkArgument(string != null, "Cannot check a null string for a match");
+        return string.length() >= prefix.length() && string.regionMatches(true, 0, prefix, 0, prefix.length());
     }
 }

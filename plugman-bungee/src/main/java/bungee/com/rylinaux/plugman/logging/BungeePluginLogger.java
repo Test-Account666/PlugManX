@@ -2,7 +2,9 @@ package bungee.com.rylinaux.plugman.logging;
 
 import core.com.rylinaux.plugman.logging.PluginLogger;
 import lombok.RequiredArgsConstructor;
-import net.md_5.bungee.api.plugin.Plugin;
+import lombok.experimental.Delegate;
+
+import java.util.logging.Logger;
 
 /**
  * Bungee implementation of PluginLogger.
@@ -12,21 +14,6 @@ import net.md_5.bungee.api.plugin.Plugin;
  */
 @RequiredArgsConstructor
 public class BungeePluginLogger implements PluginLogger {
-
-    private final Plugin plugin;
-
-    @Override
-    public void info(String message) {
-        plugin.getLogger().info(message);
-    }
-
-    @Override
-    public void warning(String message) {
-        plugin.getLogger().warning(message);
-    }
-
-    @Override
-    public void severe(String message) {
-        plugin.getLogger().severe(message);
-    }
+    @Delegate
+    private final Logger logger;
 }

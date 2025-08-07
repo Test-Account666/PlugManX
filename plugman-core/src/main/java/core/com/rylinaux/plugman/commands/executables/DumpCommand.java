@@ -92,7 +92,11 @@ public class DumpCommand extends AbstractCommand {
         plugins.sort(String.CASE_INSENSITIVE_ORDER);
 
         try (var writer = new PrintWriter(dumpFile)) {
-            plugins.forEach(writer::println);
+            for (var plugin : plugins) {
+                plugin = reformat(plugin);
+
+                writer.println(plugin);
+            }
             writer.flush();
 
             sender.sendMessage("dump.dumped", dumpFile.getName());
@@ -100,5 +104,15 @@ public class DumpCommand extends AbstractCommand {
             sender.sendMessage("dump.error");
             exception.printStackTrace();
         }
+    }
+
+    private String reformat(String plugin) {
+        if (plugin.startsWith("§a")) plugin = plugin + " - Enabled";
+
+        if (plugin.startsWith("§c")) plugin = plugin + " - Disabled";
+
+        plugin = plugin.substring(2);
+
+        return plugin;
     }
 }

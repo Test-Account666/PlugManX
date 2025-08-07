@@ -1,6 +1,6 @@
 package bukkit.com.rylinaux.plugman.pluginmanager;
 
-import bukkit.com.rylinaux.plugman.PlugMan;
+import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import bukkit.com.rylinaux.plugman.plugin.BukkitCommand;
 import bukkit.com.rylinaux.plugman.plugin.BukkitPlugin;
 import core.com.rylinaux.plugman.PluginResult;
@@ -59,7 +59,7 @@ public class BukkitPluginManager extends BasePluginManager {
             ).getTarget().invoke(Bukkit.getServer());
 
         } catch (Throwable throwable) {
-            PlugMan.getInstance().getLogger().log(Level.SEVERE, "Failed to initialize syncCommandsRunnable", throwable);
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to initialize syncCommandsRunnable", throwable);
 
             // Fallback to empty method
             syncCommandsRunnable = () -> {
@@ -335,7 +335,7 @@ public class BukkitPluginManager extends BasePluginManager {
      */
     @Override
     public boolean isIgnored(String plugin) {
-        return PlugMan.getInstance().<PlugManConfigurationManager>get(PlugManConfigurationManager.class).getIgnoredPlugins()
+        return PlugManBukkit.getInstance().<PlugManConfigurationManager>get(PlugManConfigurationManager.class).getIgnoredPlugins()
                 .stream().anyMatch(name -> name.equalsIgnoreCase(plugin));
     }
 
@@ -354,7 +354,7 @@ public class BukkitPluginManager extends BasePluginManager {
         if (target == null) return new PluginResult(false, "load.invalid-plugin");
 
         scheduleCommandLoading();
-        PlugMan.getInstance().getFilePluginMap().put(pluginFile.getName(), target.getName());
+        PlugManBukkit.getInstance().getFilePluginMap().put(pluginFile.getName(), target.getName());
 
         return new PluginResult(true, "load.loaded");
     }
@@ -380,7 +380,7 @@ public class BukkitPluginManager extends BasePluginManager {
             var craftServerClass = ClassAccessor.getClass(craftBukkitPrefix + ".CraftServer");
             return FieldAccessor.getValue(craftServerClass, "commandMap", Bukkit.getServer());
         } catch (Exception exception) {
-            PlugMan.getInstance().getLogger().log(Level.SEVERE, "Failed to get command map", exception);
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to get command map", exception);
             return null;
         }
     }
