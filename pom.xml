@@ -14,9 +14,17 @@
         <module>plugman-bukkit</module>
         <module>plugman-paper</module>
         <module>plugman-bungee</module>
-        <module>plugman-velocity</module>
         <module>plugman-assembly</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>include-velocity</id>
+            <modules>
+                <module>plugman-velocity</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <name>PlugManX</name>
     <description>Plugin manager for Bukkit servers.</description>
