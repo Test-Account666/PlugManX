@@ -63,14 +63,6 @@ public class PlugManBukkit extends JavaPlugin {
     @Delegate
     private PlugManFileManager fileManager;
 
-    @Deprecated(
-            forRemoval = true,
-            since = "2.5.0"
-    )
-    public PluginManager getPluginUtil() {
-        return serviceRegistry.getPluginManager();
-    }
-
 
     @Override
     public void onEnable() {
