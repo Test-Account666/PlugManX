@@ -47,6 +47,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 
 public class ModernPaperPluginManager extends PaperPluginManager {
@@ -122,73 +123,98 @@ public class ModernPaperPluginManager extends PaperPluginManager {
 
     private void removeFromProviderStorage(Plugin plugin) {
         try {
-            var storage = LaunchEntryPointHandler.INSTANCE.get(Entrypoint.PLUGIN);
+            var storage = getPluginStorage();
             if (storage == null) {
                 PlugManBukkit.getInstance().getLogger().warning("Could not get plugin storage for provider removal");
                 return;
             }
 
-            var providersIterable = storage.getRegisteredProviders();
-            var clonedList = new ArrayList<PluginProvider<JavaPlugin>>();
+            var providers = cloneProvidersList(storage);
+            removeMatchingProviders(plugin, storage, providers);
+        } catch (Exception exception) {
+            var message = "Error in removeFromProviderStorage for plugin " + plugin.getName();
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, message, exception);
+        }
+    }
 
-            providersIterable.forEach(clonedList::add);
+    private Object getPluginStorage() {
+        return LaunchEntryPointHandler.INSTANCE.get(Entrypoint.PLUGIN);
+    }
 
-            for (var provider : clonedList) {
-                if (!provider.getMeta().getName().equalsIgnoreCase(plugin.getName())) continue;
+    private List<PluginProvider<JavaPlugin>> cloneProvidersList(Object storage) {
+        var providersIterable = ((SimpleProviderStorage) storage).getRegisteredProviders();
+        var clonedList = new ArrayList<PluginProvider<JavaPlugin>>();
+        for (var provider : providersIterable) clonedList.add((PluginProvider<JavaPlugin>) provider);
+        return clonedList;
+    }
 
-                try {
-                    // Remove from the providers list
-                    var providers = FieldAccessor.<List<?>>getValue(SimpleProviderStorage.class, "providers", storage);
-                    var removed = providers.remove(provider);
+    private void removeMatchingProviders(Plugin plugin, Object storage, List<PluginProvider<JavaPlugin>> providers) {
+        for (var provider : providers) {
+            if (!provider.getMeta().getName().equalsIgnoreCase(plugin.getName())) continue;
 
-                    if (removed) PlugManBukkit.getInstance().getLogger().info("Successfully removed provider for plugin: " + plugin.getName());
-                    else PlugManBukkit.getInstance().getLogger().warning("Failed to remove provider for plugin: " + plugin.getName());
+            try {
+                removeProviderFromStorage(plugin, storage, provider);
+                cleanupProviderCaches(plugin, storage);
+            } catch (Exception exception) {
+                var message = "Error removing provider for plugin " + plugin.getName();
+                PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, message, exception);
+            }
+        }
+    }
 
-                    // Also try to clear any internal caches or state that might exist
-                    // This is a more aggressive approach to ensure complete cleanup
+    private void removeProviderFromStorage(Plugin plugin, Object storage, PluginProvider<JavaPlugin> provider) {
+        try {
+            var providers = FieldAccessor.<List<?>>getValue(SimpleProviderStorage.class, "providers", storage);
+            var removed = providers.remove(provider);
+
+            if (removed) {
+                var message = "Successfully removed provider for plugin: " + plugin.getName();
+                PlugManBukkit.getInstance().getLogger().info(message);
+            } else {
+                var message = "Failed to remove provider for plugin: " + plugin.getName();
+                PlugManBukkit.getInstance().getLogger().warning(message);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to remove provider from storage", e);
+        }
+    }
+
+    private void cleanupProviderCaches(Plugin plugin, Object storage) {
+        cleanupProviderContext(plugin, storage);
+        cleanupProviderIdentifiers(plugin, storage);
+    }
+
+    private void cleanupProviderContext(Plugin plugin, Object storage) {
+        cleanupMapField(storage, "providerContext",
+                entry -> entry.getKey().toString().contains(plugin.getName()),
+                "Could not clear provider context for " + plugin.getName());
+    }
+
+    private void cleanupProviderIdentifiers(Plugin plugin, Object storage) {
+        cleanupMapField(storage, "identifiers",
+                entry -> entry.getKey().toString().contains(plugin.getName()) ||
+                        entry.getValue().toString().contains(plugin.getName()),
+                "Could not clear provider identifiers for " + plugin.getName());
+    }
+
+    private void cleanupMapField(Object storage, String fieldName,
+                                 Predicate<Map.Entry<?, ?>> removalCondition,
+                                 String errorMessage) {
+        try {
+            var field = FieldAccessor.getField(storage.getClass(), fieldName);
+            if (field != null) {
+                var map = FieldAccessor.getValue(storage.getClass(), fieldName, storage);
+                if (map instanceof Map) ((Map<?, ?>) map).entrySet().removeIf(entry -> {
                     try {
-                        // Try to access and clear any provider context or cache
-                        var contextField = FieldAccessor.getField(storage.getClass(), "providerContext");
-                        if (contextField != null) {
-                            var context = FieldAccessor.getValue(storage.getClass(), "providerContext", storage);
-                            if (context instanceof Map) ((Map<?, ?>) context).entrySet().removeIf(entry -> {
-                                try {
-                                    return entry.getKey().toString().contains(plugin.getName());
-                                } catch (Exception e) {
-                                    return false;
-                                }
-                            });
-                        }
-                    } catch (Exception contextException) {
-                        // Context cleanup failed, but this is not critical
-                        PlugManBukkit.getInstance().getLogger().fine("Could not clear provider context for " + plugin.getName() + ": " + contextException.getMessage());
+                        return removalCondition.test(entry);
+                    } catch (Exception e) {
+                        return false;
                     }
-
-                    // Try to clear from any identifier tracking
-                    try {
-                        var identifierField = FieldAccessor.getField(storage.getClass(), "identifiers");
-                        if (identifierField != null) {
-                            var identifiers = FieldAccessor.getValue(storage.getClass(), "identifiers", storage);
-                            if (identifiers instanceof Map) ((Map<?, ?>) identifiers).entrySet().removeIf(entry -> {
-                                try {
-                                    return entry.getKey().toString().contains(plugin.getName()) ||
-                                            entry.getValue().toString().contains(plugin.getName());
-                                } catch (Exception e) {
-                                    return false;
-                                }
-                            });
-                        }
-                    } catch (Exception identifierException) {
-                        // Identifier cleanup failed, but this is not critical
-                        PlugManBukkit.getInstance().getLogger().fine("Could not clear provider identifiers for " + plugin.getName() + ": " + identifierException.getMessage());
-                    }
-
-                } catch (Exception exception) {
-                    PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Error removing provider for plugin " + plugin.getName(), exception);
-                }
+                });
             }
         } catch (Exception exception) {
-            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Critical error in removeFromProviderStorage for plugin " + plugin.getName(), exception);
+            var message = errorMessage + ": " + exception.getMessage();
+            PlugManBukkit.getInstance().getLogger().fine(message);
         }
     }
 
