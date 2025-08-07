@@ -132,13 +132,17 @@ public class BungeePluginManager implements PluginManager {
 
         var commands = commandsByPlugin.get(plugin.getHandle());
 
-        var usages = "";
+        var builder = new StringBuilder();
 
-        for (var command : commands)
-            usages = Arrays.stream(command.getAliases()).map(alias -> alias + " ")
-                    .collect(Collectors.joining("", command.getName() + " ", ""));
+        for (var command : commands) {
+            builder.append(command.getName()).append(", ");
+            for (var alias : command.getAliases()) builder.append(alias).append(", ");
+        }
 
-        return usages.trim().replace(" ", ", ");
+        var parsedCommands = builder.substring(0, builder.length() - 2).trim();
+        if (parsedCommands.isBlank()) return "usage.no-commands";
+
+        return parsedCommands;
     }
 
     @Override
@@ -164,14 +168,6 @@ public class BungeePluginManager implements PluginManager {
                 if (!entry.getValue().equals(foundCommand)) continue;
                 var pluginName = entry.getKey().getDescription().getName();
                 if (!plugins.contains(pluginName)) plugins.add(pluginName);
-            }
-
-            for (var entry : commandMap.entrySet()) {
-                var commandName = entry.getKey();
-                if (!commandName.contains(":")) continue;
-                var parts = commandName.split(":");
-                if (parts.length != 2 || !parts[1].equalsIgnoreCase(command)) continue;
-                if (!plugins.contains(parts[0])) plugins.add(parts[0]);
             }
         } catch (Exception exception) {
             PlugManBungee.getInstance().getLogger().log(Level.WARNING, "Failed to find command: " + command, exception);
