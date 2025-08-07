@@ -17,6 +17,7 @@ public class PaperPlugManBootstrapper implements PluginBootstrap {
 
     @Override
     public void bootstrap(BootstrapContext bootstrapContext) {
+        // Not implementation required
     }
 
     @Override
