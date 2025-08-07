@@ -30,6 +30,7 @@ package core.com.rylinaux.plugman.commands.executables;
 import core.com.rylinaux.plugman.commands.AbstractCommand;
 import core.com.rylinaux.plugman.commands.CommandSender;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
+import core.com.rylinaux.plugman.logging.PluginLogger;
 import core.com.rylinaux.plugman.pojo.UpdateResult;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 import core.com.rylinaux.plugman.util.FlagUtil;
@@ -41,7 +42,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.logging.Logger;
 
 /**
  * Command that checks if a plugin is up-to-date.
@@ -69,7 +69,6 @@ public class CheckCommand extends AbstractCommand {
      * The sub permissions of the command.
      */
     public static final String[] SUB_PERMISSIONS = {"all"};
-    private static final Logger LOGGER = Logger.getLogger(CheckCommand.class.getName());
 
     /**
      * Construct out object.
@@ -156,7 +155,9 @@ public class CheckCommand extends AbstractCommand {
                     writer.println("Unknown (Installed):");
                     writer.println(unknown);
                 } catch (IOException exception) {
-                    exception.printStackTrace();
+                    var logger = get(PluginLogger.class);
+                    logger.warning("Error writing to file: " + exception.getMessage());
+                    return;
                 }
 
                 sender.sendMessage("check.file-done", outFile.getPath());
