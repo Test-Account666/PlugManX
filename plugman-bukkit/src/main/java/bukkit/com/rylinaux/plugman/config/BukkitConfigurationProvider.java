@@ -36,6 +36,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
+import java.util.logging.Level;
 
 /**
  * Bukkit implementation of ConfigurationProvider.
@@ -84,7 +85,7 @@ public class BukkitConfigurationProvider implements YamlConfigurationProvider {
         try {
             config.save(file);
         } catch (IOException exception) {
-            exception.printStackTrace();
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to save configuration file: " + file.getName(), exception);
         }
     }
 }

@@ -104,8 +104,12 @@ public class PlugManBukkit extends JavaPlugin {
                     out.close();
                     in.close();
                 } catch (IOException exception) {
-                    exception.printStackTrace();
-                    System.out.println("Could not save " + outFile.getName() + " to " + outFile);
+                    if (instance != null) {
+                        instance.getLogger().severe("Could not save " + outFile.getName() + " to " + outFile + ": " + exception.getMessage());
+                    } else {
+                        // Fallback when instance is not available
+                        java.util.logging.Logger.getLogger("PlugManX").severe("Could not save " + outFile.getName() + " to " + outFile + ": " + exception.getMessage());
+                    }
                 }
 
             }

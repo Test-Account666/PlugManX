@@ -101,7 +101,7 @@ public class PlugManTabCompleter implements TabCompleter {
 
         for (var pluginFile : pluginsDir.listFiles()) {
             var fileName = extractLoadablePluginName(pluginFile);
-            if (fileName != null && !isPluginAlreadyLoaded(pluginFile, fileName)) files.add(fileName);
+            if (fileName != null && !isPluginAlreadyLoaded(pluginFile)) files.add(fileName);
         }
 
         StringUtil.copyPartialMatches(partialPlugin, files, completions);
@@ -126,7 +126,7 @@ public class PlugManTabCompleter implements TabCompleter {
         }
     }
 
-    private boolean isPluginAlreadyLoaded(File pluginFile, String fileName) {
+    private boolean isPluginAlreadyLoaded(File pluginFile) {
         try (var jarFile = new JarFile(pluginFile)) {
             if (jarFile.getEntry("plugin.yml") == null) return false;
 

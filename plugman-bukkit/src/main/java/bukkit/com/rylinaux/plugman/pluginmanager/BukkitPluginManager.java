@@ -368,7 +368,7 @@ public class BukkitPluginManager extends BasePluginManager {
             Bukkit.getPluginManager().enablePlugin(target);
             return new BukkitPlugin(target);
         } catch (InvalidDescriptionException | InvalidPluginException exception) {
-            exception.printStackTrace();
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to load and enable plugin: " + pluginFile.getName(), exception);
             return null;
         }
     }
@@ -392,7 +392,7 @@ public class BukkitPluginManager extends BasePluginManager {
 
             return convertBukkitCommands(knownCommands);
         } catch (Exception exception) {
-            exception.printStackTrace();
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to get known commands", exception);
             return null;
         }
     }
@@ -406,8 +406,7 @@ public class BukkitPluginManager extends BasePluginManager {
 
             FieldAccessor.setValue(SimpleCommandMap.class, "knownCommands", commandMap, knownCommands);
         } catch (Exception exception) {
-            exception.printStackTrace();
-            throw new RuntimeException("Failed to set known commands", exception);
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to set known commands", exception);
         }
     }
 
@@ -476,7 +475,7 @@ public class BukkitPluginManager extends BasePluginManager {
 
             return new CommonUnloadData(pluginManager, commandMap, plugins, names, commands, listeners, reloadlisteners);
         } catch (Exception exception) {
-            exception.printStackTrace();
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to extract plugin manager data for plugin: " + plugin.getName(), exception);
             return null;
         }
     }
@@ -542,7 +541,7 @@ public class BukkitPluginManager extends BasePluginManager {
                 commands.remove(entry.getKey());
             }
         } catch (IllegalAccessException exception) {
-            exception.printStackTrace();
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to unregister command for plugin: " + plugin.getName(), exception);
         }
     }
 

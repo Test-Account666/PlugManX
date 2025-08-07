@@ -41,6 +41,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Utilities for dealing with the SpiGet API.
@@ -48,6 +50,7 @@ import java.util.TreeMap;
  * @author rylinaux
  */
 public class SpiGetUtil {
+    private static final Logger LOGGER = Logger.getLogger(SpiGetUtil.class.getName());
 
     /**
      * The base URL for the SpiGet API.
@@ -160,7 +163,7 @@ public class SpiGetUtil {
                 }
 
             } catch (IOException | InterruptedException exception) {
-                exception.printStackTrace();
+                LOGGER.log(Level.SEVERE, "Failed to get plugin ID for: " + name, exception);
             }
         }
 
@@ -194,7 +197,7 @@ public class SpiGetUtil {
                 return gson.fromJson(body, JsonArray.class);
 
             } catch (IOException | InterruptedException exception) {
-                exception.printStackTrace();
+                LOGGER.log(Level.SEVERE, "Failed to get plugin versions for ID: " + id, exception);
             }
         }
 

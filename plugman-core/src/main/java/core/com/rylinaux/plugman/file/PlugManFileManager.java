@@ -111,7 +111,7 @@ public class PlugManFileManager {
         try {
             return Files.asByteSource(file).hash(Hashing.sha256()).toString();
         } catch (IOException exception) {
-            exception.printStackTrace();
+            logger.severe("Failed to calculate hash for file: " + file.getName() + " - " + exception.getMessage());
             return null;
         }
     }

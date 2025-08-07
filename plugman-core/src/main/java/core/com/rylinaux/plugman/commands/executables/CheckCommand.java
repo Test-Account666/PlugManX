@@ -41,6 +41,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Command that checks if a plugin is up-to-date.
@@ -48,6 +50,7 @@ import java.nio.file.Path;
  * @author rylinaux
  */
 public class CheckCommand extends AbstractCommand {
+    private static final Logger LOGGER = Logger.getLogger(CheckCommand.class.getName());
 
     /**
      * The name of the command.
@@ -157,7 +160,7 @@ public class CheckCommand extends AbstractCommand {
                     writer.println("Unknown (Installed):");
                     writer.println(unknown);
                 } catch (IOException exception) {
-                    exception.printStackTrace();
+                    LOGGER.log(Level.SEVERE, "Failed to write updates file: " + outFile.getPath(), exception);
                 }
 
                 sender.sendMessage("check.file-done", outFile.getPath());

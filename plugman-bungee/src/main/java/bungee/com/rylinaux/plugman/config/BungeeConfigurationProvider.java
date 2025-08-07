@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
 
 /**
  * BungeeCord implementation of YamlConfigurationProvider.
@@ -102,7 +103,7 @@ public class BungeeConfigurationProvider implements YamlConfigurationProvider {
         try {
             ConfigurationProvider.getProvider(YamlConfiguration.class).save(config, file);
         } catch (IOException exception) {
-            exception.printStackTrace();
+            PlugManBungee.getInstance().getLogger().log(Level.SEVERE, "Failed to save configuration file: " + file.getName(), exception);
         }
     }
 

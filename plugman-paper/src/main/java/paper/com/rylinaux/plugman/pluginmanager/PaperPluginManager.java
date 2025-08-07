@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarFile;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -129,7 +130,7 @@ public class PaperPluginManager extends BasePluginManager {
                 }
 
         } catch (Throwable throwable) {
-            throwable.printStackTrace();
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to check if plugin is a Paper plugin", throwable);
         }
 
         return false;

@@ -44,8 +44,12 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class CurseForgeUtil {
+    private static final Logger LOGGER = Logger.getLogger(CurseForgeUtil.class.getName());
+    
     /**
      * The base URL for the CurseForge API.
      */
@@ -171,7 +175,7 @@ public class CurseForgeUtil {
                 }
 
             } catch (IOException | InterruptedException exception) {
-                exception.printStackTrace();
+                LOGGER.log(Level.SEVERE, "Failed to get plugin ID for: " + name, exception);
             }
         }
 
@@ -205,7 +209,7 @@ public class CurseForgeUtil {
                 return gson.fromJson(body, JsonArray.class);
 
             } catch (IOException | InterruptedException exception) {
-                exception.printStackTrace();
+                LOGGER.log(Level.SEVERE, "Failed to get plugin versions for ID: " + id, exception);
             }
         }
 

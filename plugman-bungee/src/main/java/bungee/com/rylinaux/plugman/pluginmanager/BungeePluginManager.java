@@ -220,7 +220,6 @@ public class BungeePluginManager implements PluginManager {
             FieldAccessor.setValue(net.md_5.bungee.api.plugin.PluginManager.class, "commandMap", pluginManager, bungeeCommands);
         } catch (Exception exception) {
             PlugManBungee.getInstance().getLogger().log(Level.SEVERE, "Failed to set known commands", exception);
-            throw new RuntimeException("Failed to set known commands", exception);
         }
     }
 
@@ -299,7 +298,7 @@ public class BungeePluginManager implements PluginManager {
         try {
             yaml = FieldAccessor.getValue(net.md_5.bungee.api.plugin.PluginManager.class, "yaml", pluginManager);
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            PlugManBungee.getInstance().getLogger().log(Level.SEVERE, "Failed to access yaml field from plugin manager", e);
             return new PluginResult(false, "load.invalid-plugin");
         }
 
@@ -309,7 +308,7 @@ public class BungeePluginManager implements PluginManager {
         try {
             toLoad = FieldAccessor.getValue(net.md_5.bungee.api.plugin.PluginManager.class, "toLoad", pluginManager);
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            PlugManBungee.getInstance().getLogger().log(Level.SEVERE, "Failed to access toLoad field from plugin manager", e);
             return new PluginResult(false, "load.invalid-plugin");
         }
 
@@ -344,7 +343,7 @@ public class BungeePluginManager implements PluginManager {
                 try {
                     FieldAccessor.setValue(net.md_5.bungee.api.plugin.PluginManager.class, "toLoad", pluginManager, toLoad);
                 } catch (IllegalAccessException e) {
-                    e.printStackTrace();
+                    PlugManBungee.getInstance().getLogger().log(Level.SEVERE, "Failed to set toLoad field in plugin manager", e);
                     return new PluginResult(false, "load.invalid-plugin");
                 }
                 pluginManager.loadPlugins();
@@ -354,7 +353,7 @@ public class BungeePluginManager implements PluginManager {
                     return new PluginResult(false, "load.invalid-plugin");
                 plugin.onEnable();
             } catch (Exception ex) {
-                ProxyServer.getInstance().getLogger().log(Level.WARNING, "Could not load plugin from file " + file, ex);
+                PlugManBungee.getInstance().getLogger().log(Level.WARNING, "Could not load plugin from file " + file, ex);
                 return new PluginResult(false, "load.invalid-plugin");
             }
         }
@@ -379,7 +378,7 @@ public class BungeePluginManager implements PluginManager {
         try {
             plugins = FieldAccessor.getValue(net.md_5.bungee.api.plugin.PluginManager.class, "plugins", pluginManager);
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            PlugManBungee.getInstance().getLogger().log(Level.SEVERE, "Failed to access plugins field from plugin manager", e);
             return new PluginResult(false, "unload.failed");
         }
 

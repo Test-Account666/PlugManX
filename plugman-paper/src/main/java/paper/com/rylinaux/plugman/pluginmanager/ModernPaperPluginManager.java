@@ -47,6 +47,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 public class ModernPaperPluginManager extends PaperPluginManager {
     //TODO: Add paper-plugin support
@@ -97,7 +98,7 @@ public class ModernPaperPluginManager extends PaperPluginManager {
 
             return new ModernUnloadData(commonData, lookupNames, eventExecutorMap, pluginList);
         } catch (Exception exception) {
-            exception.printStackTrace();
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to setup unload data", exception);
             return null;
         }
     }
@@ -183,13 +184,11 @@ public class ModernPaperPluginManager extends PaperPluginManager {
                     }
 
                 } catch (Exception exception) {
-                    PlugManBukkit.getInstance().getLogger().severe("Error removing provider for plugin " + plugin.getName() + ": " + exception.getMessage());
-                    exception.printStackTrace();
+                    PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Error removing provider for plugin " + plugin.getName(), exception);
                 }
             }
         } catch (Exception exception) {
-            PlugManBukkit.getInstance().getLogger().severe("Critical error in removeFromProviderStorage for plugin " + plugin.getName() + ": " + exception.getMessage());
-            exception.printStackTrace();
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Critical error in removeFromProviderStorage for plugin " + plugin.getName(), exception);
         }
     }
 
@@ -220,7 +219,7 @@ public class ModernPaperPluginManager extends PaperPluginManager {
         } catch (NoClassDefFoundError ignored) { // ignore this, if SafeClassDefiner doesn't exist
             return true;
         } catch (Exception exception) {
-            exception.printStackTrace();
+            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to cleanup SafeClassDefiner for plugin: " + plugin.getName(), exception);
             return false;
         }
     }
