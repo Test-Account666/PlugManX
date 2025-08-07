@@ -32,6 +32,7 @@ import com.google.gson.JsonElement;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.pojo.UpdateResult;
 import lombok.SneakyThrows;
+import lombok.experimental.UtilityClass;
 
 import java.io.IOException;
 import java.net.URI;
@@ -49,6 +50,7 @@ import java.util.logging.Logger;
  *
  * @author rylinaux
  */
+@UtilityClass
 public class SpiGetUtil {
     private static final Logger LOGGER = Logger.getLogger(SpiGetUtil.class.getName());
 

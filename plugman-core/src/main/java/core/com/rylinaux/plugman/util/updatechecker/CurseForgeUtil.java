@@ -35,6 +35,7 @@ import com.google.gson.JsonElement;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.pojo.UpdateResult;
 import lombok.SneakyThrows;
+import lombok.experimental.UtilityClass;
 
 import java.io.IOException;
 import java.net.URI;
@@ -47,6 +48,7 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@UtilityClass
 public class CurseForgeUtil {
     private static final Logger LOGGER = Logger.getLogger(CurseForgeUtil.class.getName());
     
