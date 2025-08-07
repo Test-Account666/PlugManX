@@ -51,6 +51,13 @@ public class PlugManCommandHandler extends Command implements TabExecutor {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
+        while (args.length > 0 && args[args.length - 1].isBlank()) {
+            var oldArgs = args;
+
+            args = new String[args.length - 1];
+            System.arraycopy(oldArgs, 0, args, 0, oldArgs.length - 1);
+        }
+
         var commandName = args.length > 0? args[0].toLowerCase() : "help";
 
         var plugManSender = new BungeeCommandSender(sender);
