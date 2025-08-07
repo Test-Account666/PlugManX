@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 
 @UtilityClass
 public class UpdateUtil {
-    private static final Pattern VERSION_FAMILY_NUMBERS_PATTERN = Pattern.compile("\\d+(\\.\\d+)*");
+    private static final Pattern VERSION_FAMILY_NUMBERS_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)*+");
 
     /**
      * Check which plugins are up-to-date or not.
