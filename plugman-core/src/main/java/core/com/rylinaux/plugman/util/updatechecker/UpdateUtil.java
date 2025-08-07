@@ -150,7 +150,7 @@ public class UpdateUtil {
         var result = new ArrayList<List<Integer>>();
         while (matcher.find()) {
             var familyString = matcher.group();
-            var family = Arrays.stream(familyString.split("\\.")).map(Integer::parseInt).collect(Collectors.toList());
+            var family = Arrays.stream(familyString.split("\\.")).map(Integer::parseInt).toList();
             result.add(family);
         }
         return result;

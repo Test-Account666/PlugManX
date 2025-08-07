@@ -36,7 +36,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.jar.JarFile;
-import java.util.stream.Collectors;
 import java.util.zip.ZipException;
 
 /**
@@ -137,7 +136,6 @@ public class PlugManFileManager {
 
         return Arrays.stream(pluginsDir.listFiles())
                 .filter(File::isFile)
-                .filter(file -> file.getName().toLowerCase(Locale.ROOT).endsWith(".jar"))
-                .collect(Collectors.toList());
+                .filter(file -> file.getName().toLowerCase(Locale.ROOT).endsWith(".jar")).toList();
     }
 }
