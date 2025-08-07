@@ -28,17 +28,20 @@ package bukkit.com.rylinaux.plugman.api;
 
 import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
+import lombok.experimental.UtilityClass;
 import org.bukkit.plugin.Plugin;
 
 import java.util.HashMap;
+import java.util.Map;
 
+@UtilityClass
 public class PlugManAPI {
-    protected static final HashMap<Plugin, GentleUnload> gentleUnloads = new HashMap<>();
+    private static final Map<Plugin, GentleUnload> gentleUnloads = new HashMap<>();
 
     /**
      * @return = Returns all plugins which should be unloaded gently
      */
-    public static HashMap<Plugin, GentleUnload> getGentleUnloads() {
+    public static Map<Plugin, GentleUnload> getGentleUnloads() {
         return new HashMap<>(PlugManAPI.gentleUnloads);
     }
 
