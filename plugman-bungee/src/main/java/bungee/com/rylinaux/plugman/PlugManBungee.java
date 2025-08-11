@@ -28,6 +28,7 @@ package bungee.com.rylinaux.plugman;
 
 import bungee.com.rylinaux.plugman.commands.PlugManCommandHandler;
 import bungee.com.rylinaux.plugman.logging.BungeePluginLogger;
+import core.com.rylinaux.plugman.file.PlugManFileManager;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 import lombok.Getter;
 import lombok.experimental.Delegate;
@@ -70,11 +71,15 @@ public final class PlugManBungee extends Plugin implements Listener {
         serviceRegistry = new ServiceRegistry();
         var logger = new BungeePluginLogger(getLogger());
         var initializer = new BungeePlugManInitializer(this, serviceRegistry, logger);
+        var fileManager = new PlugManFileManager(logger);
+        register(PlugManFileManager.class, fileManager);
 
         initializer.initializeCoreServices();
         initializer.setupMessaging();
 
         ProxyServer.getInstance().getPluginManager().registerCommand(this, new PlugManCommandHandler());
+
+        fileManager.scanExistingPlugins();
 
         initializer.setupAutoFeatures();
     }
