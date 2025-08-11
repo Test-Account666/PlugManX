@@ -1,0 +1,91 @@
+###
+# Eigene Nachrichten-Datei.
+#
+# Nachrichten können Formatierungscodes enthalten, die auf http://minecraft.gamepedia.com/Formatting_codes gefunden werden können, und müssen das '&' Zeichen verwenden, um sie zu kennzeichnen.
+# Stelle sicher, dass du die einfachen Anführungszeichen um die Nachrichten setzt.
+# Bei neuen Updates kann sich dies ändern, und frühere Versionen zeigen die Informationen möglicherweise nicht richtig an. Änderungen werden im Changelog vermerkt.
+###
+
+prefix: '&7[&aPlugMan&7] '
+check:
+  header: '&9Rufe Plugin-Versionen ab...'
+  not-found: '&9Plugin nicht installiert - neueste verfügbare Version ist "{0}".'
+  not-found-spigot: '&cKonnte Plugin-Daten nicht abrufen - existiert das Plugin als Spigot-Ressource?'
+  out-of-date: '&cAktuelle Version (&4{0}&c) stimmt nicht mit neuester Version (&2{1}&c) überein.'
+  out-of-date-player: '&cKönnte veraltet sein (Installiert -> Neueste): {0}'
+  up-to-date: '&9Plugin scheint auf dem neuesten Stand zu sein mit Version "{0}".'
+  up-to-date-player: '&aScheint auf dem neuesten Stand zu sein (Installiert): {0}'
+  file-done: '&9Datei dump abgeschlossen: {0}'
+  unknown: '&cVersionsinformationen sind unbekannt.'
+  unknown-player: '&cUnbekannt (Installiert): {0}'
+  not-available: '&cVersionsinformationen für {0} sind nicht verfügbar.'
+disable:
+  all: '&9Alle Plugins wurden deaktiviert (außer PlugMan).'
+  already-disabled: '&c{0} ist bereits deaktiviert.'
+  disabled: '&9{0} wurde deaktiviert.'
+dump:
+  dumped: '&9Plugins wurden in {0} abgelegt.'
+  error: '&4Konnte nicht in Datei ablegen.'
+enable:
+  all: '&9Alle Plugins wurden aktiviert.'
+  already-enabled: '&c{0} ist bereits aktiviert.'
+  enabled: '&9{0} wurde aktiviert.'
+error:
+  ignored: '&cPlugMan ist darauf konfiguriert, dieses Plugin zu ignorieren.'
+  invalid-plugin: '&cDies ist kein gültiges Plugin.'
+  no-permission: '&cDu hast hierzu keine Berechtigung.'
+  specify-plugin: '&cBitte gib ein Plugin an.'
+  specify-command: '&cBitte gib einen Befehl an.'
+  paper-plugin: '&cPaper-Plugins werden derzeit leider nicht unterstützt.'
+  usage:
+    command: '&7- &9Befehl: &7{0}'
+    description: '&7- &9Beschreibung: &7{0}'
+    usage: '&7- &9Verwendung: &7{0}'
+help:
+  header: '&7--------------------- [&a PlugMan &7] ---------------------'
+  help: '&7- &a/plugman help &f- &7Zeigt dies an.'
+  list: '&7- &a/plugman list [-v] &f- &7Listet alle Plugins auf (-v zeigt Versionen).'
+  dump: '&7- &a/plugman dump &f- &7Listet Plugin-Namen und Versionen in Datei auf.'
+  info: '&7- &a/plugman info <plugin> &f- &7Informationen zu einem Plugin abrufen.'
+  usage: '&7- &a/plugman usage <plugin> &f- &7Listet die von einem Plugin registrierten Befehle auf.'
+  lookup: '&7- &a/plugman lookup <command> &f- &7Ermittelt, zu welchem Plugin ein Befehl registriert ist.'
+  enable: '&7- &a/plugman enable <plugin|all> &f- &7Aktiviert ein Plugin.'
+  disable: '&7- &a/plugman disable <plugin|all> &f- &7Deaktiviert ein Plugin.'
+  restart: '&7- &a/plugman restart <plugin|all> &f- &7Startet ein Plugin neu.'
+  load: '&7- &a/plugman load <plugin> &f- &7Lädt ein Plugin.'
+  reload: '&7- &a/plugman reload <plugin|all> &f- &7Lädt ein Plugin neu.'
+  unload: '&7- &a/plugman unload <plugin> &f- &7Entlädt ein Plugin.'
+  check: '&7- &a/plugman check <plugin|all> [-f] &f- &7Überprüft, ob ein Plugin aktuell ist (-f legt alle in Datei ab).'
+info:
+  header: 'Plugin-Informationen: {0}'
+  version: '&7- Version: &a{0}'
+  authors: '&7- Autor(en): &a{0}'
+  status: '&7- Status: {0}'
+  depends: '&7- Abhängigkeiten: {0}'
+  softdepends: '&7- Soft-Abhängigkeiten: &a{0}'
+list:
+  list: '&9Plugins ({0}): {1}'
+load:
+  already-loaded: '&c{0} ist bereits geladen.'
+  cannot-find: '&cKonnte Datei nicht finden und konnte Beschreibungen nicht durchsuchen.'
+  invalid-description: '&cDas Plugin hat eine ungültige Beschreibung.'
+  invalid-plugin: '&cDiese Datei ist kein gültiges Plugin.'
+  loaded: '&9{0} wurde geladen und aktiviert.'
+  plugin-dir: '&cPlugin-Verzeichnis nicht gefunden.'
+lookup:
+  found: '&9/{0} ist bei {1} registriert.'
+  not-found: '&cDer Befehl "/{0}" ist in keiner plugin.yml registriert.'
+reload:
+  all: '&9Alle Plugins wurden neu geladen.'
+  all-failed: '&cEinige Plugins konnten nicht neu geladen werden: {0}'
+  reloaded: '&9{0} wurde neu geladen.'
+restart:
+  all: '&9Alle Plugins wurden neu gestartet.'
+  restarted: '&9{0} wurde neu gestartet.'
+unload:
+  failed: '&cKonnte {0} nicht entladen.'
+  gentle-failed: '&cPlugin verweigerte das Entladen.'
+  unloaded: '&9{0} wurde entladen.'
+usage:
+  usage: '&9Befehle: &7{0}'
+  no-commands: '&cKeine Befehle registriert.'

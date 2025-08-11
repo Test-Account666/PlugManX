@@ -1,0 +1,91 @@
+###
+# Archivo de Mensajes Personalizado.
+#
+# Los mensajes pueden incluir cualquier código de formato encontrado en http://minecraft.gamepedia.com/Formatting_codes y deben usar el carácter '&' para denotarlos.
+# Asegúrate de incluir las comillas simples alrededor de los mensajes personalizados.
+# Con nuevas actualizaciones, esto está sujeto a cambios y las versiones anteriores podrían no mostrar la información correctamente. Los cambios se anotarán en el registro de cambios.
+###
+
+prefix: '&7[&aPlugMan&7] '
+check:
+  header: '&9Recuperando versiones de plugin...'
+  not-found: '&9Plugin no instalado - la versión más reciente es "{0}".'
+  not-found-spigot: '&cNo se ha podido recuperar datos del plugin - existe como recurso de Spigot?'
+  out-of-date: '&cVersión Actual (&4{0}&c) no coincide con la más reciente (&2{1}&c).'
+  out-of-date-player: '&cPodría estar Desactualizado (Installed -> Latest): {0}'
+  up-to-date: '&9El plugin parece estar Actualizado en la versión "{0}".'
+  up-to-date-player: '&aParece estar Actualizado (Installed): {0}'
+  file-done: '&9Volcado de archivo completo: {0}'
+  unknown: '&cInformación de la versión desconocida.'
+  unknown-player: '&cDesconocido (Installed): {0}'
+  not-available: '&cInformación de la versión {0} no está disponible.'
+disable:
+  all: '&9Todos los plugins han sido deshabilitados (excluyendo PlugMan).'
+  already-disabled: '&c{0} ya está desactivado.'
+  disabled: '&9{0} ha sido desactivado.'
+dump:
+  dumped: '&9Plugins volcados a {0}.'
+  error: '&4No se ha podido volcar a archivo.'
+enable:
+  all: '&9Todos los plugins han sido habilitados.'
+  already-enabled: '&c{0} ya está habilitado.'
+  enabled: '&9{0} ha sido habilitado.'
+error:
+  ignored: '&cPlugMan está configurado para ignorar ese plugin.'
+  invalid-plugin: '&cEse no es un plugin válido.'
+  no-permission: '&cNo tienes permitido hacer eso.'
+  specify-plugin: '&cDebes especificar un plugin.'
+  specify-command: '&cDebes especificar un comando.'
+  paper-plugin: "&cActualmente, no se soportan plugins de Paper, Lo siento."
+  usage:
+    command: '&7- &9Comando: &7{0}'
+    description: '&7- &9Descripción: &7{0}'
+    usage: '&7- &9Uso: &7{0}'
+help:
+  header: '&7--------------------- [&a PlugMan &7] ---------------------'
+  help: '&7- &a/plugman help &f- &7Muestra esto.'
+  list: '&7- &a/plugman list [-v] &f- &7Lista todo plugin (-v muestra versiones).'
+  dump: '&7- &a/plugman dump &f- &7Volca los nombres y versiones de plugins a un archivo.'
+  info: '&7- &a/plugman info <plugin> &f- &7Muestra información de un plugin.'
+  usage: '&7- &a/plugman usage <plugin> &f- &7Lista los comandos registrados de un plugin.'
+  lookup: '&7- &a/plugman lookup <command> &f- &7Encuentra que plugin ha registrado un comando.'
+  enable: '&7- &a/plugman enable <plugin|all> &f- &7Habilita un plugin.'
+  disable: '&7- &a/plugman disable <plugin|all> &f- &7Deshabilita un plugin.'
+  restart: '&7- &a/plugman restart <plugin|all> &f- &7Reinicia un plugin.'
+  load: '&7- &a/plugman load <plugin> &f- &7Carga un plugin.'
+  reload: '&7- &a/plugman reload <plugin|all> &f- &7Recarga un plugin.'
+  unload: '&7- &a/plugman unload <plugin> &f- &7Des-carga un plugin.'
+  check: '&7- &a/plugman check <plugin|all> [-f] &f- &7Revisa si un plugin está actualizado (-f volca un archivo para todos).'
+info:
+  header: 'Información del plugin: {0}'
+  version: '&7- Versión: &a{0}'
+  authors: '&7- Autor(es): &a{0}'
+  status: '&7- Status: {0}'
+  depends: '&7- Dependencias: {0}'
+  softdepends: '&7- SoftDepends: &a{0}'
+list:
+  list: '&9Plugins ({0}): {1}'
+load:
+  already-loaded: '&c{0} ya ha sido cargado.'
+  cannot-find: '&cNo se ha encontrado el archivo y fallo al buscar descripciones.'
+  invalid-description: '&cTal plugin tiene una descripción invalida.'
+  invalid-plugin: '&cEse archivo no es un plugin válido.'
+  loaded: '&9{0} ha sido cargado y activado.'
+  plugin-dir: '&cCarpeta de plugins no encontrada.'
+lookup:
+  found: '&9/{0} está registrado a {1}.'
+  not-found: '&cComando "/{0}" no está registrado en ningún plugin.yml'
+reload:
+  all: '&9Todos los plugins han sido recargados.'
+  all-failed: '&cAlgunos plugins fallaron al recargar: {0}'
+  reloaded: '&9{0} ha sido recargados.'
+restart:
+  all: '&9Todos los plugins han sido reiniciados.'
+  restarted: '&9{0} ha sido reiniciado.'
+unload:
+  failed: '&cError al des-cargar {0}.'
+  gentle-failed: '&cEl plugin se negó a des-cargarse.'
+  unloaded: '&9{0} ha sido des-cargado.'
+usage:
+  usage: '&9Comandos: &7{0}'
+  no-commands: 'No hay comandos registrados.'

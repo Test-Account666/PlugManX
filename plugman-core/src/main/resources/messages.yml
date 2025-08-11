@@ -1,0 +1,91 @@
+###
+# Custom Messaging File.
+#
+# Messaging can include any of the formatting codes found on http://minecraft.gamepedia.com/Formatting_codes and must use the '&' character to denote them.
+# Make sure to include the single quotes around the custom messages.
+# With new updates, this is subject to change and previous versions might not display information properly. Changes will be noted in the changelog.
+###
+
+prefix: '&7[&aPlugMan&7] '
+check:
+  header: '&9Retrieving plugin versions...'
+  not-found: '&9Plugin not installed - latest available version is "{0}".'
+  not-found-spigot: '&cCould not fetch plugin data - does the plugin exist as a Spigot Resource?'
+  out-of-date: '&cCurrent version (&4{0}&c) does not match latest version (&2{1}&c).'
+  out-of-date-player: '&cMight be Out-of-date (Installed -> Latest): {0}'
+  up-to-date: '&9Plugin seems to be up-to-date using version "{0}".'
+  up-to-date-player: '&aSeems to be Up-to-date (Installed): {0}'
+  file-done: '&9File dump complete: {0}'
+  unknown: '&cVersion information is unknown.'
+  unknown-player: '&cUnknown (Installed): {0}'
+  not-available: '&cVersion information for {0} is unavailable.'
+disable:
+  all: '&9All plugins have been disabled (excluding PlugMan).'
+  already-disabled: '&c{0} is already disabled.'
+  disabled: '&9{0} has been disabled.'
+dump:
+  dumped: '&9Plugins dumped to {0}.'
+  error: '&4Could not dump to file.'
+enable:
+  all: '&9All plugins have been enabled.'
+  already-enabled: '&c{0} is already enabled.'
+  enabled: '&9{0} has been enabled.'
+error:
+  ignored: '&cPlugMan is configured to ignore that plugin.'
+  invalid-plugin: '&cThat is not a valid plugin.'
+  no-permission: '&cYou do not have permission to do this.'
+  specify-plugin: '&cYou must specify a plugin.'
+  specify-command: '&cYou must specify a command.'
+  paper-plugin: "&cPaper plugins are currently not supported, I'm sorry."
+  usage:
+    command: '&7- &9Command: &7{0}'
+    description: '&7- &9Description: &7{0}'
+    usage: '&7- &9Usage: &7{0}'
+help:
+  header: '&7--------------------- [&a PlugMan &7] ---------------------'
+  help: '&7- &a/{0} help &f- &7Displays this.'
+  list: '&7- &a/{0} list [-v] &f- &7List all plugins (-v shows versions).'
+  dump: '&7- &a/{0} dump &f- &7Dump plugin names and versions to file.'
+  info: '&7- &a/{0} info <plugin> &f- &7Get info on a plugin.'
+  usage: '&7- &a/{0} usage <plugin> &f- &7List commands a plugin has registered.'
+  lookup: '&7- &a/{0} lookup <command> &f- &7Find the plugin a command is registered to.'
+  enable: '&7- &a/{0} enable <plugin|all> &f- &7Enable a plugin.'
+  disable: '&7- &a/{0} disable <plugin|all> &f- &7Disable a plugin.'
+  restart: '&7- &a/{0} restart <plugin|all> &f- &7Restart a plugin.'
+  load: '&7- &a/{0} load <plugin> &f- &7Load a plugin.'
+  reload: '&7- &a/{0} reload <plugin|all> &f- &7Reload a plugin.'
+  unload: '&7- &a/{0} unload <plugin> &f- &7Unload a plugin.'
+  check: '&7- &a/{0} check <plugin|all> [-f] &f- &7Check if a plugin is up-to-date (-f dumps to file for all).'
+info:
+  header: 'Plugin Information: {0}'
+  version: '&7- Version: &a{0}'
+  authors: '&7- Author(s): &a{0}'
+  status: '&7- Status: {0}'
+  depends: '&7- Depends: {0}'
+  softdepends: '&7- SoftDepends: &a{0}'
+list:
+  list: '&9Plugins ({0}): {1}'
+load:
+  already-loaded: '&c{0} is already loaded.'
+  cannot-find: '&cCould not find file and failed to search descriptions.'
+  invalid-description: '&cThat plugin has an invalid description.'
+  invalid-plugin: '&cThat file is not a valid plugin.'
+  loaded: '&9{0} has been loaded and enabled.'
+  plugin-dir: '&cPlugin directory not found.'
+lookup:
+  found: '&9/{0} is registered to {1}.'
+  not-found: '&cCommand "/{0}" not registered in any plugin.yml'
+reload:
+  all: '&9All plugins have been reloaded.'
+  all-failed: '&cSome plugins failed to reload: {0}'
+  reloaded: '&9{0} has been reloaded.'
+restart:
+  all: '&9All plugins have been restarted.'
+  restarted: '&9{0} has been restarted.'
+unload:
+  failed: '&cFailed to unload {0}.'
+  gentle-failed: '&cPlugin refused to unload.'
+  unloaded: '&9{0} has been unloaded.'
+usage:
+  usage: '&9Commands: &7{0}'
+  no-commands: '&cNo commands registered.'

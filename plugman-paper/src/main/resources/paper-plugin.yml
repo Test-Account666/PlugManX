@@ -1,0 +1,11 @@
+name: PlugManX
+main: bukkit.com.rylinaux.plugman.PlugManBukkit
+version: ${plugman.version}
+description: Plugin manager for Bukkit servers
+authors: [ rylinaux, TestAccount666 ]
+api-version: 1.21
+folia-supported: true
+provides: [ PlugMan ]
+load: STARTUP
+loader: paper.com.rylinaux.plugman.PaperPlugManLoader
+bootstrapper: paper.com.rylinaux.plugman.PaperPlugManBootstrapper

@@ -1,0 +1,91 @@
+###
+# 自訂訊息檔案。
+#
+# 訊息可以包含 http://minecraft.gamepedia.com/Formatting_codes 上的任何格式碼，並且必須使用「&」字元來表示它們。
+# 確保在自訂訊息周圍包含單引號。
+# 隨著新版的更新，這些內容可能會發生變化，以前的版本可能無法正確顯示資訊。變更將在變更紀錄中記錄。
+### 
+
+prefix: '&7[&aPlugMan&7] '
+check:
+  header: '&9正在檢查插件版本……'
+  not-found: '&9未安裝插件 - 最新版本是「{0}」。'
+  not-found-spigot: '&c無法取得插件資料 - 這是 Spigot Resource 嗎？'
+  out-of-date: '&c目前版本（&4{0}&c）與最新版本不相符（&2{1}&c）。'
+  out-of-date-player: '&c過時的（已安裝 -> 最新版本）：{0}'
+  up-to-date: '&9插件似乎已使用最新版本「{0}」。'
+  up-to-date-player: '&a最新版本（已安裝）：{0}'
+  file-done: '&9已完成傾印檔案：{0}'
+  unknown: '&c未知的版本資訊。'
+  unknown-player: '&c未知（已安裝）：{0}'
+  not-available: '&c{0} 的版本資訊無法使用。'
+disable:
+  all: '&9已停用所有插件。'
+  already-disabled: '&c已經停用 {0} 了。'
+  disabled: '&9已停用 {0}。'
+dump:
+  dumped: '&9插件清單已被傾印到 {0}。'
+  error: '&4無法傾印檔案。'
+enable:
+  all: '&9已啟用所有插件。'
+  already-enabled: '&c已經啟用 {0} 了。'
+  enabled: '&9已啟用 {0}。'
+error:
+  ignored: '&c已設定 PlugMan 忽略此插件。'
+  invalid-plugin: '&c無效的插件。'
+  no-permission: '&c你沒有使用此指令的權限。'
+  specify-plugin: '&c請輸入指定的插件。'
+  specify-command: '&c你必須指定指令。'
+  paper-plugin: "&c抱歉，目前不支援 Paper 插件。"
+  usage:
+    command: '&7- &9指令：&7{0}'
+    description: '&7- &9描述：&7{0}'
+    usage: '&7- &9用法：&7{0}'
+help:
+  header: '&7--------------------- [&a PlugMan &7] ---------------------'
+  help: '&7- &a/plugman help &f- &7顯示說明。'
+  list: '&7- &a/plugman list [-v] &f- &7列出所有已安裝的插件（-v 則顯示版本。）'
+  dump: '&7- &a/plugman dump &f- &7傾印插件名稱和版本到檔案 versions.txt。'
+  info: '&7- &a/plugman info <plugin> &f- &7取得插件資訊。'
+  usage: '&7- &a/plugman usage <plugin> &f- &7列出插件登錄的指令清單。'
+  lookup: '&7- &a/plugman lookup <command> &f- &7尋找指令所登錄到的插件。'
+  enable: '&7- &a/plugman enable <plugin|all> &f- &7啟用插件。'
+  disable: '&7- &a/plugman disable <plugin|all> &f- &7停用插件。'
+  restart: '&7- &a/plugman restart <plugin|all> &f- &7重新啟動插件。'
+  load: '&7- &a/plugman load <plugin> &f- &7掛載插件。'
+  reload: '&7- &a/plugman reload <plugin|all> &f- &7重新掛載插件。'
+  unload: '&7- &a/plugman unload <plugin> &f- &7解除掛載插件。'
+  check: '&7- &a/plugman check <plugin|all> [-f] &f- &7檢查插件是否為最新（-f 傾印所有到檔案）。'
+info:
+  header: '插件名稱：{0}'
+  version: '&7- 版本：&a{0}'
+  authors: '&7- 作者：&a{0}'
+  status: '&7- 狀態：{0}'
+  depends: '&7- 依賴：{0}'
+  softdepends: '&7- 軟依賴：&a{0}'
+list:
+  list: '&9插件（{0}）：{1}'
+load:
+  already-loaded: '&c已經掛載過 {0} 了。'
+  cannot-find: '&c找不到檔案且無法搜尋它。'
+  invalid-description: '&c此插件有無效的描述。'
+  invalid-plugin: '&c此檔案不是有效的插件。'
+  loaded: '&9已掛載並啟用 {0}。'
+  plugin-dir: '&c未找到插件目錄。'
+lookup:
+  found: '&9/{0} 被登錄到 {1}。'
+  not-found: '&c指令「/{0}」未在任何的 plugin.yml 中登錄'
+reload:
+  all: '&9已重新掛載所有插件。'
+  all-failed: '&c部分插件重新掛載失敗：{0}'
+  reloaded: '&9已重新掛載 {0}。'
+restart:
+  all: '&9已重新啟動所有插件。'
+  restarted: '&9已重新啟動 {0}。'
+unload:
+  failed: '&c無法解除掛載 {0}。'
+  gentle-failed: '&c插件拒絕解除掛載。'
+  unloaded: '&9已解除掛載 {0}。'
+usage:
+  usage: '&9插件指令：&7{0}'
+  no-commands: '沒有登錄的指令。'

@@ -1,0 +1,91 @@
+###
+# 自定义信息文件。
+#
+# 信息可以包含 http://minecraft.gamepedia.com/Formatting_codes 上的任何格式码，并且必须使用「&」字符来表示它们。
+# 确保在自定义信息周围包含单引号。
+# 随着新版的更新，这些内容可能会发生变化，以前的版本可能无法正确显示信息。变更将在变更纪录中记录。
+### 
+
+prefix: '&7[&aPlugMan&7] '
+check:
+  header: '&9正在检查插件版本……'
+  not-found: '&9未安装插件 - 最新版本是「{0}」。'
+  not-found-spigot: '&c无法获取插件数据 - 这是 Spigot Resource 吗？'
+  out-of-date: '&c当前版本（&4{0}&c）与最新版本不匹配（&2{1}&c）。'
+  out-of-date-player: '&c过时的（已安装 -> 最新版本）：{0}'
+  up-to-date: '&9插件似乎已使用最新版本「{0}」。'
+  up-to-date-player: '&a最新版本（已安装）：{0}'
+  file-done: '&9已完成倾印文件：{0}'
+  unknown: '&c未知的版本信息。'
+  unknown-player: '&c未知（已安装）：{0}'
+  not-available: '&c{0} 的版本信息无法使用。'
+disable:
+  all: '&9已禁用所有插件。'
+  already-disabled: '&c已经禁用 {0} 了。'
+  disabled: '&9已禁用 {0}。'
+dump:
+  dumped: '&9插件列表已被倾印到 {0}。'
+  error: '&4无法倾印文件。'
+enable:
+  all: '&9已启用所有插件。'
+  already-enabled: '&c已经启用 {0} 了。'
+  enabled: '&9已启用 {0}。'
+error:
+  ignored: '&c已设置 PlugMan 忽略此插件。'
+  invalid-plugin: '&c无效的插件。'
+  no-permission: '&c你没有使用此命令的权限。'
+  specify-plugin: '&c请输入指定的插件。'
+  specify-command: '&c你必须指定命令。'
+  paper-plugin: "&c抱歉，当前不支持 Paper 插件。"
+  usage:
+    command: '&7- &9命令：&7{0}'
+    description: '&7- &9描述：&7{0}'
+    usage: '&7- &9用法：&7{0}'
+help:
+  header: '&7--------------------- [&a PlugMan &7] ---------------------'
+  help: '&7- &a/plugman help &f- &7显示帮助。'
+  list: '&7- &a/plugman list [-v] &f- &7列出所有已安装的插件（-v 则显示版本。）'
+  dump: '&7- &a/plugman dump &f- &7倾印插件名和版本到文件 versions.txt。'
+  info: '&7- &a/plugman info <plugin> &f- &7获取插件信息。'
+  usage: '&7- &a/plugman usage <plugin> &f- &7列出插件注册的命令列表。'
+  lookup: '&7- &a/plugman lookup <command> &f- &7查找命令所注册到的插件。'
+  enable: '&7- &a/plugman enable <plugin|all> &f- &7启用插件。'
+  disable: '&7- &a/plugman disable <plugin|all> &f- &7禁用插件。'
+  restart: '&7- &a/plugman restart <plugin|all> &f- &7重新启动插件。'
+  load: '&7- &a/plugman load <plugin> &f- &7挂载插件。'
+  reload: '&7- &a/plugman reload <plugin|all> &f- &7重新挂载插件。'
+  unload: '&7- &a/plugman unload <plugin> &f- &7解除挂载插件。'
+  check: '&7- &a/plugman check <plugin|all> [-f] &f- &7检查插件是否为最新（-f 倾印所有到文件）。'
+info:
+  header: '插件名：{0}'
+  version: '&7- 版本：&a{0}'
+  authors: '&7- 作者：&a{0}'
+  status: '&7- 状态：{0}'
+  depends: '&7- 依赖：{0}'
+  softdepends: '&7- 软依赖：&a{0}'
+list:
+  list: '&9插件（{0}）：{1}'
+load:
+  already-loaded: '&c已经挂载过 {0} 了。'
+  cannot-find: '&c找不到文件且无法搜索它。'
+  invalid-description: '&c此插件有无效的描述。'
+  invalid-plugin: '&c此文件不是有效的插件。'
+  loaded: '&9已挂载并启用 {0}。'
+  plugin-dir: '&c未找到插件目录。'
+lookup:
+  found: '&9/{0} 被注册到 {1}。'
+  not-found: '&c命令「/{0}」未在任何的 plugin.yml 中注册'
+reload:
+  all: '&9已重新挂载所有插件。'
+  all-failed: '&c部分插件重新挂载失败：{0}'
+  reloaded: '&9已重新挂载 {0}。'
+restart:
+  all: '&9已重新启动所有插件。'
+  restarted: '&9已重新启动 {0}。'
+unload:
+  failed: '&c无法解除挂载 {0}。'
+  gentle-failed: '&c插件拒绝解除挂载。'
+  unloaded: '&9已解除挂载 {0}。'
+usage:
+  usage: '&9插件命令：&7{0}'
+  no-commands: '没有注册的命令。'

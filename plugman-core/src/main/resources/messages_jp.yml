@@ -1,0 +1,90 @@
+###
+# カスタムメッセージファイル
+#
+# メッセージには、http://minecraft.gamepedia.com/Formatting_codes にある任意の書式設定コードを含めることができ、それらを示すには「&」文字を使用する必要があります。
+# カスタム メッセージは必ず一重引用符で囲んでください。
+# 新しい更新により、これは変更される可能性があり、以前のバージョンでは情報が正しく表示されない可能性があります。変更は変更ログに記録されます。
+###
+
+prefix: '&7[&aPlugMan&7] '
+check:
+  header: '&9プラグインのバージョンを取得しています...'
+  not-found: '&9プラグインはインストールされていません - 最新バージョンは "{0}" です。'
+  not-found-spigot: '&cプラグインのデータを取得できませんでした - Spigotリソースとして存在するか確認してください。'
+  out-of-date: '&c現在のバージョン(&4{0}&c)と最新バージョン(&2{1}&c)が一致しません。'
+  out-of-date-player: '&c最新版にアップデートしてください(インストール済 -> 最新版): {0}'
+  up-to-date: '&9プラグインはバージョン "{0}" を使用して最新の状態です。'
+  up-to-date-player: '&a最新版を使用しています(インストール済): {0}'
+  file-done: '&9ファイルのダンプが完了しました: {0}'
+  unknown: '&cバージョン情報が不明です。'
+  unknown-player: '&c不明(インストール済): {0}'
+  not-available: '&c{0}のバージョン情報は利用できません。'
+disable:
+  all: '&9すべてのプラグインが無効になりました(PlugManは除く)。'
+  already-disabled: '&c{0}は既に無効です。'
+  disabled: '&9{0}が無効になりました。'
+dump:
+  dumped: '&9プラグインが {0} にダンプされました。'
+  error: '&4ファイルにダンプできませんでした。'
+enable:
+  all: '&9すべてのプラグインが有効になりました。'
+  already-enabled: '&c{0}は既に有効です。'
+  enabled: '&9{0}が有効になりました。'
+error:
+  ignored: '&cそのプラグインは無視されています。'
+  invalid-plugin: '&c有効なプラグインではありません。'
+  no-permission: '&cこの操作を実行する権限がありません。'
+  specify-plugin: '&cプラグインを指定する必要があります。'
+  specify-command: '&cコマンドを指定する必要があります。'
+  usage:
+    command: '&7- &9コマンド: &7{0}'
+    description: '&7- &9説明: &7{0}'
+    usage: '&7- &9使用方法: &7{0}'
+help:
+  header: '&7--------------------- [&a PlugMan &7] ---------------------'
+  help: '&7- &a/plugman help &f- &7このメッセージを表示します。'
+  list: '&7- &a/plugman list [-v] &f- &7すべてのプラグインをリストします（-v オプションを指定すると、バージョンも表示されます）。'
+  dump: '&7- &a/plugman dump &f- &7プラグイン名とバージョンをファイルにダンプします。'
+  info: '&7- &a/plugman info <プラグイン名> &f- &7プラグインに関する情報を表示します。'
+  usage: '&7- &a/plugman usage <プラグイン名> &f- &7プラグインが登録したコマンドを表示します。'
+  lookup: '&7- &a/plugman lookup <コマンド> &f- &7指定したコマンドを登録したプラグインを探します。'
+  enable: '&7- &a/plugman enable <プラグイン名|all> &f- &7プラグインを有効化します。'
+  disable: '&7- &a/plugman disable <プラグイン名|all> &f- &7プラグインを無効化します。'
+  restart: '&7- &a/plugman restart <プラグイン名|all> &f- &7プラグインを再起動します。'
+  load: '&7- &a/plugman load <プラグイン名> &f- &7プラグインを読み込みます。'
+  reload: '&7- &a/plugman reload <plugin|all> &f- &7プラグインをリロードします。'
+  unload: '&7- &a/plugman unload <plugin> &f- &7プラグインをアンロードします。'
+  check: '&7- &a/plugman check <plugin|all> [-f] &f- &7プラグインが最新かどうかを確認します（-fはすべてのプラグインをファイルにダンプします）。'
+info:
+  header: 'プラグイン情報：{0}'
+  version: '&7- バージョン：&a{0}'
+  authors: '&7- 作者：&a{0}'
+  status: '&7- ステータス：{0}'
+  depends: '&7- 依存関係：{0}'
+  softdepends: '&7- ソフト依存関係：&a{0}'
+list:
+  list: '&9プラグイン（{0}）：{1}'
+load:
+  already-loaded: '&c{0} はすでにロードされています。'
+  cannot-find: '&cファイルを見つけられず、説明文の検索に失敗しました。'
+  invalid-description: '&cそのプラグインには無効な説明があります。'
+  invalid-plugin: '&cそのファイルは有効なプラグインではありません。'
+  loaded: '&9{0} がロードされ、有効になりました。'
+  plugin-dir: '&cプラグインディレクトリが見つかりません。'
+lookup:
+  found: '&9/{0} は {1} に登録されています。'
+  not-found: '&cコマンド "/{0}" はどの plugin.yml にも登録されていません。'
+reload:
+  all: '&9すべてのプラグインがリロードされました。'
+  all-failed: '&c一部のプラグインのリロードに失敗しました: {0}'
+  reloaded: '&9{0} がリロードされました。'
+restart:
+  all: '&9すべてのプラグインが再起動されました。'
+  restarted: '&9{0} が再起動されました。'
+unload:
+  failed: '&c{0}をアンロードできませんでした。'
+  gentle-failed: '&cプラグインがアンロードを拒否しました。'
+  unloaded: '&9{0}がアンロードされました。'
+usage:
+  usage: '&9コマンド: &7{0}'
+  no-commands: '登録されたコマンドがありません。'
