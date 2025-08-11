@@ -20,13 +20,13 @@ public class BungeeThreadUtil implements ThreadUtil {
 
     @Override
     public void syncRepeating(Runnable runnable, long delay, long period) {
-        ProxyServer.getInstance().getScheduler().schedule(PlugManBungee.getInstance(), runnable, delay * 20, period * 20, TimeUnit.SECONDS);
+        ProxyServer.getInstance().getScheduler().schedule(PlugManBungee.getInstance(), runnable, delay, period, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void asyncRepeating(Runnable runnable, long delay, long period) {
         var scheduler = ProxyServer.getInstance().getScheduler();
 
-        scheduler.schedule(PlugManBungee.getInstance(), () -> scheduler.runAsync(PlugManBungee.getInstance(), runnable), delay * 20, period * 20, TimeUnit.SECONDS);
+        scheduler.schedule(PlugManBungee.getInstance(), () -> scheduler.runAsync(PlugManBungee.getInstance(), runnable), delay, period, TimeUnit.MILLISECONDS);
     }
 }

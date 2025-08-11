@@ -30,6 +30,8 @@ import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import bukkit.com.rylinaux.plugman.util.BukkitThreadUtil;
 import paper.com.rylinaux.plugman.pluginmanager.ModernPaperPluginManager;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Paper-specific utility class for threading with Folia support.
  *
@@ -85,7 +87,7 @@ public class PaperThreadUtil extends BukkitThreadUtil {
         }
 
         var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
-        foliaLib.getScheduler().runTimer(runnable, delay, period);
+        foliaLib.getScheduler().runTimer(runnable, delay, period, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -99,6 +101,6 @@ public class PaperThreadUtil extends BukkitThreadUtil {
         }
 
         var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
-        foliaLib.getScheduler().runTimerAsync(runnable, delay, period);
+        foliaLib.getScheduler().runTimerAsync(runnable, delay, period, TimeUnit.MILLISECONDS);
     }
 }

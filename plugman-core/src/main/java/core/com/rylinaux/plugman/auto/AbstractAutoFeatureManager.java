@@ -47,17 +47,11 @@ import java.util.HashSet;
 @RequiredArgsConstructor
 public abstract class AbstractAutoFeatureManager implements AutoFeatureManager {
     @Delegate
-
     protected final ServiceRegistry serviceRegistry;
-
     private boolean warningShown = false;
-    private PlugManFileManager fileManager;
 
     protected PlugManFileManager getFileManager() {
-        if (fileManager != null) return fileManager;
-
-        fileManager = new PlugManFileManager(getLogger());
-        return fileManager;
+        return serviceRegistry.get(PlugManFileManager.class);
     }
 
     protected ThreadUtil getThreadUtil() {
