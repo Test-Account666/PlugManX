@@ -51,6 +51,7 @@ import java.nio.file.Path;
  * @author rylinaux
  */
 public abstract class BasePlugManInitializer {
+    public static final String[] LANGUAGES = {"cn", "de", "es", "jp", "tw", "ru"};
     protected final ServiceRegistry serviceRegistry;
     protected final PluginLogger logger;
     @Getter
@@ -118,8 +119,22 @@ public abstract class BasePlugManInitializer {
         var messagesFile = new File(dataFolder, "messages.yml");
         if (!messagesFile.exists()) try (var in = getResourceAsStream("messages.yml")) {
             if (in != null) Files.copy(in, messagesFile.toPath());
-        } catch (IOException e) {
-            logger.severe("Failed to create messages.yml: " + e.getMessage());
+        } catch (IOException exception) {
+            logger.severe("Failed to create messages.yml: ", exception);
+        }
+
+        var messagesDir = dataFolder.toPath().resolve("messages").toFile();
+        if (!messagesDir.exists()) messagesDir.mkdirs();
+
+        for (var language : LANGUAGES) {
+            var fileName = "messages_" + language + ".yml";
+
+            messagesFile = new File(messagesDir, fileName);
+            if (!messagesFile.exists()) try (var in = getResourceAsStream(fileName)) {
+                if (in != null) Files.copy(in, messagesFile.toPath());
+            } catch (IOException exception) {
+                logger.severe("Failed to create " + fileName, exception);
+            }
         }
     }
 
