@@ -36,9 +36,9 @@ import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.util.reflection.ClassAccessor;
 import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
 import core.com.rylinaux.plugman.util.reflection.MethodAccessor;
+import core.com.rylinaux.plugman.util.tuples.Tuple;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import lombok.experimental.Delegate;
-import manifold.ext.rt.api.auto;
 import org.bukkit.command.PluginCommand;
 import org.yaml.snakeyaml.error.YAMLException;
 
@@ -219,7 +219,7 @@ public class PaperPluginManager extends BasePluginManager {
     @Override
     public PluginResult unload(Plugin plugin) {
         var out = unloadWithPaper(plugin);
-        if (!out.result.success()) return out.result;
+        if (!out.second().success()) return out.second();
 
         closeClassLoader(plugin);
         cleanupPaperPluginManager(plugin);
@@ -228,17 +228,17 @@ public class PaperPluginManager extends BasePluginManager {
         return new PluginResult(true, "unload.unloaded");
     }
 
-    public auto unloadWithPaper(Plugin plugin) {
-        if (!handleGentleUnload(plugin)) return data:(CommonUnloadData) null, result:new PluginResult(false, "unload.gentle-failed");
+    public Tuple<CommonUnloadData, PluginResult> unloadWithPaper(Plugin plugin) {
+        if (!handleGentleUnload(plugin)) return new Tuple<>(null, new PluginResult(false, "unload.gentle-failed"));
 
         var unloadData = setupUnloadData(plugin);
-        if (unloadData == null) return data:unloadData, result:new PluginResult(false, "unload.failed");
+        if (unloadData == null) return new Tuple<>(null, new PluginResult(false, "unload.failed"));
 
         cleanupListeners(plugin, unloadData);
         cleanupCommands(plugin, unloadData);
         removeFromPluginLists(plugin, unloadData);
 
-        return data:unloadData, result:new PluginResult(true, "unload.common-success");
+        return new Tuple<>(unloadData, new PluginResult(true, "unload.common-success"));
     }
 
 

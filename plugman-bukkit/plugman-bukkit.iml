@@ -4,14 +4,10 @@
     <facet type="minecraft" name="Minecraft">
       <configuration>
         <autoDetectTypes>
-          <platformType>PAPER</platformType>
-          <platformType>ADVENTURE</platformType>
+          <platformType>SPIGOT</platformType>
         </autoDetectTypes>
         <projectReimportVersion>1</projectReimportVersion>
       </configuration>
     </facet>
-  </component>
-  <component name="McpModuleSettings">
-    <option name="srgType" value="SRG" />
   </component>
 </module>

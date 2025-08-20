@@ -55,7 +55,6 @@ import java.nio.file.Path;
     description = "Plugin manager for Velocity servers.",
     authors = {"rylinaux", "TestAccount666"}
 )
-@NoBootstrap
 public final class PlugManVelocity {
 
     @Getter

@@ -72,17 +72,8 @@
                     <source>21</source>
                     <target>21</target>
                     <encoding>UTF-8</encoding>
-                    <compilerArgs>
-                        <!-- Configure manifold plugin-->
-                        <arg>-Xplugin:Manifold</arg>
-                    </compilerArgs>
                     <!-- Add the processor path for the plugin -->
                     <annotationProcessorPaths>
-                        <path>
-                            <groupId>systems.manifold</groupId>
-                            <artifactId>manifold-tuple</artifactId>
-                            <version>${manifold.version}</version>
-                        </path>
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
@@ -111,12 +102,6 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.38</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>systems.manifold</groupId>
-            <artifactId>manifold-tuple-rt</artifactId>
-            <version>${manifold.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

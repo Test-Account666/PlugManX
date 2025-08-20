@@ -1,18 +1,19 @@
 package paper.com.rylinaux.plugman;
 
 import bukkit.com.rylinaux.plugman.PlugManBukkit;
-import paper.com.rylinaux.plugman.commands.PaperCommandCreator;
 import bukkit.com.rylinaux.plugman.pluginmanager.BukkitPluginManager;
-import paper.com.rylinaux.plugman.util.PaperThreadUtil;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.util.ThreadUtil;
 import io.papermc.paper.plugin.bootstrap.BootstrapContext;
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
 import io.papermc.paper.plugin.bootstrap.PluginProviderContext;
-import manifold.rt.api.NoBootstrap;
+import lombok.extern.slf4j.Slf4j;
 import org.bukkit.plugin.java.JavaPlugin;
+import paper.com.rylinaux.plugman.commands.OldPaperCommandCreator;
+import paper.com.rylinaux.plugman.commands.PaperCommandCreator;
+import paper.com.rylinaux.plugman.util.PaperThreadUtil;
 
-@NoBootstrap
+@Slf4j
 public class PaperPlugManBootstrapper implements PluginBootstrap {
 
     @Override
