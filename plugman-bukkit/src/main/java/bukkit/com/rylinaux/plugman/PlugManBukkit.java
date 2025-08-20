@@ -32,7 +32,6 @@ import bukkit.com.rylinaux.plugman.commands.PlugManTabCompleter;
 import bukkit.com.rylinaux.plugman.logging.BukkitPluginLogger;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
 import core.com.rylinaux.plugman.file.PlugManFileManager;
-import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 import lombok.Getter;
 import lombok.experimental.Delegate;
