@@ -23,7 +23,17 @@ public class PaperPlugManBootstrapper implements PluginBootstrap {
     @Override
     public JavaPlugin createPlugin(PluginProviderContext context) {
         var plugMan = new PlugManBukkit();
-        plugMan.commandCreator = new PaperCommandCreator();
+
+        try {
+            plugMan.commandCreator = new PaperCommandCreator();
+        } catch (Throwable throwable) {
+            if (!(throwable instanceof ClassNotFoundException
+                    || throwable instanceof NoClassDefFoundError
+                    || throwable instanceof NoSuchMethodError
+                    || throwable instanceof NoSuchMethodException)) throw new RuntimeException(throwable);
+
+            plugMan.commandCreator = new OldPaperCommandCreator();
+        }
 
         plugMan.hook = () -> {
             var initializer = new PaperInitializer(plugMan);
