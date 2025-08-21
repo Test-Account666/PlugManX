@@ -32,11 +32,9 @@ import bukkit.com.rylinaux.plugman.commands.PlugManTabCompleter;
 import bukkit.com.rylinaux.plugman.logging.BukkitPluginLogger;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
 import core.com.rylinaux.plugman.file.PlugManFileManager;
-import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 import lombok.Getter;
 import lombok.experimental.Delegate;
-import manifold.rt.api.NoBootstrap;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -46,7 +44,6 @@ import org.jetbrains.annotations.ApiStatus;
  * @author rylinaux
  */
 @SuppressWarnings("JavadocDeclaration")
-@NoBootstrap
 public class PlugManBukkit extends JavaPlugin {
 
     @Getter

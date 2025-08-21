@@ -1,18 +1,19 @@
 package paper.com.rylinaux.plugman;
 
 import bukkit.com.rylinaux.plugman.PlugManBukkit;
-import paper.com.rylinaux.plugman.commands.PaperCommandCreator;
 import bukkit.com.rylinaux.plugman.pluginmanager.BukkitPluginManager;
-import paper.com.rylinaux.plugman.util.PaperThreadUtil;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.util.ThreadUtil;
 import io.papermc.paper.plugin.bootstrap.BootstrapContext;
 import io.papermc.paper.plugin.bootstrap.PluginBootstrap;
 import io.papermc.paper.plugin.bootstrap.PluginProviderContext;
-import manifold.rt.api.NoBootstrap;
+import lombok.extern.slf4j.Slf4j;
 import org.bukkit.plugin.java.JavaPlugin;
+import paper.com.rylinaux.plugman.commands.OldPaperCommandCreator;
+import paper.com.rylinaux.plugman.commands.PaperCommandCreator;
+import paper.com.rylinaux.plugman.util.PaperThreadUtil;
 
-@NoBootstrap
+@Slf4j
 public class PaperPlugManBootstrapper implements PluginBootstrap {
 
     @Override
@@ -23,7 +24,17 @@ public class PaperPlugManBootstrapper implements PluginBootstrap {
     @Override
     public JavaPlugin createPlugin(PluginProviderContext context) {
         var plugMan = new PlugManBukkit();
-        plugMan.commandCreator = new PaperCommandCreator();
+
+        try {
+            plugMan.commandCreator = new PaperCommandCreator();
+        } catch (Throwable throwable) {
+            if (!(throwable instanceof ClassNotFoundException
+                    || throwable instanceof NoClassDefFoundError
+                    || throwable instanceof NoSuchMethodError
+                    || throwable instanceof NoSuchMethodException)) throw new RuntimeException(throwable);
+
+            plugMan.commandCreator = new OldPaperCommandCreator();
+        }
 
         plugMan.hook = () -> {
             var initializer = new PaperInitializer(plugMan);

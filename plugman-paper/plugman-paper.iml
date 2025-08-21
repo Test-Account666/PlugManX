@@ -5,7 +5,7 @@
       <configuration>
         <autoDetectTypes>
           <platformType>PAPER</platformType>
-          <platformType>ADVENTURE</platformType>
+          <platformType>MCP</platformType>
         </autoDetectTypes>
         <projectReimportVersion>1</projectReimportVersion>
       </configuration>

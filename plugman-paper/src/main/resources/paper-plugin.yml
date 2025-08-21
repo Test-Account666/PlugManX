@@ -3,7 +3,7 @@ main: bukkit.com.rylinaux.plugman.PlugManBukkit
 version: ${plugman.version}
 description: Plugin manager for Bukkit servers
 authors: [ rylinaux, TestAccount666 ]
-api-version: 1.21
+api-version: "1.20"
 folia-supported: true
 provides: [ PlugMan ]
 load: STARTUP

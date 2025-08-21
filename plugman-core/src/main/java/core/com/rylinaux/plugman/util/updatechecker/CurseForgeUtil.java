@@ -37,6 +37,7 @@ import core.com.rylinaux.plugman.pojo.UpdateResult;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -50,12 +51,11 @@ import java.util.logging.Logger;
 
 @UtilityClass
 public class CurseForgeUtil {
-    private static final Logger LOGGER = Logger.getLogger(CurseForgeUtil.class.getName());
-    
     /**
      * The base URL for the CurseForge API.
      */
     public static final String API_BASE_URL = "https://servermods.forgesvc.net/servermods/";
+    private static final Logger LOGGER = Logger.getLogger(CurseForgeUtil.class.getName());
 
     /**
      * Check which plugins are up-to-date or not.
@@ -120,6 +120,8 @@ public class CurseForgeUtil {
         HashCode currentPluginHashCode;
 
         var file = plugin.getFile();
+        // Fetch file manually, not sure why `Plugin#getFile` can fail in the first place, tbh
+        if (file == null) file = new File(plugin.getClass().getProtectionDomain().getCodeSource().getLocation().getFile());
         try {
             currentPluginHashCode = Files.asByteSource(file).hash(Hashing.md5());
         } catch (IOException e) {

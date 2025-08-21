@@ -60,9 +60,9 @@ public class ModernPaperPluginManager extends PaperPluginManager {
     @Override
     public PluginResult unload(Plugin plugin) {
         var result = unloadWithPaper(plugin);
-        if (!result.result.success()) return result.result;
+        if (!result.second().success()) return result.second();
 
-        var unloadData = setupUnloadData(result.data);
+        var unloadData = setupUnloadData(result.first());
         if (unloadData == null) return new PluginResult(false, "unload.failed");
 
         cleanupEventExecutors(plugin, unloadData);
