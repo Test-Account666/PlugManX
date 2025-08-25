@@ -33,6 +33,7 @@ import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.plugin.PluginContainer;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 import lombok.Getter;
 import lombok.experimental.Delegate;
@@ -49,11 +50,11 @@ import java.nio.file.Path;
  * @author rylinaux
  */
 @Plugin(
-    id = "plugmanvelocity",
-    name = "PlugManVelocity",
-    version = "3.0.1",
-    description = "Plugin manager for Velocity servers.",
-    authors = {"rylinaux", "TestAccount666"}
+        id = "plugmanvelocity",
+        name = "PlugManVelocity",
+        version = "3.0.2-RC.1",
+        description = "Plugin manager for Velocity servers.",
+        authors = {"rylinaux", "TestAccount666"}
 )
 public final class PlugManVelocity {
 
@@ -64,12 +65,16 @@ public final class PlugManVelocity {
     @Delegate
     private ServiceRegistry serviceRegistry;
 
+    private final PluginContainer container;
     private final ProxyServer server;
     private final Logger logger;
     private final Path dataDirectory;
 
+    private VelocityPlugManInitializer initializer;
+
     @Inject
-    public PlugManVelocity(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
+    public PlugManVelocity(PluginContainer container, ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
+        this.container = container
         this.server = server;
         this.logger = logger;
         this.dataDirectory = dataDirectory;
@@ -81,7 +86,7 @@ public final class PlugManVelocity {
 
         serviceRegistry = new ServiceRegistry();
         var pluginLogger = new VelocityPluginLogger(logger);
-        var initializer = new VelocityPlugManInitializer(this, serviceRegistry, pluginLogger);
+        initializer = new VelocityPlugManInitializer(this, container, serviceRegistry, pluginLogger);
 
         initializer.initializeCoreServices();
         initializer.setupMessaging();
@@ -95,7 +100,6 @@ public final class PlugManVelocity {
     public void onProxyShutdown(ProxyShutdownEvent event) {
         instance = null;
         var pluginLogger = new VelocityPluginLogger(logger);
-        var initializer = new VelocityPlugManInitializer(this, serviceRegistry, pluginLogger);
         initializer.cleanup();
         server.getCommandManager().unregister("plugman");
     }

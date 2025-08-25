@@ -40,6 +40,8 @@ import velocity.com.rylinaux.plugman.config.VelocityPlugManConfigurationManager;
 import velocity.com.rylinaux.plugman.messaging.VelocityColorFormatter;
 import velocity.com.rylinaux.plugman.pluginmanager.VelocityPluginManager;
 import velocity.com.rylinaux.plugman.util.VelocityThreadUtil;
+import velocity.com.rylinaux.plugman.plugin.VelocityPlugin;
+import com.velocitypowered.api.plugin.PluginContainer;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,8 +56,8 @@ public class VelocityPlugManInitializer extends BasePlugManInitializer {
 
     private final PlugManVelocity plugin;
 
-    public VelocityPlugManInitializer(PlugManVelocity plugin, ServiceRegistry serviceRegistry, PluginLogger logger) {
-        super(serviceRegistry, logger);
+    public VelocityPlugManInitializer(PlugManVelocity plugin, PluginContainer container, ServiceRegistry serviceRegistry, PluginLogger logger) {
+        super(new VelocityPlugin(container, plugin), serviceRegistry, logger);
         this.plugin = plugin;
     }
 

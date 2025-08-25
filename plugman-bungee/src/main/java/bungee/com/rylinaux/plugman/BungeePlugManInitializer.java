@@ -30,6 +30,7 @@ import bungee.com.rylinaux.plugman.auto.BungeeAutoFeatureManager;
 import bungee.com.rylinaux.plugman.config.BungeeConfigurationProvider;
 import bungee.com.rylinaux.plugman.config.BungeePlugManConfigurationManager;
 import bungee.com.rylinaux.plugman.messaging.BungeeColorFormatter;
+import bungee.com.rylinaux.plugman.plugin.BungeePlugin;
 import bungee.com.rylinaux.plugman.pluginmanager.BungeePluginManager;
 import bungee.com.rylinaux.plugman.util.BungeeThreadUtil;
 import core.com.rylinaux.plugman.auto.AutoFeatureManager;
@@ -56,7 +57,7 @@ public class BungeePlugManInitializer extends BasePlugManInitializer {
     private final PlugManBungee plugin;
 
     public BungeePlugManInitializer(PlugManBungee plugin, ServiceRegistry serviceRegistry, PluginLogger logger) {
-        super(serviceRegistry, logger);
+        super(new BungeePlugin(plugin), serviceRegistry, logger);
         this.plugin = plugin;
     }
 
