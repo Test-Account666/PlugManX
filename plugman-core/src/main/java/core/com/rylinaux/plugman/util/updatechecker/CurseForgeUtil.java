@@ -40,9 +40,11 @@ import lombok.experimental.UtilityClass;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.TreeMap;
@@ -121,7 +123,13 @@ public class CurseForgeUtil {
 
         var file = plugin.getFile();
         // Fetch file manually, not sure why `Plugin#getFile` can fail in the first place, tbh
-        if (file == null) file = new File(plugin.getClass().getProtectionDomain().getCodeSource().getLocation().getFile());
+        if (file == null) {
+            var path = plugin.getClass()
+                    .getProtectionDomain().getCodeSource()
+                    .getLocation().getFile();
+            path = URLDecoder.decode(path, StandardCharsets.UTF_8);
+            file = new File(path);
+        }
         try {
             currentPluginHashCode = Files.asByteSource(file).hash(Hashing.md5());
         } catch (IOException e) {
