@@ -287,7 +287,7 @@ public class BukkitPluginManager extends BasePluginManager {
         var plugins = new ArrayList<String>();
 
         for (var entry : getKnownCommands().entrySet()) {
-            var cl = entry.getValue().getClass().getClassLoader();
+            var cl = entry.getValue().getHandle().getClass().getClassLoader();
 
             if (cl.getClass() != pluginClassLoaderClass) handleNonPluginClassLoaderCommand(entry, command, plugins);
             else handlePluginClassLoaderCommand(entry, command, plugins, cl);
