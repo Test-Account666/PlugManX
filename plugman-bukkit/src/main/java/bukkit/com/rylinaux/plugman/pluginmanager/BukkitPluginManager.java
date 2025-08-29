@@ -6,6 +6,7 @@ import bukkit.com.rylinaux.plugman.plugin.BukkitPlugin;
 import core.com.rylinaux.plugman.PluginResult;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
 import core.com.rylinaux.plugman.plugins.Command;
+import core.com.rylinaux.plugman.plugins.CommandMapWrap;
 import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.util.StringUtil;
 import core.com.rylinaux.plugman.util.reflection.ClassAccessor;
@@ -196,8 +197,7 @@ public class BukkitPluginManager extends BasePluginManager {
     @Override
     public List<String> getPluginNames(boolean fullName) {
         var plugins = new ArrayList<String>();
-        for (var plugin : Bukkit.getPluginManager().getPlugins())
-            plugins.add(fullName? plugin.getDescription().getFullName() : plugin.getName());
+        for (var plugin : Bukkit.getPluginManager().getPlugins()) plugins.add(fullName? plugin.getDescription().getFullName() : plugin.getName());
         return plugins;
     }
 
@@ -267,10 +267,11 @@ public class BukkitPluginManager extends BasePluginManager {
         var knownCommands = getKnownCommands();
 
         return knownCommands.entrySet().stream()
-                .filter(s -> {
-                    if (s.getKey().contains(":")) return s.getKey().split(":")[0].equalsIgnoreCase(plugin.getName());
+                .filter(entry -> {
+                    var name = entry.getKey();
+                    if (name.contains(":")) return name.split(":")[0].equalsIgnoreCase(plugin.getName());
                     else {
-                        var classLoader = s.getValue().getHandle().getClass().getClassLoader();
+                        var classLoader = entry.getValue().getHandle().getClass().getClassLoader();
                         return classLoader.getClass() == pluginClassLoaderClass && getPluginFromClassLoader.apply(classLoader) == plugin.getHandle();
                     }
                 }).collect(Collectors.toList());
@@ -299,7 +300,8 @@ public class BukkitPluginManager extends BasePluginManager {
     private void handleNonPluginClassLoaderCommand(Map.Entry<String, Command> entry, String command, List<String> plugins) {
         var parts = entry.getKey().split(":");
 
-        if (parts.length == 2 && parts[1].equalsIgnoreCase(command)) Arrays.stream(Bukkit.getPluginManager().getPlugins())
+        if (parts.length != 2 || !parts[1].equalsIgnoreCase(command)) return;
+        Arrays.stream(Bukkit.getPluginManager().getPlugins())
                 .filter(pl -> pl.getName().equalsIgnoreCase(parts[0]))
                 .findFirst().ifPresent(plugin -> plugins.add(plugin.getName()));
     }
@@ -385,42 +387,16 @@ public class BukkitPluginManager extends BasePluginManager {
     }
 
     @Override
-    public Map<String, Command> getKnownCommands() {
+    public CommandMapWrap<org.bukkit.command.Command> getKnownCommands() {
         try {
             var commandMap = getCommandMap();
             var knownCommands = FieldAccessor.<Map<String, org.bukkit.command.Command>>getValue(SimpleCommandMap.class, "knownCommands", commandMap);
 
-            return convertBukkitCommands(knownCommands);
+            return new CommandMapWrap<>(knownCommands, BukkitCommand::new);
         } catch (Exception exception) {
             PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to get known commands", exception);
             return null;
         }
-    }
-
-    @Override
-    public void setKnownCommands(Map<String, Command> knownPlugManCommands) {
-        try {
-            var knownCommands = convertPlugManCommands(knownPlugManCommands);
-
-            var commandMap = getCommandMap();
-
-            FieldAccessor.setValue(SimpleCommandMap.class, "knownCommands", commandMap, knownCommands);
-        } catch (Exception exception) {
-            PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to set known commands", exception);
-        }
-    }
-
-    @ApiStatus.Internal
-    public Map<String, org.bukkit.command.Command> convertPlugManCommands(Map<String, Command> plugManCommands) {
-        var bukkitCommands = new HashMap<String, org.bukkit.command.Command>();
-        for (var entry : plugManCommands.entrySet()) {
-            var commandName = entry.getKey();
-            var command = entry.getValue();
-
-            bukkitCommands.put(commandName, command.getHandle());
-        }
-
-        return bukkitCommands;
     }
 
     /**
@@ -433,7 +409,7 @@ public class BukkitPluginManager extends BasePluginManager {
     public synchronized PluginResult unload(Plugin plugin) {
         if (!handleGentleUnload(plugin)) return new PluginResult(false, "unload.gentle-failed");
 
-        syncCommands();
+        //syncCommands();
 
         var unloadData = extractPluginManagerData(plugin);
         if (unloadData == null) return new PluginResult(false, "unload.failed");
@@ -468,8 +444,8 @@ public class BukkitPluginManager extends BasePluginManager {
                 reloadlisteners = false;
             }
 
-            var commandMap = FieldAccessor.<SimpleCommandMap>getValue(pluginManager.getClass(), "commandMap", pluginManager);
-            var commands = FieldAccessor.<Map<String, org.bukkit.command.Command>>getValue(SimpleCommandMap.class, "knownCommands", commandMap);
+            var commandMap = getCommandMap();//FieldAccessor.<SimpleCommandMap>getValue(pluginManager.getClass(), "commandMap", pluginManager);
+            var commands = getKnownCommands(); //FieldAccessor.<Map<String, org.bukkit.command.Command>>getValue(SimpleCommandMap.class, "knownCommands", commandMap);
 
             pluginManager.disablePlugin(bukkitPlugin);
 
@@ -486,21 +462,20 @@ public class BukkitPluginManager extends BasePluginManager {
 
         cleanupListeners(plugin, data.listeners(), data.reloadListeners());
         cleanupCommands(plugin, data);
+        syncCommands();
         removeFromPluginLists(plugin, data);
     }
 
     private void cleanupCommands(Plugin plugin, CommonUnloadData data) {
         if (data.commandMap() == null) return;
 
-        var modifiedKnownCommands = new HashMap<>(data.commands());
+        var modifiedKnownCommands = data.commands();
 
-        for (var entry : new HashMap<>(data.commands()).entrySet())
-            if (entry.getValue() instanceof PluginCommand) handlePluginCommand(plugin, data.commandMap(), modifiedKnownCommands, entry);
+        for (var entry : modifiedKnownCommands.asMap().entrySet())
+            if (entry.getValue().getHandle() instanceof PluginCommand) handlePluginCommand(plugin, data.commandMap(), modifiedKnownCommands, entry);
             else handleNonPluginCommand(plugin, data.commandMap(), modifiedKnownCommands, entry);
 
-        var plugManCommands = convertBukkitCommands(modifiedKnownCommands);
-
-        setKnownCommands(plugManCommands);
+        syncCommands();
     }
 
     @ApiStatus.Internal
@@ -518,8 +493,8 @@ public class BukkitPluginManager extends BasePluginManager {
 
     @ApiStatus.Internal
     public void handleNonPluginCommand(Plugin plugin, SimpleCommandMap commandMap,
-                                       Map<String, org.bukkit.command.Command> modifiedKnownCommands,
-                                       Map.Entry<String, org.bukkit.command.Command> entry) {
+                                       CommandMapWrap<org.bukkit.command.Command> modifiedKnownCommands,
+                                       Map.Entry<String, Command> entry) {
         try {
             unregisterNonPluginCommands(plugin, commandMap, modifiedKnownCommands, entry);
         } catch (IllegalStateException exception) {
@@ -529,15 +504,17 @@ public class BukkitPluginManager extends BasePluginManager {
     }
 
     @ApiStatus.Internal
-    public void unregisterNonPluginCommands(Plugin plugin, CommandMap commandMap, Map<String, org.bukkit.command.Command> commands,
-                                            Map.Entry<String, org.bukkit.command.Command> entry) {
+    public void unregisterNonPluginCommands(Plugin plugin, CommandMap commandMap, CommandMapWrap<org.bukkit.command.Command> commands,
+                                            Map.Entry<String, Command> entry) {
         var command = entry.getValue();
-        var pluginField = FieldAccessor.getFirstFieldName(command.getClass(), Plugin.class);
+        var handle = command.<org.bukkit.command.Command>getHandle();
+
+        var pluginField = FieldAccessor.getFirstFieldName(handle.getClass(), Plugin.class);
 
         try {
-            var owningPlugin = FieldAccessor.<org.bukkit.plugin.Plugin>getValue(command.getClass(), pluginField, command);
+            var owningPlugin = FieldAccessor.<org.bukkit.plugin.Plugin>getValue(handle.getClass(), pluginField, handle);
             if (owningPlugin != null && owningPlugin.getName().equalsIgnoreCase(plugin.getName())) {
-                command.unregister(commandMap);
+                handle.unregister(commandMap);
                 commands.remove(entry.getKey());
             }
         } catch (IllegalAccessException exception) {

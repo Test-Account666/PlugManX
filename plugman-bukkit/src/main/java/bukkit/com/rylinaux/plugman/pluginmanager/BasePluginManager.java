@@ -29,11 +29,12 @@ package bukkit.com.rylinaux.plugman.pluginmanager;
 import bukkit.com.rylinaux.plugman.PlugManBukkit;
 import bukkit.com.rylinaux.plugman.api.PlugManAPI;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
+import core.com.rylinaux.plugman.plugins.Command;
+import core.com.rylinaux.plugman.plugins.CommandMapWrap;
 import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
 import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.event.Event;
@@ -130,9 +131,9 @@ public abstract class BasePluginManager implements PluginManager {
      * Common plugin command handling logic.
      */
     protected void handlePluginCommand(Plugin plugin, SimpleCommandMap commandMap,
-                                       Map<String, Command> modifiedKnownCommands,
+                                       CommandMapWrap<org.bukkit.command.Command> modifiedKnownCommands,
                                        Map.Entry<String, Command> entry) {
-        var command = (PluginCommand) entry.getValue();
+        var command = (PluginCommand) entry.getValue().<org.bukkit.command.Command>getHandle();
         var bukkitPlugin = plugin.<org.bukkit.plugin.Plugin>getHandle();
         if (command.getPlugin() != bukkitPlugin) return;
         command.unregister(commandMap);
@@ -143,19 +144,19 @@ public abstract class BasePluginManager implements PluginManager {
      * Common broken command removal logic.
      */
     protected void handleBrokenCommand(Map.Entry<String, Command> entry, SimpleCommandMap commandMap,
-                                       Map<String, Command> modifiedKnownCommands, String loggerName) {
+                                       CommandMapWrap<org.bukkit.command.Command> modifiedKnownCommands, String loggerName) {
         var config = PlugManBukkit.getInstance().<PlugManConfigurationManager>get(PlugManConfigurationManager.class);
 
-        if (config.shouldNotifyOnBrokenCommandRemoval())
-            Logger.getLogger(loggerName).info("Removing broken command '" + entry.getValue().getName() + "'!");
-        entry.getValue().unregister(commandMap);
+        var handle = entry.getValue().<org.bukkit.command.Command>getHandle();
+        if (config.shouldNotifyOnBrokenCommandRemoval()) Logger.getLogger(loggerName).info("Removing broken command '" + handle.getName() + "'!");
+        handle.unregister(commandMap);
         modifiedKnownCommands.remove(entry.getKey());
     }
 
     /**
      * Common command loading logic.
      */
-    protected void scheduleCommandLoading() {
+    protected synchronized void scheduleCommandLoading() {
         Bukkit.getScheduler().runTaskLater(PlugManBukkit.getInstance(), this::syncCommands, 10L);
     }
 
@@ -169,7 +170,7 @@ public abstract class BasePluginManager implements PluginManager {
      * Common data structure for unload operations.
      */
     public record CommonUnloadData(org.bukkit.plugin.PluginManager pluginManager, SimpleCommandMap commandMap, List<org.bukkit.plugin.Plugin> plugins,
-                                   Map<String, org.bukkit.plugin.Plugin> names, Map<String, org.bukkit.command.Command> commands,
+                                   Map<String, org.bukkit.plugin.Plugin> names, CommandMapWrap<org.bukkit.command.Command> commands,
                                    Map<Event, SortedSet<RegisteredListener>> listeners,
                                    boolean reloadListeners) {
     }

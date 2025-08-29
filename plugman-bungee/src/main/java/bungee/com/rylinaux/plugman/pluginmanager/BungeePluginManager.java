@@ -6,7 +6,7 @@ import bungee.com.rylinaux.plugman.plugin.BungeePlugin;
 import com.google.common.collect.Multimap;
 import core.com.rylinaux.plugman.PluginResult;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
-import core.com.rylinaux.plugman.plugins.Command;
+import core.com.rylinaux.plugman.plugins.CommandMapWrap;
 import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
@@ -196,55 +196,17 @@ public class BungeePluginManager implements PluginManager {
     }
 
     @Override
-    public Map<String, Command> getKnownCommands() {
+    public CommandMapWrap<net.md_5.bungee.api.plugin.Command> getKnownCommands() {
         try {
             var pluginManager = ProxyServer.getInstance().getPluginManager();
             var commandMap = FieldAccessor.<Map<String, net.md_5.bungee.api.plugin.Command>>getValue(
                     net.md_5.bungee.api.plugin.PluginManager.class, "commandMap", pluginManager);
 
-            if (commandMap == null) return new HashMap<>();
-
-            return convertBungeeCommands(commandMap);
+            return new CommandMapWrap<>(commandMap, BungeeCommand::new);
         } catch (Exception exception) {
             PlugManBungee.getInstance().getLogger().log(Level.SEVERE, "Failed to get known commands", exception);
-            return new HashMap<>();
+            return null;
         }
-    }
-
-    @Override
-    public void setKnownCommands(Map<String, Command> knownCommands) {
-        try {
-            var pluginManager = ProxyServer.getInstance().getPluginManager();
-            var bungeeCommands = convertPlugManCommands(knownCommands);
-
-            FieldAccessor.setValue(net.md_5.bungee.api.plugin.PluginManager.class, "commandMap", pluginManager, bungeeCommands);
-        } catch (Exception exception) {
-            PlugManBungee.getInstance().getLogger().log(Level.SEVERE, "Failed to set known commands", exception);
-        }
-    }
-
-    private Map<String, Command> convertBungeeCommands(Map<String, net.md_5.bungee.api.plugin.Command> bungeeCommands) {
-        var plugManCommands = new HashMap<String, Command>();
-        for (var entry : bungeeCommands.entrySet()) {
-            var commandName = entry.getKey();
-            var command = entry.getValue();
-
-            plugManCommands.put(commandName, new BungeeCommand(command));
-        }
-
-        return plugManCommands;
-    }
-
-    private Map<String, net.md_5.bungee.api.plugin.Command> convertPlugManCommands(Map<String, Command> plugManCommands) {
-        var bungeeCommands = new HashMap<String, net.md_5.bungee.api.plugin.Command>();
-        for (var entry : plugManCommands.entrySet()) {
-            var commandName = entry.getKey();
-            var command = entry.getValue();
-
-            bungeeCommands.put(commandName, command.getHandle());
-        }
-
-        return bungeeCommands;
     }
 
     @Override
