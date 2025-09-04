@@ -29,7 +29,6 @@ package core.com.rylinaux.plugman.plugins;
 import core.com.rylinaux.plugman.PluginResult;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public interface PluginManager {
@@ -162,16 +161,7 @@ public interface PluginManager {
      */
     PluginResult load(String name);
 
-    Map<String, Command> getKnownCommands();
-
-    /**
-     * Changes the knownCommands field in CommandMap
-     *
-     * @param knownCommands the modified known commands
-     * @throws RuntimeException if command map or known commands field cannot be found
-     */
-    void setKnownCommands(Map<String, Command> knownCommands);
-
+    CommandMapWrap<?> getKnownCommands();
 
     /**
      * Loads and enables a plugin.

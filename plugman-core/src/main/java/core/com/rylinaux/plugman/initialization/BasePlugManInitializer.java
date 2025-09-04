@@ -30,6 +30,7 @@ import core.com.rylinaux.plugman.auto.AutoFeatureManager;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
 import core.com.rylinaux.plugman.file.messaging.MessageFormatter;
 import core.com.rylinaux.plugman.logging.PluginLogger;
+import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 import core.com.rylinaux.plugman.util.ThreadUtil;
@@ -57,9 +58,18 @@ public abstract class BasePlugManInitializer {
     @Getter
     protected final File dataFolder = Path.of("plugins", "PlugManX").toFile();
 
-    protected BasePlugManInitializer(ServiceRegistry serviceRegistry, PluginLogger logger) {
+    protected BasePlugManInitializer(Plugin plugMan, ServiceRegistry serviceRegistry, PluginLogger logger) {
         this.serviceRegistry = serviceRegistry;
         this.logger = logger;
+
+        checkForDevVersion(plugMan);
+    }
+
+    private void checkForDevVersion(Plugin plugin) {
+        var version = plugin.getVersion();
+        if (!version.toLowerCase().contains("dev") && !version.toLowerCase().contains("-rc.")) return;
+
+        logger.warning("You are running a development version (" + version + ") of PlugMan. This is not recommended for production use.");
     }
 
     /**

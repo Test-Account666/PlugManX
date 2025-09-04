@@ -30,6 +30,7 @@ import bukkit.com.rylinaux.plugman.auto.BukkitAutoFeatureManager;
 import bukkit.com.rylinaux.plugman.config.BukkitConfigurationProvider;
 import bukkit.com.rylinaux.plugman.config.BukkitPlugManConfigurationManager;
 import bukkit.com.rylinaux.plugman.messaging.BukkitColorFormatter;
+import bukkit.com.rylinaux.plugman.plugin.BukkitPlugin;
 import bukkit.com.rylinaux.plugman.pluginmanager.BukkitPluginManager;
 import bukkit.com.rylinaux.plugman.util.BukkitThreadUtil;
 import core.com.rylinaux.plugman.auto.AutoFeatureManager;
@@ -54,7 +55,7 @@ public class BukkitPlugManInitializer extends BasePlugManInitializer {
     private final PlugManBukkit plugin;
 
     public BukkitPlugManInitializer(PlugManBukkit plugin, ServiceRegistry serviceRegistry, PluginLogger logger) {
-        super(serviceRegistry, logger);
+        super(new BukkitPlugin(plugin), serviceRegistry, logger);
         this.plugin = plugin;
     }
 

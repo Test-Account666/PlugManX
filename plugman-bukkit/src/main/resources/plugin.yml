@@ -8,6 +8,8 @@ folia-supported: true
 provides: [ PlugMan ]
 libraries:
   - com.fasterxml.jackson.core:jackson-databind:${jackson.version}
+  - com.fasterxml.jackson.core:jackson-core:${jackson.version}
+  - com.fasterxml.jackson.core:jackson-annotations:${jackson.version}
 load: STARTUP
 softdepend:
   - PlugMan

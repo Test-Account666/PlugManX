@@ -1,7 +1,6 @@
 package paper.com.rylinaux.plugman.commands;
 
 import bukkit.com.rylinaux.plugman.PlugManBukkit;
-import bukkit.com.rylinaux.plugman.commands.CommandCreator;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import org.bukkit.command.CommandExecutor;
@@ -11,12 +10,21 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-public class PaperCommandCreator extends CommandCreator {
+public class PaperCommandCreator extends OldPaperCommandCreator {
 
     @Override
     public void registerCommand(String commandName, CommandExecutor executor, TabCompleter tabCompleter, String... aliases) {
-        PlugManBukkit.getInstance().registerCommand(commandName, createCommand(executor, tabCompleter, commandName));
-        Arrays.stream(aliases).forEach(alias -> PlugManBukkit.getInstance().registerCommand(alias, createCommand(executor, tabCompleter, alias)));
+        try {
+            PlugManBukkit.getInstance().registerCommand(commandName, createCommand(executor, tabCompleter, commandName));
+            Arrays.stream(aliases).forEach(alias -> PlugManBukkit.getInstance().registerCommand(alias, createCommand(executor, tabCompleter, alias)));
+        } catch (Throwable throwable) {
+            if (!(throwable instanceof ClassNotFoundException
+                    || throwable instanceof NoClassDefFoundError
+                    || throwable instanceof NoSuchMethodError
+                    || throwable instanceof NoSuchMethodException)) throw new RuntimeException(throwable);
+
+            super.registerCommand(commandName, executor, tabCompleter, aliases);
+        }
     }
 
     private BasicCommand createCommand(CommandExecutor executor, TabCompleter tabCompleter, String label) {

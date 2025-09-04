@@ -39,13 +39,13 @@ import core.com.rylinaux.plugman.util.reflection.MethodAccessor;
 import core.com.rylinaux.plugman.util.tuples.Tuple;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import lombok.experimental.Delegate;
+import org.bukkit.command.Command;
 import org.bukkit.command.PluginCommand;
 import org.yaml.snakeyaml.error.YAMLException;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -158,7 +158,7 @@ public class PaperPluginManager extends BasePluginManager {
 
         var target = loadPluginWithPaper(pluginFile);
         if (target == null) {
-            target = loadAndEnablePlugin(pluginFile);
+            target = _bukkitPluginManager.loadAndEnablePlugin(pluginFile);
             if (target == null) return new PluginResult(false, "load.invalid-plugin");
         }
 
@@ -202,7 +202,7 @@ public class PaperPluginManager extends BasePluginManager {
 
 
     @Override
-    protected void scheduleCommandLoading() {
+    protected synchronized void scheduleCommandLoading() {
         if (isFolia()) {
             var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
             foliaLib.getScheduler().runLater(this::syncCommands, 500, TimeUnit.MILLISECONDS);
@@ -231,7 +231,7 @@ public class PaperPluginManager extends BasePluginManager {
     public Tuple<CommonUnloadData, PluginResult> unloadWithPaper(Plugin plugin) {
         if (!handleGentleUnload(plugin)) return new Tuple<>(null, new PluginResult(false, "unload.gentle-failed"));
 
-        var unloadData = setupUnloadData(plugin);
+        var unloadData = extractPluginManagerData(plugin);
         if (unloadData == null) return new Tuple<>(null, new PluginResult(false, "unload.failed"));
 
         cleanupListeners(plugin, unloadData);
@@ -239,12 +239,6 @@ public class PaperPluginManager extends BasePluginManager {
         removeFromPluginLists(plugin, unloadData);
 
         return new Tuple<>(unloadData, new PluginResult(true, "unload.common-success"));
-    }
-
-
-    private CommonUnloadData setupUnloadData(Plugin plugin) {
-        syncCommands();
-        return _bukkitPluginManager.extractPluginManagerData(plugin);
     }
 
     private void cleanupListeners(Plugin plugin, CommonUnloadData data) {
@@ -255,10 +249,12 @@ public class PaperPluginManager extends BasePluginManager {
     private void cleanupCommands(Plugin plugin, CommonUnloadData data) {
         if (data.commandMap() == null) return;
 
-        var modifiedKnownCommands = new HashMap<>(data.commands());
+        var modifiedKnownCommands = data.commands();
 
-        for (var entry : new HashMap<>(data.commands()).entrySet()) {
-            if (entry.getValue() instanceof PluginCommand command) {
+        for (var entry : modifiedKnownCommands.asMap().entrySet()) {
+            var handle = entry.getValue().<Command>getHandle();
+
+            if (handle instanceof PluginCommand command) {
                 if (command.getPlugin() == plugin.getHandle()) {
                     command.unregister(data.commandMap());
                     modifiedKnownCommands.remove(entry.getKey());
@@ -267,20 +263,19 @@ public class PaperPluginManager extends BasePluginManager {
             }
 
             try {
-                unregisterNonPluginCommands(plugin, data.commandMap(), modifiedKnownCommands, entry);
+                _bukkitPluginManager.unregisterNonPluginCommands(plugin, data.commandMap(), modifiedKnownCommands, entry);
             } catch (IllegalStateException exception) {
                 if (exception.getMessage().equalsIgnoreCase("zip file closed")) {
                     var config = PlugManBukkit.getInstance().<PlugManConfigurationManager>get(PlugManConfigurationManager.class);
                     if (config.shouldNotifyOnBrokenCommandRemoval())
-                        Logger.getLogger(PaperPluginManager.class.getName()).info("Removing broken command '" + entry.getValue().getName() + "'!");
-                    entry.getValue().unregister(data.commandMap());
+                        Logger.getLogger(PaperPluginManager.class.getName()).info("Removing broken command '" + handle.getName() + "'!");
+                    handle.unregister(data.commandMap());
                     modifiedKnownCommands.remove(entry.getKey());
                 }
             }
         }
 
-        var plugManCommands = convertBukkitCommands(modifiedKnownCommands);
-        setKnownCommands(plugManCommands);
+        syncCommands();
     }
 
     private void cleanupPaperPluginManager(Plugin plugin) {

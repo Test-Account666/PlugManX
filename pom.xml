@@ -6,7 +6,7 @@
 
     <groupId>com.rylinaux</groupId>
     <artifactId>PlugManX</artifactId>
-    <version>3.0.1</version>
+    <version>3.0.2</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -57,7 +57,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <plugman.version>3.0.1</plugman.version>
+        <plugman.version>3.0.2</plugman.version>
         <manifold.version>2025.1.26</manifold.version>
         <jackson.version>2.13.5</jackson.version>
     </properties>
