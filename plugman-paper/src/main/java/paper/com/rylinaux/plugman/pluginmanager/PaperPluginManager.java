@@ -31,7 +31,6 @@ import bukkit.com.rylinaux.plugman.plugin.BukkitPlugin;
 import bukkit.com.rylinaux.plugman.pluginmanager.BasePluginManager;
 import bukkit.com.rylinaux.plugman.pluginmanager.BukkitPluginManager;
 import core.com.rylinaux.plugman.PluginResult;
-import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
 import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.util.reflection.ClassAccessor;
 import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
@@ -40,7 +39,6 @@ import core.com.rylinaux.plugman.util.tuples.Tuple;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import lombok.experimental.Delegate;
 import org.bukkit.command.Command;
-import org.bukkit.command.PluginCommand;
 import org.yaml.snakeyaml.error.YAMLException;
 
 import java.io.File;
@@ -51,7 +49,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Utilities for managing paper plugins.
@@ -158,7 +155,7 @@ public class PaperPluginManager extends BasePluginManager {
 
         var target = loadPluginWithPaper(pluginFile);
         if (target == null) {
-            target = _bukkitPluginManager.loadAndEnablePlugin(pluginFile);
+            target = loadAndEnablePlugin(pluginFile);
             if (target == null) return new PluginResult(false, "load.invalid-plugin");
         }
 
@@ -250,30 +247,14 @@ public class PaperPluginManager extends BasePluginManager {
         if (data.commandMap() == null) return;
 
         var modifiedKnownCommands = data.commands();
+        var pluginCommands = getCommandsFromPlugin(plugin);
 
-        for (var entry : modifiedKnownCommands.asMap().entrySet()) {
-            var handle = entry.getValue().<Command>getHandle();
+        pluginCommands.forEach(entry -> {
+            var command = entry.getValue().<Command>getHandle();
 
-            if (handle instanceof PluginCommand command) {
-                if (command.getPlugin() == plugin.getHandle()) {
-                    command.unregister(data.commandMap());
-                    modifiedKnownCommands.remove(entry.getKey());
-                }
-                continue;
-            }
-
-            try {
-                _bukkitPluginManager.unregisterNonPluginCommands(plugin, data.commandMap(), modifiedKnownCommands, entry);
-            } catch (IllegalStateException exception) {
-                if (exception.getMessage().equalsIgnoreCase("zip file closed")) {
-                    var config = PlugManBukkit.getInstance().<PlugManConfigurationManager>get(PlugManConfigurationManager.class);
-                    if (config.shouldNotifyOnBrokenCommandRemoval())
-                        Logger.getLogger(PaperPluginManager.class.getName()).info("Removing broken command '" + handle.getName() + "'!");
-                    handle.unregister(data.commandMap());
-                    modifiedKnownCommands.remove(entry.getKey());
-                }
-            }
-        }
+            command.unregister(data.commandMap());
+            modifiedKnownCommands.remove(entry.getKey());
+        });
 
         syncCommands();
     }
