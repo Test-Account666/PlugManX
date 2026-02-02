@@ -8,7 +8,7 @@
     <parent>
         <groupId>com.rylinaux</groupId>
         <artifactId>PlugManX</artifactId>
-        <version>3.0.3</version>
+        <version>3.0.4-dev1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
