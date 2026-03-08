@@ -33,8 +33,8 @@ import core.com.rylinaux.plugman.plugins.Command;
 import core.com.rylinaux.plugman.plugins.CommandMapWrap;
 import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.plugins.PluginManager;
+import core.com.rylinaux.plugman.util.ThreadUtil;
 import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
-import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.event.Event;
@@ -157,7 +157,7 @@ public abstract class BasePluginManager implements PluginManager {
      * Common command loading logic.
      */
     protected synchronized void scheduleCommandLoading() {
-        Bukkit.getScheduler().runTaskLater(PlugManBukkit.getInstance(), this::syncCommands, 10L);
+        PlugManBukkit.getInstance().get(ThreadUtil.class).syncLater(this::syncCommands, 10L);
     }
 
 

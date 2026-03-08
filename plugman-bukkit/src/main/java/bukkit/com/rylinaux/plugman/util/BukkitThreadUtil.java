@@ -44,7 +44,7 @@ public class BukkitThreadUtil implements ThreadUtil {
      */
     @Override
     public void async(Runnable runnable) {
-        Bukkit.getScheduler().runTaskAsynchronously(PlugManBukkit.getInstance(), runnable);
+        asyncLater(runnable, 0);
     }
 
     /**
@@ -54,7 +54,17 @@ public class BukkitThreadUtil implements ThreadUtil {
      */
     @Override
     public void sync(Runnable runnable) {
-        Bukkit.getScheduler().runTask(PlugManBukkit.getInstance(), runnable);
+        syncLater(runnable, 0);
+    }
+
+    @Override
+    public void asyncLater(Runnable runnable, long delay) {
+        Bukkit.getScheduler().runTaskLaterAsynchronously(PlugManBukkit.getInstance(), runnable, delay);
+    }
+
+    @Override
+    public void syncLater(Runnable runnable, long delay) {
+        Bukkit.getScheduler().runTaskLater(PlugManBukkit.getInstance(), runnable, delay);
     }
 
     @Override

@@ -52,28 +52,27 @@ public class PaperThreadUtil extends BukkitThreadUtil {
      * Run a task in a separate thread with Folia support.
      */
     @Override
-    public void async(Runnable runnable) {
+    public void asyncLater(Runnable runnable, long delay) {
         if (!shouldUseFolia()) {
             super.async(runnable);
             return;
         }
 
         var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
-        foliaLib.getScheduler().runAsync((ignored) -> runnable.run());
+        foliaLib.getScheduler().runLaterAsync((ignored) -> runnable.run(), delay);
     }
 
     /**
      * Run a task in the main thread with Folia support.
      */
-    @Override
-    public void sync(Runnable runnable) {
+    synchronized public void syncLater(Runnable runnable, long delay) {
         if (!shouldUseFolia()) {
-            super.sync(runnable);
+            super.syncLater(runnable, delay);
             return;
         }
 
         var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
-        foliaLib.getScheduler().runLater(runnable, 0L);
+        foliaLib.getScheduler().runLater(runnable, delay);
     }
 
     /**
