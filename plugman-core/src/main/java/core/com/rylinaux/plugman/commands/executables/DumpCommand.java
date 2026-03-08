@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * Command that dumps plugin names and versions to file.
@@ -88,15 +89,15 @@ public class DumpCommand extends AbstractCommand {
     public void execute(CommandSender sender, String label, String[] args) {
         var dumpFile = new File(Path.of("plugins", "PlugManX").toFile(), "versions.txt");
 
-        var plugins = getPluginManager().getPluginNames(true);
-        plugins.sort(String.CASE_INSENSITIVE_ORDER);
+        var enabledPlugins = getPluginManager().getEnabledPluginNames(true);
+        enabledPlugins.sort(String.CASE_INSENSITIVE_ORDER);
+
+        var disabledPlugins = getPluginManager().getDisabledPluginNames(true);
+        disabledPlugins.sort(String.CASE_INSENSITIVE_ORDER);
 
         try (var writer = new PrintWriter(dumpFile)) {
-            for (var plugin : plugins) {
-                plugin = reformat(plugin);
-
-                writer.println(plugin);
-            }
+            write(enabledPlugins, writer, true);
+            write(disabledPlugins, writer, false);
             writer.flush();
 
             sender.sendMessage("dump.dumped", dumpFile.getName());
@@ -107,13 +108,20 @@ public class DumpCommand extends AbstractCommand {
         }
     }
 
-    private String reformat(String plugin) {
-        if (plugin.startsWith("§a")) plugin = plugin + " - Enabled";
+    private String reformat(String plugin, boolean enabled) {
+        if (enabled) plugin = plugin + " - Enabled";
+        else plugin = plugin + " - Disabled";
 
-        if (plugin.startsWith("§c")) plugin = plugin + " - Disabled";
-
-        plugin = plugin.substring(2);
+        if (plugin.startsWith("§")) plugin = plugin.substring(2);
 
         return plugin;
+    }
+
+    private void write(List<String> plugins, PrintWriter writer, boolean enabled) {
+        for (var plugin : plugins) {
+            plugin = reformat(plugin, enabled);
+
+            writer.println(plugin);
+        }
     }
 }
