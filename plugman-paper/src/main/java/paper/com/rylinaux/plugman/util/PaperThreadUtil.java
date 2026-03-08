@@ -65,7 +65,8 @@ public class PaperThreadUtil extends BukkitThreadUtil {
     /**
      * Run a task in the main thread with Folia support.
      */
-    synchronized public void syncLater(Runnable runnable, long delay) {
+    @Override
+    public synchronized void syncLater(Runnable runnable, long delay) {
         if (!shouldUseFolia()) {
             super.syncLater(runnable, delay);
             return;
