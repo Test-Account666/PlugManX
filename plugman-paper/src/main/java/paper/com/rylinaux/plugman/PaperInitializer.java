@@ -80,14 +80,14 @@ public class PaperInitializer {
     }
 
     /**
-     * Returns the Minecraft version integer id. 1.20 -> 12000, 1.21.4 -> 12104, 26.1 -> 26100.
+     * Returns the Minecraft version integer id. 1.20 -> 12000, 1.21.4 -> 12104, 26.1 -> 260100.
      */
     private static int obtainVersion() {
         try {
             String[] versions = Bukkit.getMinecraftVersion().split("\\.");
             return Integer.parseInt(versions[0]) * 10000
                 + (versions.length > 1 ? Integer.parseInt(versions[1]) : 0) * 100
-                + versions.length > 2 ? Integer.parseInt(versions[2]): 0;
+                + (versions.length > 2 ? Integer.parseInt(versions[2]) : 0);
         } catch (Exception ignored) {
         }
         return -1;
