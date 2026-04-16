@@ -56,8 +56,8 @@ public class PaperInitializer {
         }
 
         return obtainVersion() >= 12005 ?
-            new ModernPaperPluginManager(bukkitPluginManager) :
-            new PaperPluginManager(bukkitPluginManager);
+            new ModernPaperPluginManager() :
+            new PaperPluginManager();
     }
 
     /**

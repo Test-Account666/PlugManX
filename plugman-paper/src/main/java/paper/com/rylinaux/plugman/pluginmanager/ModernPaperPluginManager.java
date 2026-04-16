@@ -53,10 +53,6 @@ import java.util.logging.Level;
 public class ModernPaperPluginManager extends PaperPluginManager {
     //TODO: Add paper-plugin support
 
-    public ModernPaperPluginManager(BukkitPluginManager bukkitPluginManager) {
-        super(bukkitPluginManager);
-    }
-
     @Override
     public PluginResult unload(Plugin plugin) {
         var result = unloadWithPaper(plugin);

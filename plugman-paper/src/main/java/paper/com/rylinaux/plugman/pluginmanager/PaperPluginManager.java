@@ -55,13 +55,9 @@ import java.util.logging.Level;
  *
  * @author rylinaux
  */
-public class PaperPluginManager extends BasePluginManager {
-    @Delegate
-    private final BukkitPluginManager _bukkitPluginManager;
+public class PaperPluginManager extends BukkitPluginManager {
 
-    public PaperPluginManager(BukkitPluginManager bukkitPluginManager) {
-        _bukkitPluginManager = bukkitPluginManager;
-
+    public PaperPluginManager() {
         try {
             var pluginClassLoader = ClassAccessor.getClass("org.bukkit.plugin.java.PluginClassLoader");
             if (pluginClassLoader == null) throw new ClassNotFoundException("PluginClassLoader not found");

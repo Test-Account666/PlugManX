@@ -36,30 +36,30 @@
             </resource>
         </resources>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <version>2.6.0</version>
-                <configuration>
-                    <licenseName>mit</licenseName>
-                    <licenseResolver>file://${project.parent.basedir}/license</licenseResolver>
-                    <organizationName>${project.artifactId}</organizationName>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>first</id>
-                        <goals>
-                            <goal>update-file-header</goal>
-                        </goals>
-                        <phase>process-sources</phase>
-                        <configuration>
-                            <includes>
-                                <include>src/main/java/com/rylinaux/**</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+<!--            <plugin>-->
+<!--                <groupId>org.codehaus.mojo</groupId>-->
+<!--                <artifactId>license-maven-plugin</artifactId>-->
+<!--                <version>2.6.0</version>-->
+<!--                <configuration>-->
+<!--                    <licenseName>mit</licenseName>-->
+<!--                    <licenseResolver>file://${project.parent.basedir}/license</licenseResolver>-->
+<!--                    <organizationName>${project.artifactId}</organizationName>-->
+<!--                </configuration>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>first</id>-->
+<!--                        <goals>-->
+<!--                            <goal>update-file-header</goal>-->
+<!--                        </goals>-->
+<!--                        <phase>process-sources</phase>-->
+<!--                        <configuration>-->
+<!--                            <includes>-->
+<!--                                <include>src/main/java/com/rylinaux/**</include>-->
+<!--                            </includes>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
