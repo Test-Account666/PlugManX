@@ -54,7 +54,7 @@ public class ModernPaperPluginManager extends PaperPluginManager {
     //TODO: Add paper-plugin support
 
     @Override
-    public PluginResult unload(Plugin plugin) {
+    public synchronized PluginResult unload(Plugin plugin) {
         var result = unloadWithPaper(plugin);
         if (!result.second().success()) return result.second();
 
