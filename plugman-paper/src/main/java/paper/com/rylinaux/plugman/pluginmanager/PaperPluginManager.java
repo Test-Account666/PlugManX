@@ -210,7 +210,7 @@ public class PaperPluginManager extends BukkitPluginManager {
      * @return the message to send to the user.
      */
     @Override
-    public PluginResult unload(Plugin plugin) {
+    public synchronized PluginResult unload(Plugin plugin) {
         var out = unloadWithPaper(plugin);
         if (!out.second().success()) return out.second();
 
@@ -239,7 +239,8 @@ public class PaperPluginManager extends BukkitPluginManager {
         data.listeners().values().forEach(set -> set.removeIf(value -> value.getPlugin() == plugin.getHandle()));
     }
 
-    private void cleanupCommands(Plugin plugin, CommonUnloadData data) {
+    @Override
+    protected void cleanupCommands(Plugin plugin, CommonUnloadData data) {
         if (data.commandMap() == null) return;
 
         var modifiedKnownCommands = data.commands();
