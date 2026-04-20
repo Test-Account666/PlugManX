@@ -55,13 +55,9 @@ import java.util.logging.Level;
  *
  * @author rylinaux
  */
-public class PaperPluginManager extends BasePluginManager {
-    @Delegate
-    private final BukkitPluginManager _bukkitPluginManager;
+public class PaperPluginManager extends BukkitPluginManager {
 
-    public PaperPluginManager(BukkitPluginManager bukkitPluginManager) {
-        _bukkitPluginManager = bukkitPluginManager;
-
+    public PaperPluginManager() {
         try {
             var pluginClassLoader = ClassAccessor.getClass("org.bukkit.plugin.java.PluginClassLoader");
             if (pluginClassLoader == null) throw new ClassNotFoundException("PluginClassLoader not found");
@@ -214,7 +210,7 @@ public class PaperPluginManager extends BasePluginManager {
      * @return the message to send to the user.
      */
     @Override
-    public PluginResult unload(Plugin plugin) {
+    public synchronized PluginResult unload(Plugin plugin) {
         var out = unloadWithPaper(plugin);
         if (!out.second().success()) return out.second();
 
@@ -243,7 +239,8 @@ public class PaperPluginManager extends BasePluginManager {
         data.listeners().values().forEach(set -> set.removeIf(value -> value.getPlugin() == plugin.getHandle()));
     }
 
-    private void cleanupCommands(Plugin plugin, CommonUnloadData data) {
+    @Override
+    protected void cleanupCommands(Plugin plugin, CommonUnloadData data) {
         if (data.commandMap() == null) return;
 
         var modifiedKnownCommands = data.commands();

@@ -55,14 +55,9 @@ public class PaperInitializer {
             return bukkitPluginManager;
         }
 
-        var version = Bukkit.getBukkitVersion().split("-")[0].split("\\.");
-
-        var paperVersion = Integer.parseInt(version[1]) * 100;
-        if (version.length >= 3) paperVersion += Integer.parseInt(version[2]);
-
-        return paperVersion >= 2005?
-                new ModernPaperPluginManager(bukkitPluginManager) :
-                new PaperPluginManager(bukkitPluginManager);
+        return obtainVersion() >= 12005 ?
+            new ModernPaperPluginManager() :
+            new PaperPluginManager();
     }
 
     /**
@@ -84,4 +79,18 @@ public class PaperInitializer {
         plugin.getLogger().info("You can disable this warning by setting 'showPaperWarning' to false in the config.yml");
     }
 
+    /**
+     * Returns the Minecraft version integer id. 1.20 -> 12000, 1.21.4 -> 12104, 26.1 -> 260100.
+     */
+    private int obtainVersion() {
+        try {
+            String[] versions = Bukkit.getMinecraftVersion().split("\\.");
+            return Integer.parseInt(versions[0]) * 10000
+                + (versions.length > 1 ? Integer.parseInt(versions[1]) : 0) * 100
+                + (versions.length > 2 ? Integer.parseInt(versions[2]) : 0);
+        } catch (Exception ignored) {
+            plugin.getLogger().warning("Failed to obtain server version!");
+        }
+        return -1;
+    }
 }

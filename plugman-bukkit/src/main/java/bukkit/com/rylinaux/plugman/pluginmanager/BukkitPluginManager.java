@@ -470,7 +470,7 @@ public class BukkitPluginManager extends BasePluginManager {
         removeFromPluginLists(plugin, data);
     }
 
-    private void cleanupCommands(Plugin plugin, CommonUnloadData data) {
+    protected void cleanupCommands(Plugin plugin, CommonUnloadData data) {
         if (data.commandMap() == null) return;
 
         var modifiedKnownCommands = data.commands();
