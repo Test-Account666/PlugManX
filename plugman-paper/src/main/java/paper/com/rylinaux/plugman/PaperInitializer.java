@@ -81,16 +81,36 @@ public class PaperInitializer {
 
     /**
      * Returns the Minecraft version integer id. 1.20 -> 12000, 1.21.4 -> 12104, 26.1 -> 260100.
+     * <p>
+     * Paper reports the version id directly (e.g. "26.2"), but some builds append non-numeric
+     * metadata as extra segments like "26.2.build.3-alpha". Each segment is therefore parsed
+     * leniently, taking only its numeric prefix, so such versions still resolve correctly
+     * (26.2 -> 260200).
      */
     private int obtainVersion() {
         try {
             String[] versions = Bukkit.getMinecraftVersion().split("\\.");
-            return Integer.parseInt(versions[0]) * 10000
-                + (versions.length > 1 ? Integer.parseInt(versions[1]) : 0) * 100
-                + (versions.length > 2 ? Integer.parseInt(versions[2]) : 0);
+            int major = parseSegment(versions, 0);
+            int minor = parseSegment(versions, 1);
+            int patch = parseSegment(versions, 2);
+            return major * 10000 + minor * 100 + patch;
         } catch (Exception ignored) {
             plugin.getLogger().warning("Failed to obtain server version!");
         }
         return -1;
+    }
+
+    /**
+     * Leniently parses the numeric prefix of a version segment, returning 0 when the segment is
+     * missing or does not start with a digit.
+     */
+    private static int parseSegment(String[] segments, int index) {
+        if (index >= segments.length) return 0;
+
+        String segment = segments[index];
+        int end = 0;
+        while (end < segment.length() && Character.isDigit(segment.charAt(end))) end++;
+
+        return end == 0 ? 0 : Integer.parseInt(segment.substring(0, end));
     }
 }
