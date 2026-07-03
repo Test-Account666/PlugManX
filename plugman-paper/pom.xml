@@ -45,42 +45,15 @@
                     <licenseResolver>file://${project.parent.basedir}/license</licenseResolver>
                     <organizationName>${project.artifactId}</organizationName>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>first</id>
-                        <goals>
-                            <goal>update-file-header</goal>
-                        </goals>
-                        <phase>process-sources</phase>
-                        <configuration>
-                            <includes>
-                                <include>src/main/java/com/rylinaux/**</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.0</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
+                    <source>25</source>
+                    <target>25</target>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>ca.bkaw</groupId>
-                <artifactId>paper-nms-maven-plugin</artifactId>
-                <version>1.4.10</version>
-                <executions>
-                    <execution>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>remap</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
@@ -97,14 +70,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21.8-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>ca.bkaw</groupId>
-            <artifactId>paper-nms</artifactId>
-            <version>1.21.8-SNAPSHOT</version>
+            <version>26.1.2.build.72-stable</version>
             <scope>provided</scope>
         </dependency>
 

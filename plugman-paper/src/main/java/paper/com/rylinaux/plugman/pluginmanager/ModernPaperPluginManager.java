@@ -33,14 +33,9 @@ import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.util.reflection.ClassAccessor;
 import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
 import core.com.rylinaux.plugman.util.reflection.MethodAccessor;
-import io.papermc.paper.plugin.entrypoint.Entrypoint;
-import io.papermc.paper.plugin.entrypoint.LaunchEntryPointHandler;
-import io.papermc.paper.plugin.provider.PluginProvider;
-import io.papermc.paper.plugin.storage.SimpleProviderStorage;
 import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
 import org.bukkit.plugin.EventExecutor;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.lang.reflect.Method;
@@ -133,20 +128,28 @@ public class ModernPaperPluginManager extends PaperPluginManager {
         }
     }
 
-    private Object getPluginStorage() {
-        return LaunchEntryPointHandler.INSTANCE.get(Entrypoint.PLUGIN);
+    private Object getPluginStorage() throws Exception {
+        var launchEntryPointHandlerClass = ClassAccessor.getClass("io.papermc.paper.plugin.entrypoint.LaunchEntryPointHandler");
+        var entrypointClass = ClassAccessor.getClass("io.papermc.paper.plugin.entrypoint.Entrypoint");
+        if (launchEntryPointHandlerClass == null || entrypointClass == null) return null;
+
+        var instance = FieldAccessor.getValue(launchEntryPointHandlerClass, "INSTANCE", null);
+        var pluginFieldValue = FieldAccessor.getValue(entrypointClass, "PLUGIN", null);
+        return MethodAccessor.invoke(instance.getClass(), "get", instance, new Class<?>[]{pluginFieldValue.getClass()}, pluginFieldValue);
     }
 
-    private List<PluginProvider<JavaPlugin>> cloneProvidersList(Object storage) {
-        var providersIterable = ((SimpleProviderStorage) storage).getRegisteredProviders();
-        var clonedList = new ArrayList<PluginProvider<JavaPlugin>>();
-        for (var provider : providersIterable) clonedList.add((PluginProvider<JavaPlugin>) provider);
+    private List<Object> cloneProvidersList(Object storage) throws Exception {
+        var providersIterable = MethodAccessor.<Iterable<?>>invoke(storage.getClass(), "getRegisteredProviders", storage);
+        var clonedList = new ArrayList<>();
+        for (var provider : providersIterable) clonedList.add(provider);
         return clonedList;
     }
 
-    private void removeMatchingProviders(Plugin plugin, Object storage, List<PluginProvider<JavaPlugin>> providers) {
+    private void removeMatchingProviders(Plugin plugin, Object storage, List<Object> providers) throws Exception {
         for (var provider : providers) {
-            if (!provider.getMeta().getName().equalsIgnoreCase(plugin.getName())) continue;
+            var meta = MethodAccessor.invoke(provider.getClass(), "getMeta", provider);
+            var providerName = MethodAccessor.<String>invoke(meta.getClass(), "getName", meta);
+            if (!providerName.equalsIgnoreCase(plugin.getName())) continue;
 
             try {
                 removeProviderFromStorage(plugin, storage, provider);
@@ -158,9 +161,9 @@ public class ModernPaperPluginManager extends PaperPluginManager {
         }
     }
 
-    private void removeProviderFromStorage(Plugin plugin, Object storage, PluginProvider<JavaPlugin> provider) {
+    private void removeProviderFromStorage(Plugin plugin, Object storage, Object provider) {
         try {
-            var providers = FieldAccessor.<List<?>>getValue(SimpleProviderStorage.class, "providers", storage);
+            var providers = FieldAccessor.<List<?>>getValue(storage.getClass(), "providers", storage);
             var removed = providers.remove(provider);
 
             if (removed) {
