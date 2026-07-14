@@ -3,7 +3,7 @@ package velocity.com.rylinaux.plugman.commands;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import core.com.rylinaux.plugman.commands.CommandSender;
-import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import velocity.com.rylinaux.plugman.PlugManVelocity;
 
 public record VelocityCommandSender(CommandSource commandSource) implements CommandSender {
@@ -25,7 +25,7 @@ public record VelocityCommandSender(CommandSource commandSource) implements Comm
     @Override
     public void sendMessage(boolean prefix, String message, Object... args) {
         message = PlugManVelocity.getInstance().getMessageFormatter().formatMessage(prefix, message, args);
-        commandSource().sendMessage(Component.text(String.format(message, args)));
+        commandSource().sendMessage(LegacyComponentSerializer.legacySection().deserialize(message));
     }
 
     @Override

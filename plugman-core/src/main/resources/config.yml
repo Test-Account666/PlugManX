@@ -3,7 +3,7 @@
 #
 # This takes the form of a comma separated list enclosed within the brackets.
 ###
-ignored-plugins: [ PlugMan,PlugManX,PlugManBungee,ViaVersion,ViaBackwards,ViaRewind,ProtocolSupport,ProtocolLib ]
+ignored-plugins: [ PlugMan,PlugManX,PlugManBungee,ViaVersion,ViaBackwards,ViaRewind,ProtocolSupport,ProtocolLib,PlotSquared ]
 notify-on-broken-command-removal: true
 auto-load:
   enabled: false
@@ -15,5 +15,14 @@ auto-reload:
   enabled: false
   check-every-seconds: 10
 showPaperWarning: true
+paperReloadDebug: false
+
+# Controls which plugins are automatically reloaded when a target plugin is reloaded/restarted.
+# ALL = reload hard and soft dependents
+# REQUIRED_ONLY = reload only plugins with a required depend on the target
+# OFF = do not reload dependents automatically
+reloadDependentsMode: REQUIRED_ONLY
+
+
 # Do not change this value
-version: 3
+version: 5

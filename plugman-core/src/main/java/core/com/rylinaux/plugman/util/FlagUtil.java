@@ -29,7 +29,9 @@ package core.com.rylinaux.plugman.util;
 import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Utilities for dealing with flags passed to commands.
@@ -40,24 +42,59 @@ import java.util.Arrays;
 public class FlagUtil {
 
     /**
-     * Check if a flag exists in the command arguments and remove it from the original array.
+     * Check if a flag exists in the command arguments.
      *
      * @param args the array of arguments.
      * @param flag the flag to check for.
      * @return true if the flag exists.
      */
     public static boolean hasFlag(String[] args, char flag) {
-        var list = new ArrayList<>(Arrays.asList(args));
-
-        for (var it = list.iterator(); it.hasNext(); ) {
-            if (!it.next().equalsIgnoreCase("-" + flag)) continue;
-            it.remove();
-            args = list.toArray(args);
-            return true;
-        }
-
-        return false;
-
+        return parse(args, flag).hasFlag(flag);
     }
 
+    /**
+     * Parse supported flags without leaving null entries in the command arguments.
+     *
+     * @param args           the command arguments
+     * @param supportedFlags the flags to extract
+     * @return the parsed flags and cleaned arguments
+     */
+    public static ParsedArguments parse(String[] args, char... supportedFlags) {
+        var supported = new HashSet<Character>();
+        for (var flag : supportedFlags) supported.add(Character.toLowerCase(flag));
+
+        var arguments = new ArrayList<String>();
+        var flags = new HashSet<Character>();
+
+        for (var argument : args) {
+            if (argument == null) continue;
+
+            if (argument.length() == 2 && argument.charAt(0) == '-') {
+                var flag = Character.toLowerCase(argument.charAt(1));
+                if (supported.contains(flag)) {
+                    flags.add(flag);
+                    continue;
+                }
+            }
+
+            arguments.add(argument);
+        }
+
+        return new ParsedArguments(arguments, flags);
+    }
+
+    public record ParsedArguments(List<String> arguments, Set<Character> flags) {
+        public ParsedArguments {
+            arguments = List.copyOf(arguments);
+            flags = Set.copyOf(flags);
+        }
+
+        public String[] argumentArray() {
+            return arguments.toArray(String[]::new);
+        }
+
+        public boolean hasFlag(char flag) {
+            return flags.contains(Character.toLowerCase(flag));
+        }
+    }
 }

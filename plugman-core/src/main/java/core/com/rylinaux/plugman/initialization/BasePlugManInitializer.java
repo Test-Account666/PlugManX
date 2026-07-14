@@ -76,6 +76,7 @@ public abstract class BasePlugManInitializer {
      * Initialize core services in the service registry
      */
     public void initializeCoreServices() {
+        initializeReflectionCaches();
         serviceRegistry.register(PluginLogger.class, logger);
 
         var configurationManager = createConfigurationManager();
@@ -93,6 +94,7 @@ public abstract class BasePlugManInitializer {
      */
     public void setupMessaging() {
         setupMessageFiles();
+        migratePlatformMessages();
 
         try {
             var messageFormatter = createMessageFormatter();
@@ -114,10 +116,30 @@ public abstract class BasePlugManInitializer {
      * Cleanup resources and clear caches
      */
     public void cleanup() {
+        clearReflectionCaches();
         serviceRegistry.clear();
-        ClassAccessor.clearCache();
-        FieldAccessor.clearCache();
-        MethodAccessor.clearCache();
+    }
+
+    private void clearReflectionCaches() {
+        clearReflectionCache("class", () -> ClassAccessor.clearCache());
+        clearReflectionCache("field", () -> FieldAccessor.clearCache());
+        clearReflectionCache("method", () -> MethodAccessor.clearCache());
+    }
+
+    private void initializeReflectionCaches() {
+        ClassAccessor.getCacheSize();
+        FieldAccessor.getCacheSize();
+        MethodAccessor.getCacheSize();
+    }
+
+    private void clearReflectionCache(String cacheName, Runnable cacheCleanup) {
+        try {
+            cacheCleanup.run();
+        } catch (NoClassDefFoundError ignored) {
+            // Velocity may close plugin classloaders before dispatching ProxyShutdownEvent.
+        } catch (LinkageError | RuntimeException exception) {
+            logger.warning("Failed to clear " + cacheName + " reflection cache during shutdown: " + exception.getMessage());
+        }
     }
 
     /**
@@ -150,6 +172,10 @@ public abstract class BasePlugManInitializer {
 
     protected InputStream getResourceAsStream(String resource) {
         return getClass().getClassLoader().getResourceAsStream(resource);
+    }
+
+    protected void migratePlatformMessages() {
+        // Platforms can add messages that do not belong in every distribution.
     }
 
     protected abstract PlugManConfigurationManager createConfigurationManager();

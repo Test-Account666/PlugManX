@@ -14,8 +14,11 @@ import velocity.com.rylinaux.plugman.logging.VelocityPluginLogger;
  * @author rylinaux
  */
 public class VelocityPlugManConfigurationManager extends PlugManConfigurationManager {
+    private final YamlConfigurationProvider configProvider;
+
     private VelocityPlugManConfigurationManager(YamlConfigurationProvider configProvider, PluginLogger logger, JacksonConfigurationService jacksonConfigService) {
         super(configProvider, logger, jacksonConfigService);
+        this.configProvider = configProvider;
     }
 
     public static PlugManConfigurationManager of(PlugManVelocity plugin) {
@@ -25,5 +28,23 @@ public class VelocityPlugManConfigurationManager extends PlugManConfigurationMan
         var jacksonConfigService = new JacksonConfigurationService();
 
         return new VelocityPlugManConfigurationManager(configProvider, logger, jacksonConfigService);
+    }
+
+    @Override
+    protected int getCurrentConfigVersion() {
+        return 6;
+    }
+
+    @Override
+    public void initializeConfiguration() {
+        super.initializeConfiguration();
+        if (!configProvider.contains("velocityReloadDebug")) {
+            configProvider.set("velocityReloadDebug", false);
+            configProvider.save();
+        }
+    }
+
+    public boolean isVelocityReloadDebugEnabled() {
+        return configProvider.getBoolean("velocityReloadDebug", false);
     }
 }

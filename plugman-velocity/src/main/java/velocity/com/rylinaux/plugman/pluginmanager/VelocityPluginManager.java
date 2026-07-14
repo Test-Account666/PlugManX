@@ -1,64 +1,83 @@
 package velocity.com.rylinaux.plugman.pluginmanager;
 
 import com.velocitypowered.api.plugin.PluginContainer;
+import com.velocitypowered.api.plugin.PluginDescription;
 import com.velocitypowered.api.proxy.ProxyServer;
-import com.velocitypowered.proxy.command.VelocityCommandManager;
 import core.com.rylinaux.plugman.PluginResult;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
 import core.com.rylinaux.plugman.plugins.Command;
+import core.com.rylinaux.plugman.plugins.CommandMapWrap;
 import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
 import lombok.SneakyThrows;
 import velocity.com.rylinaux.plugman.PlugManVelocity;
+import velocity.com.rylinaux.plugman.config.VelocityPlugManConfigurationManager;
 import velocity.com.rylinaux.plugman.plugin.VelocityCommand;
 import velocity.com.rylinaux.plugman.plugin.VelocityPlugin;
 
 import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Velocity implementation of PluginManager.
- * Manages plugins on Velocity proxy servers.
- *
- * @author rylinaux
+ * Runtime load and unload are experimental because Velocity has no supported lifecycle API.
  */
 public class VelocityPluginManager implements PluginManager {
-    //TODO: Actually implement this
-    //TODO: Use `id` instead of name. Name isn't guaranteed to be available
+    private static final Set<String> PROTECTED_PLUGIN_IDS = Set.of("velocity", "plugmanvelocity");
+
+    private final ExperimentalVelocityRuntime runtime = ExperimentalVelocityRuntime.detect();
+    private final Map<String, File> unloadedPluginFiles = new ConcurrentHashMap<>();
 
     private ProxyServer getServer() {
         return PlugManVelocity.getInstance().getServer();
     }
 
-    private com.velocitypowered.proxy.plugin.VelocityPluginManager getPluginManager() {
-        return (com.velocitypowered.proxy.plugin.VelocityPluginManager) getServer().getPluginManager();
-    }
-
-    private VelocityCommandManager getCommandManager() {
-        return (VelocityCommandManager) getServer().getCommandManager();
-    }
-
     @Override
     public PluginResult enable(Plugin plugin) {
-        return new PluginResult(false, "Not implemented");
+        if (plugin == null) return new PluginResult(false, "error.invalid-plugin");
+        if (getPluginByName(plugin.getName()) != null) {
+            return new PluginResult(false, "enable.already-enabled", plugin.getName());
+        }
+        return load(plugin);
     }
 
     @Override
     public PluginResult enableAll() {
-        return new PluginResult(false, "Not implemented");
+        var successful = true;
+        for (var entry : new ArrayList<>(unloadedPluginFiles.entrySet())) {
+            if (!loadPluginFromFile(entry.getValue()).success()) successful = false;
+        }
+        return new PluginResult(successful, "plugins.enabled-all");
     }
 
     @Override
     public PluginResult disable(Plugin plugin) {
-        return new PluginResult(false, "Not implemented");
+        return unload(plugin);
     }
 
     @Override
     public PluginResult disableAll() {
-        return new PluginResult(false, "Not implemented");
+        var successful = true;
+        for (var plugin : new ArrayList<>(getPlugins())) {
+            if (isProtected(plugin) || isIgnored(plugin)) continue;
+            if (!unload(plugin).success()) successful = false;
+        }
+        return new PluginResult(successful, "plugins.disabled-all");
     }
 
     @Override
@@ -68,8 +87,7 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public String getFormattedName(Plugin plugin, boolean includeVersions) {
-        if (includeVersions) return plugin.getName() + " (" + plugin.getVersion() + ")";
-        return plugin.getName();
+        return includeVersions ? plugin.getName() + " (" + plugin.getVersion() + ")" : plugin.getName();
     }
 
     @Override
@@ -80,22 +98,25 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public Plugin getPluginByName(String name) {
-        return getServer().getPluginManager().getPlugin(name)
-                .map(pluginContainer -> new VelocityPlugin(pluginContainer, pluginContainer.getInstance()))
-                .orElse(null);
+        var direct = getServer().getPluginManager().getPlugin(name);
+        if (direct.isPresent()) return wrap(direct.get());
+
+        return getServer().getPluginManager().getPlugins().stream()
+                .filter(container -> container.getDescription().getName()
+                        .map(value -> value.equalsIgnoreCase(name)).orElse(false))
+                .findFirst().map(this::wrap).orElse(null);
     }
 
     @Override
     public List<String> getPluginNames(boolean fullName) {
-        return getServer().getPluginManager().getPlugins().stream()
-                .map(container -> fullName? getFormattedName(new VelocityPlugin(container, container.getInstance()), true)
-                        : container.getDescription().getId())
+        return getPlugins().stream()
+                .map(plugin -> fullName ? getFormattedName(plugin, true) : plugin.getName())
+                .sorted(String.CASE_INSENSITIVE_ORDER)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<String> getDisabledPluginNames(boolean fullName) {
-        // Velocity doesn't have disabled plugins concept
         return Collections.emptyList();
     }
 
@@ -107,125 +128,239 @@ public class VelocityPluginManager implements PluginManager {
     @Override
     public String getPluginVersion(String name) {
         return getServer().getPluginManager().getPlugin(name)
-                .map(container -> container.getDescription().getVersion().orElse("Unknown"))
+                .flatMap(container -> container.getDescription().getVersion())
                 .orElse("Unknown");
     }
 
     @Override
     public String getUsages(Plugin plugin) {
-        var list = new ArrayList<String>();
-
-        for (var alias : getServer().getCommandManager().getAliases()) {
-            var name = plugin.getName();
-
-            if (!findByCommand(alias).contains(name)) continue;
-            list.add(alias);
-        }
-
-        return String.join(", ", list);
+        var aliases = getServer().getCommandManager().getAliases().stream()
+                .filter(alias -> findByCommand(alias).stream()
+                        .anyMatch(plugin.getName()::equalsIgnoreCase))
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+        return String.join(", ", aliases);
     }
 
     @Override
     public List<String> findByCommand(String command) {
-        var list = new ArrayList<String>();
+        var meta = getServer().getCommandManager().getCommandMeta(command);
+        if (meta == null) return Collections.emptyList();
 
-        try {
-            var commandMeta = getServer().getCommandManager().getCommandMeta(command);
-            if (commandMeta != null) {
-                var pluginContainer = commandMeta.getPlugin();
-                if (pluginContainer instanceof PluginContainer container) {
-                    var pluginName = container.getDescription().getName();
-                    pluginName.ifPresent(list::add);
-                }
-            }
-
-            // Also check for namespaced commands (plugin:command)
-            for (var alias : getServer().getCommandManager().getAliases())
-                if (alias.contains(":")) {
-                    var parts = alias.split(":");
-                    if (parts.length == 2 && parts[1].equalsIgnoreCase(command)) if (!list.contains(parts[0])) list.add(parts[0]);
-                }
-        } catch (Exception exception) {
-            // Log error but don't fail completely
-            PlugManVelocity.getInstance().getLogger().warn("Error finding command: {}", command, exception);
+        var owner = meta.getPlugin();
+        if (owner instanceof PluginContainer container) {
+            return List.of(container.getDescription().getId());
         }
+        if (owner == null) return Collections.emptyList();
 
-        return list;
+        return getServer().getPluginManager().fromInstance(owner)
+                .map(container -> List.of(container.getDescription().getId()))
+                .orElseGet(Collections::emptyList);
     }
 
     @Override
     public boolean isIgnored(Plugin plugin) {
-        var configManager = PlugManVelocity.getInstance().get(PlugManConfigurationManager.class);
-        return configManager != null && configManager.getIgnoredPlugins().contains(plugin.getName());
+        return plugin != null && (isProtected(plugin) || isIgnored(plugin.getName()));
     }
 
     @Override
     public boolean isIgnored(String plugin) {
+        if (isProtected(plugin)) return true;
         var configManager = PlugManVelocity.getInstance().get(PlugManConfigurationManager.class);
-        return configManager != null && configManager.getIgnoredPlugins().contains(plugin);
+        return configManager != null && configManager.getIgnoredPlugins().stream()
+                .anyMatch(ignored -> ignored.equalsIgnoreCase(plugin));
     }
 
     @Override
     public PluginResult load(String name) {
-        return new PluginResult(false, "Not implemented");
+        if (!runtimeAvailable()) return new PluginResult(false, "load.invalid-plugin", name);
+        var file = findPluginFile(name);
+        if (file == null) return new PluginResult(false, "load.cannot-find", name);
+        return loadPluginFromFile(file);
     }
 
     @Override
     public PluginResult load(Plugin plugin) {
-        return new PluginResult(false, "Not implemented");
+        if (plugin == null) return new PluginResult(false, "load.invalid-plugin");
+        var id = plugin.getName().toLowerCase(Locale.ROOT);
+        var file = unloadedPluginFiles.get(id);
+        if (file == null) file = plugin.getFile();
+        return loadPluginFromFile(file);
     }
 
     @SneakyThrows
     @Override
-    public Map<String, Command> getKnownCommands() {
-        var commands = new HashMap<String, Command>();
-
-        var commandMetas = FieldAccessor.<Map<String, com.velocitypowered.api.command.CommandMeta>>getValue("commandMetas", getCommandManager());
-
-        for (var entry : commandMetas.entrySet()) {
-            var alias = entry.getKey();
-
-            commands.put(alias, new VelocityCommand(entry.getValue()));
-        }
-        return commands;
-    }
-
-    @Override
-    public void setKnownCommands(Map<String, Command> knownCommands) {
-        // Not implemented
+    public CommandMapWrap<com.velocitypowered.api.command.CommandMeta> getKnownCommands() {
+        var commandManager = getServer().getCommandManager();
+        var commandMetas = FieldAccessor
+                .<Map<String, com.velocitypowered.api.command.CommandMeta>>getValue("commandMetas", commandManager);
+        return new CommandMapWrap<>(commandMetas, VelocityCommand::new);
     }
 
     @Override
     public PluginResult unload(Plugin plugin) {
-        return new PluginResult(false, "Not implemented");
+        if (!runtimeAvailable() || !(plugin instanceof VelocityPlugin velocityPlugin)) {
+            return new PluginResult(false, "unload.failed", plugin == null ? "Unknown" : plugin.getName());
+        }
+        if (isProtected(plugin)) return new PluginResult(false, "error.ignored", plugin.getName());
+
+        var container = velocityPlugin.pluginContainer();
+        var file = plugin.getFile();
+        var startedAt = System.nanoTime();
+        debug("Starting unload for {}", plugin.getName());
+        try {
+            runtime.unload(getServer(), container, this::debug);
+            if (file != null) {
+                unloadedPluginFiles.put(plugin.getName().toLowerCase(Locale.ROOT), file);
+            }
+            debug("Completed unload for {} in {} ms", plugin.getName(), elapsedMillis(startedAt));
+            return new PluginResult(true, "unload.unloaded", plugin.getName());
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            debug("Unload for {} failed after {} ms: {}", plugin.getName(), elapsedMillis(startedAt), exception);
+            logFailure("unload", plugin.getName(), exception);
+            return new PluginResult(false, "unload.failed", plugin.getName());
+        }
     }
 
     @Override
     public boolean isPaperPlugin(Plugin plugin) {
-        return false; // Velocity plugins are not Paper plugins
+        return false;
+    }
+
+    @Override
+    public List<String> getPluginListMessageKeys() {
+        return List.of("list.velocity");
+    }
+
+    @Override
+    public String getPluginListMessageKey(Plugin plugin) {
+        return "list.velocity";
     }
 
     @Override
     public Set<Plugin> getPlugins() {
         return getServer().getPluginManager().getPlugins().stream()
-                .map(pluginContainer -> new VelocityPlugin(pluginContainer, pluginContainer.getInstance()))
-                .collect(Collectors.toSet());
+                .map(this::wrap)
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
-    @SneakyThrows
     public File findPluginFile(String name) {
-        var plugin = getServer().getPluginManager().getPlugins().stream()
-                .filter(pluginContainer -> pluginContainer.getDescription().getName().get().equalsIgnoreCase(name))
-                .findFirst();
-        if (plugin.isEmpty()) return null;
+        var loaded = getPluginByName(name);
+        if (loaded != null) return loaded.getFile();
 
-        var pluginClass = plugin.get().getInstance().getClass();
-        var pluginFile = pluginClass.getProtectionDomain().getCodeSource().getLocation();
+        var remembered = unloadedPluginFiles.get(name.toLowerCase(Locale.ROOT));
+        if (remembered != null && remembered.isFile()) return remembered;
 
-        return Path.of(pluginFile.toURI()).toFile();
+        var pluginsDirectory = getPluginsDirectory();
+        if (!Files.isDirectory(pluginsDirectory)) return null;
+
+        try (Stream<Path> files = Files.list(pluginsDirectory)) {
+            return files.filter(path -> path.getFileName().toString().endsWith(".jar"))
+                    .filter(path -> hasPluginId(path, name))
+                    .map(Path::toFile)
+                    .findFirst().orElse(null);
+        } catch (IOException exception) {
+            PlugManVelocity.getInstance().getLogger().error("Failed to scan Velocity plugin files", exception);
+            return null;
+        }
     }
 
     public PluginResult loadPluginFromFile(File file) {
-        return new PluginResult(false, "Not implemented");
+        if (!runtimeAvailable() || file == null || !file.isFile()) {
+            return new PluginResult(false, "load.invalid-plugin", file == null ? "Unknown" : file.getName());
+        }
+
+        var startedAt = System.nanoTime();
+        debug("Starting load for {}", file.getName());
+        try {
+            var description = runtime.readDescription(getServer(), file.toPath());
+            debug("Read plugin description for {} after {} ms", description.getId(), elapsedMillis(startedAt));
+            if (isProtected(description.getId()) || isIgnored(description.getId())) {
+                return new PluginResult(false, "error.ignored", description.getId());
+            }
+            if (getServer().getPluginManager().isLoaded(description.getId())) {
+                return new PluginResult(false, "load.already-loaded", description.getId());
+            }
+
+            var missingDependencies = findMissingDependencies(description);
+            if (!missingDependencies.isEmpty()) {
+                return new PluginResult(false, "load.missing-dependencies",
+                        description.getId(), String.join(", ", missingDependencies));
+            }
+
+            var container = runtime.load(getServer(), file.toPath(), this::debug);
+            unloadedPluginFiles.remove(container.getDescription().getId().toLowerCase(Locale.ROOT));
+            debug("Completed load for {} in {} ms", container.getDescription().getId(), elapsedMillis(startedAt));
+            return new PluginResult(true, "load.loaded", container.getDescription().getId());
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            debug("Load for {} failed after {} ms: {}", file.getName(), elapsedMillis(startedAt), exception);
+            logFailure("load", file.getName(), exception);
+            return new PluginResult(false, "load.invalid-plugin", file.getName());
+        }
+    }
+
+    private List<String> findMissingDependencies(PluginDescription description) {
+        return description.getDependencies().stream()
+                .filter(dependency -> !dependency.isOptional())
+                .map(dependency -> dependency.getId())
+                .filter(dependency -> !getServer().getPluginManager().isLoaded(dependency))
+                .toList();
+    }
+
+    private boolean hasPluginId(Path file, String expectedName) {
+        try {
+            var description = runtime.readDescription(getServer(), file);
+            return description.getId().equalsIgnoreCase(expectedName)
+                    || description.getName().map(name -> name.equalsIgnoreCase(expectedName)).orElse(false);
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            return false;
+        }
+    }
+
+    private Path getPluginsDirectory() {
+        var dataDirectory = PlugManVelocity.getInstance().getDataDirectory();
+        return dataDirectory.getParent() == null ? Path.of("plugins") : dataDirectory.getParent();
+    }
+
+    private VelocityPlugin wrap(PluginContainer container) {
+        return new VelocityPlugin(container, container.getInstance().orElse(null));
+    }
+
+    private boolean runtimeAvailable() {
+        return runtime != null;
+    }
+
+    public boolean isExperimentalRuntimeAvailable() {
+        return runtimeAvailable();
+    }
+
+    private void debug(String message, Object... arguments) {
+        if (!isVelocityReloadDebugEnabled()) return;
+        PlugManVelocity.getInstance().getLogger().info("[VelocityReloadDebug] " + message, arguments);
+    }
+
+    private boolean isVelocityReloadDebugEnabled() {
+        var configurationManager = PlugManVelocity.getInstance().get(PlugManConfigurationManager.class);
+        return configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig
+                && velocityConfig.isVelocityReloadDebugEnabled();
+    }
+
+    private static long elapsedMillis(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000L;
+    }
+
+    private boolean isProtected(Plugin plugin) {
+        return plugin != null && isProtected(plugin.getName());
+    }
+
+    private boolean isProtected(String id) {
+        return id != null && PROTECTED_PLUGIN_IDS.contains(id.toLowerCase(Locale.ROOT));
+    }
+
+    private void logFailure(String operation, String plugin, Throwable throwable) {
+        var cause = throwable instanceof InvocationTargetException invocation && invocation.getCause() != null
+                ? invocation.getCause() : throwable;
+        PlugManVelocity.getInstance().getLogger().error(
+                "Experimental Velocity plugin {} failed for {}", operation, plugin, cause);
     }
 }

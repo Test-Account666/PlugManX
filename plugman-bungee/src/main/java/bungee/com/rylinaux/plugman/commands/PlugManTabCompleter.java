@@ -27,7 +27,8 @@ public class PlugManTabCompleter implements TabExecutor {
     /**
      * Valid command names.
      */
-    private static final String[] COMMANDS = {"check", "disable", "dump", "enable", "help", "info", "list", "load", "lookup", "reload", "restart", "unload", "usage"};
+    private static final String[] COMMANDS = {"check", "deps", "disable", "dump", "enable", "help", "info", "list", "load", "lookup", "reload", "reloadmode", "restart", "unload", "usage"};
+    private static final List<String> RELOAD_MODES = List.of("ALL", "REQUIRED_ONLY", "OFF");
 
     @Override
     public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
@@ -59,6 +60,7 @@ public class PlugManTabCompleter implements TabExecutor {
         switch (command) {
             case "load", "enable" -> completeLoadablePlugins(partialArg, completions);
             case "lookup" -> completeKnownCommands(partialArg, completions);
+            case "reloadmode" -> StringUtil.copyPartialMatches(partialArg, RELOAD_MODES, completions);
             default -> completeAllPlugins(partialArg, completions);
         }
     }

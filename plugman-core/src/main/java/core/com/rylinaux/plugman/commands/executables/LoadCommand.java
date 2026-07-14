@@ -102,6 +102,6 @@ public class LoadCommand extends AbstractCommand {
         }
 
         var result = getPluginManager().load(name);
-        sender.sendMessage(result.messageId(), name);
+        sender.sendMessage(result.messageId(), result.messageArgs().length == 0 ? new Object[]{name} : result.messageArgs());
     }
 }

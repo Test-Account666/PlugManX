@@ -28,6 +28,7 @@ package velocity.com.rylinaux.plugman;
 
 import core.com.rylinaux.plugman.auto.AutoFeatureManager;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
+import core.com.rylinaux.plugman.config.MessageMigrationService;
 import core.com.rylinaux.plugman.file.messaging.MessageFormatter;
 import core.com.rylinaux.plugman.initialization.BasePlugManInitializer;
 import core.com.rylinaux.plugman.logging.PluginLogger;
@@ -65,7 +66,6 @@ public class VelocityPlugManInitializer extends BasePlugManInitializer {
     protected PlugManConfigurationManager createConfigurationManager() {
         var configurationManager = VelocityPlugManConfigurationManager.of(plugin);
         configurationManager.initializeConfiguration();
-        configurationManager.getIgnoredPlugins().add("PlugManVelocity");
         return configurationManager;
     }
 
@@ -98,6 +98,11 @@ public class VelocityPlugManInitializer extends BasePlugManInitializer {
     @Override
     protected AutoFeatureManager createAutoFeatureManager() {
         return new VelocityAutoFeatureManager(serviceRegistry);
+    }
+
+    @Override
+    protected void migratePlatformMessages() {
+        new MessageMigrationService(getDataFolder(), logger).migrateVelocityMessages();
     }
 
     @Override

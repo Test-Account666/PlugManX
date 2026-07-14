@@ -155,7 +155,7 @@ public abstract class AbstractCommand {
     }
 
     /**
-     * Validates a plugin for common checks (exists, not ignored, not paper plugin).
+     * Validates a plugin for common checks (exists, not ignored).
      *
      * @param plugin the plugin to validate
      * @return true if valid, false otherwise
@@ -169,11 +169,6 @@ public abstract class AbstractCommand {
 
         if (getPluginManager().isIgnored(plugin)) {
             sender.sendMessage("error.ignored");
-            return false;
-        }
-
-        if (getPluginManager().isPaperPlugin(plugin)) {
-            sender.sendMessage("error.paper-plugin");
             return false;
         }
 

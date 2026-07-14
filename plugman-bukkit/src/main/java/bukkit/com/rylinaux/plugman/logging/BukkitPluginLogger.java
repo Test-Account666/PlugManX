@@ -56,6 +56,7 @@ public class BukkitPluginLogger implements PluginLogger {
 
     @Override
     public void severe(String message, Throwable throwable) {
+        CrashDumpWriter.write(message, throwable);
         logger.log(Level.SEVERE, message, throwable);
     }
 }

@@ -35,8 +35,13 @@ import core.com.rylinaux.plugman.file.PlugManFileManager;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 import lombok.Getter;
 import lombok.experimental.Delegate;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.ApiStatus;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Plugin manager for Bukkit servers.
@@ -45,6 +50,9 @@ import org.jetbrains.annotations.ApiStatus;
  */
 @SuppressWarnings("JavadocDeclaration")
 public class PlugManBukkit extends JavaPlugin {
+
+    private static final Pattern VERSION_NUMBER_PATTERN = Pattern.compile("\\d+");
+    private static final int MIN_SUPPORTED_SERVER_VERSION = 2000;
 
     @Getter
     private static PlugManBukkit instance = null;
@@ -64,12 +72,20 @@ public class PlugManBukkit extends JavaPlugin {
     @Override
     public void onEnable() {
         PlugManBukkit.instance = this;
+        serviceRegistry = new ServiceRegistry();
+
+        if (!isSupportedServerVersion()) {
+            getLogger().severe("PlugManX 3.0.5 requires Minecraft/Paper/Spigot 1.20 or newer.");
+            getLogger().severe("Detected server version: " + Bukkit.getBukkitVersion());
+            getLogger().severe("Please update your server to 1.20 or higher, or use an older PlugManX build.");
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
 
         saveDefaultConfig();
 
         if (commandCreator == null) commandCreator = new CommandCreator();
 
-        serviceRegistry = new ServiceRegistry();
         var logger = new BukkitPluginLogger(getLogger());
         var initializer = new BukkitPlugManInitializer(this, serviceRegistry, logger);
         fileManager = new PlugManFileManager(logger);
@@ -88,6 +104,29 @@ public class PlugManBukkit extends JavaPlugin {
         initializer.setupAutoFeatures();
 
         hook.run();
+    }
+
+    private boolean isSupportedServerVersion() {
+        return parseServerVersion(Bukkit.getBukkitVersion()) >= MIN_SUPPORTED_SERVER_VERSION;
+    }
+
+    private int parseServerVersion(String bukkitVersion) {
+        var numbers = new ArrayList<Integer>();
+        var matcher = VERSION_NUMBER_PATTERN.matcher(bukkitVersion == null ? "" : bukkitVersion);
+        while (matcher.find()) numbers.add(Integer.parseInt(matcher.group()));
+
+        if (numbers.isEmpty()) return 0;
+        if (numbers.get(0) == 1) return parseMinecraftVersion(numbers);
+
+        var major = numbers.get(0);
+        var minor = numbers.size() > 1 ? numbers.get(1) : 0;
+        return major * 100 + minor;
+    }
+
+    private int parseMinecraftVersion(List<Integer> numbers) {
+        var minor = numbers.size() > 1 ? numbers.get(1) : 0;
+        var patch = numbers.size() > 2 ? numbers.get(2) : 0;
+        return minor * 100 + patch;
     }
 
 

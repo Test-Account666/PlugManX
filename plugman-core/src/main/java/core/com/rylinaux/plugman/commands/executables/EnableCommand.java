@@ -90,7 +90,7 @@ public class EnableCommand extends AbstractCommand {
         if (!validatePlugin(label, target)) return;
 
         var result = getPluginManager().enable(target);
-        sender.sendMessage(result.messageId(), target.getName());
+        sender.sendMessage(result.messageId(), result.messageArgs().length == 0 ? new Object[]{target.getName()} : result.messageArgs());
     }
 
 }

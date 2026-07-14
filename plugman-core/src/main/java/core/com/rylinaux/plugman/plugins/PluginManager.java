@@ -164,6 +164,19 @@ public interface PluginManager {
     CommandMapWrap<?> getKnownCommands();
 
     /**
+     * Starts a batch of command-map mutations. Implementations may defer expensive
+     * command syncing until {@link #endCommandUpdateBatch()} is called.
+     */
+    default void beginCommandUpdateBatch() {
+    }
+
+    /**
+     * Ends a command-map mutation batch and flushes any deferred command sync.
+     */
+    default void endCommandUpdateBatch() {
+    }
+
+    /**
      * Loads and enables a plugin.
      *
      * @param plugin plugin to load
@@ -188,6 +201,14 @@ public interface PluginManager {
      * @return if the plugin is a Paper plugin
      */
     boolean isPaperPlugin(Plugin plugin);
+
+    default List<String> getPluginListMessageKeys() {
+        return List.of("list.paper", "list.bukkit");
+    }
+
+    default String getPluginListMessageKey(Plugin plugin) {
+        return isPaperPlugin(plugin) ? "list.paper" : "list.bukkit";
+    }
 
     Set<Plugin> getPlugins();
 }
