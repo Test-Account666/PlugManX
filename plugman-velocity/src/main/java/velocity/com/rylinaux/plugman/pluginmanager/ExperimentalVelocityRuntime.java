@@ -16,6 +16,7 @@ import com.velocitypowered.api.scheduler.ScheduledTask;
 import velocity.com.rylinaux.plugman.PlugManVelocity;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -278,7 +279,7 @@ final class ExperimentalVelocityRuntime {
         try {
             action.run();
             debug(debug, startedAt, "Completed cleanup step: " + name);
-        } catch (Exception | LinkageError exception) {
+        } catch (ReflectiveOperationException | IOException | RuntimeException | LinkageError exception) {
             failures.add(new CleanupFailure(name, exception));
             debug(debug, startedAt, "WARNING: cleanup step failed (" + name + "): " + exception);
         }
@@ -426,7 +427,7 @@ final class ExperimentalVelocityRuntime {
 
     @FunctionalInterface
     private interface CleanupAction {
-        void run() throws Exception;
+        void run() throws ReflectiveOperationException, IOException;
     }
 
     private record CleanupFailure(String step, Throwable cause) {
