@@ -95,7 +95,7 @@ public final class PlugManVelocity {
 
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
-        instance = this;
+        setInstance(this);
         prepareDataDirectory();
 
         serviceRegistry = new ServiceRegistry();
@@ -113,10 +113,13 @@ public final class PlugManVelocity {
 
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
-        instance = null;
-        var pluginLogger = new VelocityPluginLogger(logger);
+        setInstance(null);
         initializer.cleanup();
         server.getCommandManager().unregister("plugman");
+    }
+
+    private static void setInstance(PlugManVelocity plugin) {
+        instance = plugin;
     }
 
     public ProxyServer getServer() {
@@ -162,6 +165,9 @@ public final class PlugManVelocity {
         var pluginManager = get(core.com.rylinaux.plugman.plugins.PluginManager.class);
         var runtimeAvailable = pluginManager instanceof VelocityPluginManager velocityManager
                 && velocityManager.isExperimentalRuntimeAvailable();
+        var runtimeAdapter = pluginManager instanceof VelocityPluginManager velocityManager
+                ? velocityManager.getExperimentalRuntimeAdapterName()
+                : "unavailable";
         var proxyVersion = server.getVersion();
 
         sendWarningLine(Component.text(WARNING_BORDER, NamedTextColor.DARK_GRAY));
@@ -173,7 +179,7 @@ public final class PlugManVelocity {
             sendDiagnosticLine("Detected proxy software: ", proxyVersion.getName());
             sendDiagnosticLine("Velocity version: ", proxyVersion.getVersion());
             sendDiagnosticLine("Java version: ", System.getProperty("java.version", "Unknown"));
-            sendDiagnosticLine("Velocity reload strategy: ", "experimental runtime adapter");
+            sendDiagnosticLine("Velocity reload strategy: ", runtimeAdapter);
             sendDiagnosticLine("Runtime reload capabilities available: ", runtimeAvailable ? "yes" : "no");
             sendDiagnosticLine("Velocity reload debug enabled: ", reloadDebugEnabled ? "yes" : "no");
         }

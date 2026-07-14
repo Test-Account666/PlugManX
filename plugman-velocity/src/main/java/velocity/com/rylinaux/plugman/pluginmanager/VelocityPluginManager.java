@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -38,6 +39,8 @@ import java.util.stream.Stream;
  * Runtime load and unload are experimental because Velocity has no supported lifecycle API.
  */
 public class VelocityPluginManager implements PluginManager {
+    private static final String UNKNOWN_PLUGIN = "Unknown";
+    private static final String LOAD_INVALID_PLUGIN = "load.invalid-plugin";
     private static final Set<String> PROTECTED_PLUGIN_IDS = Set.of("velocity", "plugmanvelocity");
 
     private final ExperimentalVelocityRuntime runtime = ExperimentalVelocityRuntime.detect();
@@ -112,7 +115,7 @@ public class VelocityPluginManager implements PluginManager {
         return getPlugins().stream()
                 .map(plugin -> fullName ? getFormattedName(plugin, true) : plugin.getName())
                 .sorted(String.CASE_INSENSITIVE_ORDER)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -129,7 +132,7 @@ public class VelocityPluginManager implements PluginManager {
     public String getPluginVersion(String name) {
         return getServer().getPluginManager().getPlugin(name)
                 .flatMap(container -> container.getDescription().getVersion())
-                .orElse("Unknown");
+                .orElse(UNKNOWN_PLUGIN);
     }
 
     @Override
@@ -173,7 +176,7 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public PluginResult load(String name) {
-        if (!runtimeAvailable()) return new PluginResult(false, "load.invalid-plugin", name);
+        if (!runtimeAvailable()) return new PluginResult(false, LOAD_INVALID_PLUGIN, name);
         var file = findPluginFile(name);
         if (file == null) return new PluginResult(false, "load.cannot-find", name);
         return loadPluginFromFile(file);
@@ -181,7 +184,7 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public PluginResult load(Plugin plugin) {
-        if (plugin == null) return new PluginResult(false, "load.invalid-plugin");
+        if (plugin == null) return new PluginResult(false, LOAD_INVALID_PLUGIN);
         var id = plugin.getName().toLowerCase(Locale.ROOT);
         var file = unloadedPluginFiles.get(id);
         if (file == null) file = plugin.getFile();
@@ -200,7 +203,7 @@ public class VelocityPluginManager implements PluginManager {
     @Override
     public PluginResult unload(Plugin plugin) {
         if (!runtimeAvailable() || !(plugin instanceof VelocityPlugin velocityPlugin)) {
-            return new PluginResult(false, "unload.failed", plugin == null ? "Unknown" : plugin.getName());
+            return new PluginResult(false, "unload.failed", plugin == null ? UNKNOWN_PLUGIN : plugin.getName());
         }
         if (isProtected(plugin)) return new PluginResult(false, "error.ignored", plugin.getName());
 
@@ -209,7 +212,7 @@ public class VelocityPluginManager implements PluginManager {
         var startedAt = System.nanoTime();
         debug("Starting unload for {}", plugin.getName());
         try {
-            runtime.unload(getServer(), container, this::debug);
+            runtime.unload(getServer(), container, debugConsumer());
             if (file != null) {
                 unloadedPluginFiles.put(plugin.getName().toLowerCase(Locale.ROOT), file);
             }
@@ -267,7 +270,7 @@ public class VelocityPluginManager implements PluginManager {
 
     public PluginResult loadPluginFromFile(File file) {
         if (!runtimeAvailable() || file == null || !file.isFile()) {
-            return new PluginResult(false, "load.invalid-plugin", file == null ? "Unknown" : file.getName());
+            return new PluginResult(false, LOAD_INVALID_PLUGIN, file == null ? UNKNOWN_PLUGIN : file.getName());
         }
 
         var startedAt = System.nanoTime();
@@ -288,14 +291,14 @@ public class VelocityPluginManager implements PluginManager {
                         description.getId(), String.join(", ", missingDependencies));
             }
 
-            var container = runtime.load(getServer(), file.toPath(), this::debug);
+            var container = runtime.load(getServer(), file.toPath(), debugConsumer());
             unloadedPluginFiles.remove(container.getDescription().getId().toLowerCase(Locale.ROOT));
             debug("Completed load for {} in {} ms", container.getDescription().getId(), elapsedMillis(startedAt));
             return new PluginResult(true, "load.loaded", container.getDescription().getId());
         } catch (ReflectiveOperationException | RuntimeException exception) {
             debug("Load for {} failed after {} ms: {}", file.getName(), elapsedMillis(startedAt), exception);
             logFailure("load", file.getName(), exception);
-            return new PluginResult(false, "load.invalid-plugin", file.getName());
+            return new PluginResult(false, LOAD_INVALID_PLUGIN, file.getName());
         }
     }
 
@@ -334,6 +337,10 @@ public class VelocityPluginManager implements PluginManager {
         return runtimeAvailable();
     }
 
+    public String getExperimentalRuntimeAdapterName() {
+        return runtimeAvailable() ? runtime.adapterName() : "unavailable";
+    }
+
     private void debug(String message, Object... arguments) {
         if (!isVelocityReloadDebugEnabled()) return;
         PlugManVelocity.getInstance().getLogger().info("[VelocityReloadDebug] " + message, arguments);
@@ -343,6 +350,10 @@ public class VelocityPluginManager implements PluginManager {
         var configurationManager = PlugManVelocity.getInstance().get(PlugManConfigurationManager.class);
         return configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig
                 && velocityConfig.isVelocityReloadDebugEnabled();
+    }
+
+    private Consumer<String> debugConsumer() {
+        return isVelocityReloadDebugEnabled() ? this::debug : null;
     }
 
     private static long elapsedMillis(long startedAt) {

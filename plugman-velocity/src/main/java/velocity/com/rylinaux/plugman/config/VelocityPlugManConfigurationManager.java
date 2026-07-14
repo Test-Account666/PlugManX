@@ -14,6 +14,8 @@ import velocity.com.rylinaux.plugman.logging.VelocityPluginLogger;
  * @author rylinaux
  */
 public class VelocityPlugManConfigurationManager extends PlugManConfigurationManager {
+    private static final String VELOCITY_RELOAD_DEBUG_KEY = "velocityReloadDebug";
+
     private final YamlConfigurationProvider configProvider;
 
     private VelocityPlugManConfigurationManager(YamlConfigurationProvider configProvider, PluginLogger logger, JacksonConfigurationService jacksonConfigService) {
@@ -38,13 +40,13 @@ public class VelocityPlugManConfigurationManager extends PlugManConfigurationMan
     @Override
     public void initializeConfiguration() {
         super.initializeConfiguration();
-        if (!configProvider.contains("velocityReloadDebug")) {
-            configProvider.set("velocityReloadDebug", false);
+        if (!configProvider.contains(VELOCITY_RELOAD_DEBUG_KEY)) {
+            configProvider.set(VELOCITY_RELOAD_DEBUG_KEY, false);
             configProvider.save();
         }
     }
 
     public boolean isVelocityReloadDebugEnabled() {
-        return configProvider.getBoolean("velocityReloadDebug", false);
+        return configProvider.getBoolean(VELOCITY_RELOAD_DEBUG_KEY, false);
     }
 }
