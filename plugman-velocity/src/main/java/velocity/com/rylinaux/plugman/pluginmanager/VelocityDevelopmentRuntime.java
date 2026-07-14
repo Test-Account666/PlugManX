@@ -350,25 +350,16 @@ final class VelocityDevelopmentRuntime {
     private int unregisterPluginChannels(ProxyServer server,
                                          PluginContainer container,
                                          ClassLoader classLoader) throws IllegalAccessException {
-        var channels = findPluginChannels(server, container, classLoader);
+        var channels = findPluginChannels(classLoader);
         if (channels == null || channels.isEmpty()) return 0;
         server.getChannelRegistrar().unregister(channels.toArray(ChannelIdentifier[]::new));
         return channels.size();
     }
 
-    private Set<ChannelIdentifier> findPluginChannels(ProxyServer server,
-                                                       PluginContainer container,
-                                                       ClassLoader classLoader)
-            throws IllegalAccessException {
-        var pluginId = container.getDescription().getId().toLowerCase(java.util.Locale.ROOT);
-        var channels = classLoader == null
+    private Set<ChannelIdentifier> findPluginChannels(ClassLoader classLoader) {
+        return classLoader == null
                 ? new HashSet<ChannelIdentifier>()
                 : new HashSet<>(pluginChannelsByClassLoader.getOrDefault(classLoader, Set.of()));
-        var namespace = pluginId + ":";
-        registeredChannels(server).stream()
-                .filter(channel -> channel.getId().toLowerCase(java.util.Locale.ROOT).startsWith(namespace))
-                .forEach(channels::add);
-        return channels;
     }
 
     private List<String> findRemainingPluginChannels(ProxyServer server, ClassLoader classLoader)

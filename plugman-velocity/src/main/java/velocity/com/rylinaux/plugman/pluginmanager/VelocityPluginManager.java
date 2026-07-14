@@ -318,19 +318,28 @@ public class VelocityPluginManager implements PluginManager {
         try {
             prepareReloadBackup(plugin);
             runtime.unload(getServer(), container, debugConsumer());
-            if (file != null) {
-                var id = plugin.getName().toLowerCase(Locale.ROOT);
-                unloadedPluginFiles.put(id, file);
-                unloadedPlugins.put(id, velocityPlugin);
-            }
+            rememberUnloadedPlugin(velocityPlugin, file);
             debug("Completed unload for {} in {} ms", plugin.getName(), elapsedMillis(startedAt));
             return new PluginResult(true, "unload.unloaded", plugin.getName());
         } catch (ReflectiveOperationException | IOException | RuntimeException exception) {
-            discardReloadBackup(plugin.getName());
             debug("Unload for {} failed after {} ms: {}", plugin.getName(), elapsedMillis(startedAt), exception);
             logFailure("unload", plugin.getName(), exception);
+            if (!getServer().getPluginManager().isLoaded(plugin.getName())) {
+                rememberUnloadedPlugin(velocityPlugin, file);
+                debug("Velocity removed {} despite cleanup warnings; continuing so it can be loaded again",
+                        plugin.getName());
+                return new PluginResult(true, "unload.unloaded", plugin.getName());
+            }
+            discardReloadBackup(plugin.getName());
             return new PluginResult(false, "unload.failed", plugin.getName());
         }
+    }
+
+    private void rememberUnloadedPlugin(VelocityPlugin plugin, File file) {
+        if (file == null) return;
+        var id = plugin.getName().toLowerCase(Locale.ROOT);
+        unloadedPluginFiles.put(id, file);
+        unloadedPlugins.put(id, plugin);
     }
 
     @Override
