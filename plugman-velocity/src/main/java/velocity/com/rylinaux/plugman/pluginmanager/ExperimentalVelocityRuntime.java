@@ -322,35 +322,63 @@ final class ExperimentalVelocityRuntime {
         var classLoader = instance == null ? null : instance.getClass().getClassLoader();
         var failures = new ArrayList<CleanupFailure>();
 
-        cleanupStep("rollback event listeners", failures, debug, startedAt, () -> {
-            if (instance != null) server.getEventManager().unregisterListeners(instance);
-        });
-        cleanupStep("rollback scheduled tasks", failures, debug, startedAt, () -> {
-            if (instance == null) return;
-            for (ScheduledTask task : List.copyOf(server.getScheduler().tasksByPlugin(instance))) {
-                task.cancel();
-            }
-        });
-        cleanupStep("rollback commands", failures, debug, startedAt, () -> {
-            if (instance != null) unregisterCommands(server, container, instance);
-        });
-        var leakSnapshot = registered && instance != null
-                ? captureLeakSnapshot(server, container, instance, debug, startedAt)
-                : null;
-        cleanupStep("rollback plugin registry", failures, debug, startedAt, () -> {
-            if (registered) pluginMap(server.getPluginManager()).remove(container.getDescription().getId());
-        });
-        cleanupStep("rollback instance registry", failures, debug, startedAt, () -> {
-            if (registered && instance != null) instanceMap(server.getPluginManager()).remove(instance);
-        });
-        cleanupStep("rollback plugin classloader", failures, debug, startedAt, () -> {
-            if (classLoader instanceof Closeable closeable) closeable.close();
-        });
+        cleanupStep("rollback event listeners", failures, debug, startedAt,
+                () -> unregisterRollbackListeners(server, instance));
+        cleanupStep("rollback scheduled tasks", failures, debug, startedAt,
+                () -> cancelRollbackTasks(server, instance));
+        cleanupStep("rollback commands", failures, debug, startedAt,
+                () -> unregisterRollbackCommands(server, container, instance));
+        var leakSnapshot = captureRollbackLeakSnapshot(server, container, instance, registered, debug, startedAt);
+        cleanupStep("rollback plugin registry", failures, debug, startedAt,
+                () -> removeRollbackPlugin(server, container, registered));
+        cleanupStep("rollback instance registry", failures, debug, startedAt,
+                () -> removeRollbackInstance(server, instance, registered));
+        cleanupStep("rollback plugin classloader", failures, debug, startedAt,
+                () -> closeRollbackClassLoader(classLoader));
 
         if (classLoader != null) inspectLeaks(leakSnapshot, classLoader, debug, startedAt);
         if (failures.isEmpty()) return null;
 
         return new VelocityCleanupException(container.getDescription().getId(), failures);
+    }
+
+    private void unregisterRollbackListeners(ProxyServer server, Object instance) {
+        if (instance != null) server.getEventManager().unregisterListeners(instance);
+    }
+
+    private void cancelRollbackTasks(ProxyServer server, Object instance) {
+        if (instance == null) return;
+        for (ScheduledTask task : List.copyOf(server.getScheduler().tasksByPlugin(instance))) {
+            task.cancel();
+        }
+    }
+
+    private void unregisterRollbackCommands(ProxyServer server, PluginContainer container, Object instance) {
+        if (instance != null) unregisterCommands(server, container, instance);
+    }
+
+    private LeakSnapshot captureRollbackLeakSnapshot(ProxyServer server,
+                                                      PluginContainer container,
+                                                      Object instance,
+                                                      boolean registered,
+                                                      Consumer<String> debug,
+                                                      long startedAt) {
+        if (!registered || instance == null) return null;
+        return captureLeakSnapshot(server, container, instance, debug, startedAt);
+    }
+
+    private void removeRollbackPlugin(ProxyServer server, PluginContainer container, boolean registered)
+            throws IllegalAccessException {
+        if (registered) pluginMap(server.getPluginManager()).remove(container.getDescription().getId());
+    }
+
+    private void removeRollbackInstance(ProxyServer server, Object instance, boolean registered)
+            throws IllegalAccessException {
+        if (registered && instance != null) instanceMap(server.getPluginManager()).remove(instance);
+    }
+
+    private void closeRollbackClassLoader(ClassLoader classLoader) throws IOException {
+        if (classLoader instanceof Closeable closeable) closeable.close();
     }
 
     private AbstractModule createCommonModule(ProxyServer server, PluginContainer loadingContainer) {

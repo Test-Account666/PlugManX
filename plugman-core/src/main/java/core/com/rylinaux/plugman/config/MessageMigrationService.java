@@ -24,6 +24,7 @@ public class MessageMigrationService {
     private static final String RELOAD_MODE_SECTION = "reloadmode";
     private static final String RELOAD_SECTION = "reload";
     private static final String RESTART_SECTION = "restart";
+    private static final String VELOCITY_SECTION = "velocity";
     private static final BulkMessageDefaults DEFAULT_BULK_MESSAGES = new BulkMessageDefaults(
             "&cDependency cycle detected: {0}",
             "&9Reloaded {0} plugins in {1} seconds (&c{2} failed&9, &e{3} skipped&9).",
@@ -209,12 +210,12 @@ public class MessageMigrationService {
             var lifecycleMessages = messagesFile.getName().equals(GERMAN_MESSAGES_FILE)
                     ? GERMAN_VELOCITY_MESSAGES
                     : DEFAULT_VELOCITY_MESSAGES;
-            var changed = addMissingMessageEntry(updatedLines, "list", "velocity", defaults.velocityMessage());
+            var changed = addMissingMessageEntry(updatedLines, "list", VELOCITY_SECTION, defaults.velocityMessage());
             changed |= addMissingMessageEntry(updatedLines, HELP_SECTION, "velocity-lifecycle",
                     lifecycleMessages.helpMessage());
-            changed |= addMissingMessageEntry(updatedLines, "velocity", "enabled",
+            changed |= addMissingMessageEntry(updatedLines, VELOCITY_SECTION, "enabled",
                     lifecycleMessages.enabledMessage());
-            changed |= addMissingMessageEntry(updatedLines, "velocity", "disabled",
+            changed |= addMissingMessageEntry(updatedLines, VELOCITY_SECTION, "disabled",
                     lifecycleMessages.disabledMessage());
             if (!changed) return;
 
