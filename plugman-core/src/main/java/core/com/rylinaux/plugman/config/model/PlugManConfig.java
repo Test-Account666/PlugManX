@@ -59,7 +59,7 @@ public class PlugManConfig {
     private boolean showPaperWarning = true;
 
     /**
-     * Whether to show the experimental Velocity reload warning
+     * Whether to show the Velocity development build warning
      */
     @JsonProperty("showVelocityWarning")
     private boolean showVelocityWarning = true;

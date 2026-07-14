@@ -26,7 +26,7 @@ the need to restart the server.
 * Permissions Support - All commands default to OP.
 
 > [!WARNING]
-> Velocity reload support is experimental because Velocity does not expose an official runtime unload API. PlugManX
+> The Velocity artifact is a development build because Velocity does not expose an official runtime unload API. PlugManX
 > checks the required runtime capabilities before enabling it, but some plugins may still require a full proxy restart.
 > Velocity also has no separate enabled/disabled plugin state. On Velocity, `/plugman enable` loads a previously
 > unloaded plugin and `/plugman disable` fully unloads it.
@@ -43,10 +43,10 @@ the need to restart the server.
 | /plugman deps [plugin]                | Show dependencies and dependent plugins for a plugin.             |
 | /plugman lookup [command]             | Find the plugin a command is registered to.                       |
 | /plugman enable [plugin&#124;all]     | Enable a plugin; on Velocity, this loads it.                       |
-| /plugman disable [plugin&#124;all]    | Disable a plugin; on Velocity, this fully unloads it.              |
-| /plugman restart [plugin&#124;all]    | Restart a plugin; on Velocity, this performs unload/load.          |
+| /plugman disable [plugin&#124;all] | Disable a plugin; on Velocity, this fully unloads it.                 |
+| /plugman restart [plugin&#124;all] | Restart a plugin; on Velocity, this performs unload/load.             |
 | /plugman load [plugin]                | Load a plugin.                                                    |
-| /plugman reload [plugin&#124;all]     | Reload (unload/load) a plugin.                                    |
+| /plugman reload [plugin&#124;all] | Reload (unload/load) a plugin.                                        |
 | /plugman reloadconfig                 | Reload PlugMan config and messages.                               |
 | /plugman reloadmode [mode]            | View or change dependent reload mode.                             |
 | /plugman unload [plugin]              | Unload a plugin.                                                  |
@@ -61,6 +61,9 @@ the need to restart the server.
 | ALL           | Reload plugins with hard `depend` and `softdepend` links. |
 | REQUIRED_ONLY | Reload only plugins with a required `depend` link.        |
 | OFF           | Do not reload dependent plugins automatically.            |
+
+On Velocity, critical plugins such as PlugManX, LuckPerms, and Geyser are protected by default. Reloading,
+restarting, disabling, or unloading them requires `--force` and the matching `<command>.force` permission.
 
 ## Permissions
 
@@ -101,8 +104,10 @@ Important options:
 | Option               | Default       | Description                                                        |
 |----------------------|---------------|--------------------------------------------------------------------|
 | ignored-plugins      | See config    | Plugins PlugManX should not manage.                                |
-| showVelocityWarning  | true          | Shows the experimental Velocity reload warning at startup.         |
-| velocityReloadDebug  | false         | Logs detailed Velocity reload phases and timings.                   |
+| showVelocityWarning         | true  | Shows the Velocity development build warning at startup.           |
+| velocityReloadDebug         | false | Logs detailed Velocity reload phases and timings.                  |
+| velocityCrashDumps          | true  | Writes identified crash dumps for Velocity runtime failures.       |
+| velocityDevTestFunctions    | false | Enables protected Velocity development test commands.              |
 | paperReloadDebug     | false         | Enables extra Paper reload diagnostics in console.                 |
 | reloadDependentsMode | REQUIRED_ONLY | Controls dependent reload behavior for reload/restart operations.  |
 

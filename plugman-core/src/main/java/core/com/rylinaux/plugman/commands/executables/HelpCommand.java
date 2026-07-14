@@ -36,6 +36,8 @@ import core.com.rylinaux.plugman.services.ServiceRegistry;
  * @author rylinaux
  */
 public class HelpCommand extends AbstractCommand {
+    private static final java.util.Set<String> FORCE_COMMANDS =
+            java.util.Set.of("disable", "reload", "restart", "unload");
 
     /**
      * The name of the command.
@@ -88,7 +90,10 @@ public class HelpCommand extends AbstractCommand {
         for (var section : help.getKeys(false)) {
             if (!section.equalsIgnoreCase("header") && !sender.hasPermission("plugman." + section)) continue;
 
-            sender.sendMessage(false, help.getName() + "." + section, label);
+            var messageKey = getPluginManager().supportsForceFlag() && FORCE_COMMANDS.contains(section.toLowerCase())
+                    ? help.getName() + ".velocity-" + section
+                    : help.getName() + "." + section;
+            sender.sendMessage(false, messageKey, label);
         }
     }
 }

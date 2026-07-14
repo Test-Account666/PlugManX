@@ -84,6 +84,7 @@ load:
   enable-failed: '&c{0} 已加载，但在 onEnable 期间失败。请检查上方的堆栈跟踪。'
   loaded: '&9{0} 已加载并启用。'
   missing-dependencies: '&c无法加载 {0}。缺少必要依赖: {1}'
+  rollback-restored: '&e重新加载 {0} 失败，但之前的插件 JAR 已恢复并加载。'
   plugin-dir: '&c找不到插件目录。'
 lookup:
   found: '&9/{0} 已注册到 {1}。'

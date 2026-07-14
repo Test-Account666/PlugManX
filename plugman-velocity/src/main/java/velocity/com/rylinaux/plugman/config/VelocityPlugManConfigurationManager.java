@@ -15,6 +15,8 @@ import velocity.com.rylinaux.plugman.logging.VelocityPluginLogger;
  */
 public class VelocityPlugManConfigurationManager extends PlugManConfigurationManager {
     private static final String VELOCITY_RELOAD_DEBUG_KEY = "velocityReloadDebug";
+    private static final String VELOCITY_CRASH_DUMPS_KEY = "velocityCrashDumps";
+    private static final String VELOCITY_DEV_TEST_FUNCTIONS_KEY = "velocityDevTestFunctions";
 
     private final YamlConfigurationProvider configProvider;
 
@@ -42,11 +44,25 @@ public class VelocityPlugManConfigurationManager extends PlugManConfigurationMan
         super.initializeConfiguration();
         if (!configProvider.contains(VELOCITY_RELOAD_DEBUG_KEY)) {
             configProvider.set(VELOCITY_RELOAD_DEBUG_KEY, false);
-            configProvider.save();
         }
+        if (!configProvider.contains(VELOCITY_CRASH_DUMPS_KEY)) {
+            configProvider.set(VELOCITY_CRASH_DUMPS_KEY, true);
+        }
+        if (!configProvider.contains(VELOCITY_DEV_TEST_FUNCTIONS_KEY)) {
+            configProvider.set(VELOCITY_DEV_TEST_FUNCTIONS_KEY, false);
+        }
+        configProvider.save();
     }
 
     public boolean isVelocityReloadDebugEnabled() {
         return configProvider.getBoolean(VELOCITY_RELOAD_DEBUG_KEY, false);
+    }
+
+    public boolean areVelocityCrashDumpsEnabled() {
+        return configProvider.getBoolean(VELOCITY_CRASH_DUMPS_KEY, true);
+    }
+
+    public boolean areVelocityDevTestFunctionsEnabled() {
+        return configProvider.getBoolean(VELOCITY_DEV_TEST_FUNCTIONS_KEY, false);
     }
 }

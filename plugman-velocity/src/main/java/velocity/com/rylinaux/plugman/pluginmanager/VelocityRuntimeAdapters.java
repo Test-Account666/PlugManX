@@ -16,14 +16,14 @@ final class VelocityRuntimeAdapters {
     static Selection find(String version) {
         if (compare(version, 3, 4, 0) < 0) {
             throw new IllegalStateException(
-                    "Experimental Velocity reload requires Velocity 3.4.0 or newer; detected " + version);
+                    "The Velocity development runtime requires Velocity 3.4.0 or newer; detected " + version);
         }
 
         var adapter = ADAPTERS.stream()
                 .filter(candidate -> candidate.supports(version))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(
-                        "No experimental Velocity runtime adapter is available for version " + version));
+                        "No Velocity development runtime adapter is available for version " + version));
         var warning = compare(version, 4, 0, 0) > 0
                 ? "Velocity " + version + " is newer than the tested 4.0.0 runtime. "
                 + "PlugManX will use the 4.0 adapter after capability checks, but reload compatibility is not guaranteed."

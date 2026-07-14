@@ -13,6 +13,7 @@ import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
 import lombok.SneakyThrows;
 import velocity.com.rylinaux.plugman.PlugManVelocity;
 import velocity.com.rylinaux.plugman.config.VelocityPlugManConfigurationManager;
+import velocity.com.rylinaux.plugman.logging.VelocityCrashDumpWriter;
 import velocity.com.rylinaux.plugman.plugin.VelocityCommand;
 import velocity.com.rylinaux.plugman.plugin.VelocityPlugin;
 
@@ -21,8 +22,10 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -30,22 +33,34 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Velocity implementation of PluginManager.
- * Runtime load and unload are experimental because Velocity has no supported lifecycle API.
+ * Runtime load and unload use development adapters because Velocity has no supported lifecycle API.
  */
 public class VelocityPluginManager implements PluginManager {
     private static final String UNKNOWN_PLUGIN = "Unknown";
     private static final String LOAD_INVALID_PLUGIN = "load.invalid-plugin";
-    private static final Set<String> PROTECTED_PLUGIN_IDS = Set.of("velocity", "plugmanvelocity");
+    private static final Set<String> ALWAYS_PROTECTED_PLUGIN_IDS = Set.of("velocity");
+    private static final Set<String> FORCE_PROTECTED_PLUGIN_IDS = Set.of(
+            "plugman", "plugmanx", "plugmanvelocity", "luckperms", "geyser", "geyser-velocity");
 
-    private final ExperimentalVelocityRuntime runtime = ExperimentalVelocityRuntime.detect();
+    private final VelocityDevelopmentRuntime runtime = VelocityDevelopmentRuntime.detect();
     private final Map<String, File> unloadedPluginFiles = new ConcurrentHashMap<>();
     private final Map<String, VelocityPlugin> unloadedPlugins = new ConcurrentHashMap<>();
+    private final Map<String, ReloadBackup> reloadBackups = new ConcurrentHashMap<>();
+    private final Map<String, Path> knownGoodPluginJars = new ConcurrentHashMap<>();
+    private final ReentrantLock operationLock = new ReentrantLock(true);
+    private final ThreadLocal<Integer> operationBatchDepth = ThreadLocal.withInitial(() -> 0);
+
+    public VelocityPluginManager() {
+        initializeKnownGoodPluginCache();
+    }
 
     private ProxyServer getServer() {
         return PlugManVelocity.getInstance().getServer();
@@ -53,6 +68,10 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public PluginResult enable(Plugin plugin) {
+        return serialized(() -> enableLocked(plugin));
+    }
+
+    private PluginResult enableLocked(Plugin plugin) {
         if (plugin == null) return new PluginResult(false, "error.invalid-plugin");
         if (getServer().getPluginManager().isLoaded(plugin.getName())) {
             return new PluginResult(false, "enable.already-enabled", plugin.getName());
@@ -65,16 +84,29 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public PluginResult enableAll() {
+        return serialized(this::enableAllLocked);
+    }
+
+    private PluginResult enableAllLocked() {
         var successful = true;
-        for (var entry : new ArrayList<>(unloadedPluginFiles.entrySet())) {
-            if (!loadPluginFromFile(entry.getValue()).success()) successful = false;
+        for (var plugin : dependencyOrder(unloadedPlugins.values())) {
+            if (!loadLocked(plugin).success()) successful = false;
         }
         return new PluginResult(successful, "plugins.enabled-all");
     }
 
     @Override
     public PluginResult disable(Plugin plugin) {
-        var result = unload(plugin);
+        return disable(plugin, false);
+    }
+
+    @Override
+    public PluginResult disable(Plugin plugin, boolean force) {
+        return serialized(() -> disableLocked(plugin, force));
+    }
+
+    private PluginResult disableLocked(Plugin plugin, boolean force) {
+        var result = unloadLocked(plugin, force);
         return result.success()
                 ? new PluginResult(true, "velocity.disabled", plugin.getName())
                 : result;
@@ -82,10 +114,21 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public PluginResult disableAll() {
+        return disableAll(false);
+    }
+
+    @Override
+    public PluginResult disableAll(boolean force) {
+        return serialized(() -> disableAllLocked(force));
+    }
+
+    private PluginResult disableAllLocked(boolean force) {
         var successful = true;
-        for (var plugin : new ArrayList<>(getPlugins())) {
-            if (isProtected(plugin) || isIgnored(plugin)) continue;
-            if (!unload(plugin).success()) successful = false;
+        var plugins = new ArrayList<>(dependencyOrder(getPlugins()));
+        Collections.reverse(plugins);
+        for (var plugin : plugins) {
+            if (isAlwaysProtected(plugin) || isIgnored(plugin) || (!force && requiresForce(plugin))) continue;
+            if (!unloadLocked(plugin, force).success()) successful = false;
         }
         return new PluginResult(successful, "plugins.disabled-all");
     }
@@ -180,12 +223,12 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public boolean isIgnored(Plugin plugin) {
-        return plugin != null && (isProtected(plugin) || isIgnored(plugin.getName()));
+        return plugin != null && isIgnored(plugin.getName());
     }
 
     @Override
     public boolean isIgnored(String plugin) {
-        if (isProtected(plugin)) return true;
+        if (isAlwaysProtected(plugin)) return true;
         var configManager = PlugManVelocity.getInstance().get(PlugManConfigurationManager.class);
         return configManager != null && configManager.getIgnoredPlugins().stream()
                 .anyMatch(ignored -> ignored.equalsIgnoreCase(plugin));
@@ -193,19 +236,52 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public PluginResult load(String name) {
+        return serialized(() -> loadLocked(name));
+    }
+
+    private PluginResult loadLocked(String name) {
         if (!runtimeAvailable()) return new PluginResult(false, LOAD_INVALID_PLUGIN, name);
         var file = findPluginFile(name);
         if (file == null) return new PluginResult(false, "load.cannot-find", name);
-        return loadPluginFromFile(file);
+        return loadPluginFromFileLocked(file);
     }
 
     @Override
     public PluginResult load(Plugin plugin) {
+        return serialized(() -> loadLocked(plugin));
+    }
+
+    private PluginResult loadLocked(Plugin plugin) {
         if (plugin == null) return new PluginResult(false, LOAD_INVALID_PLUGIN);
         var id = plugin.getName().toLowerCase(Locale.ROOT);
         var file = unloadedPluginFiles.get(id);
         if (file == null) file = plugin.getFile();
-        return loadPluginFromFile(file);
+        var result = loadPluginFromFileLocked(file);
+        if (result.success() || !reloadBackups.containsKey(id)) return result;
+        return restoreReloadBackup(id, result);
+    }
+
+    @Override
+    public void beginCommandUpdateBatch() {
+        operationLock.lock();
+        operationBatchDepth.set(operationBatchDepth.get() + 1);
+    }
+
+    @Override
+    public void endCommandUpdateBatch() {
+        var depth = operationBatchDepth.get();
+        if (depth <= 0) return;
+
+        try {
+            if (depth == 1) {
+                discardAllReloadBackups();
+                operationBatchDepth.remove();
+            } else {
+                operationBatchDepth.set(depth - 1);
+            }
+        } finally {
+            operationLock.unlock();
+        }
     }
 
     @SneakyThrows
@@ -219,16 +295,29 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public PluginResult unload(Plugin plugin) {
+        return unload(plugin, false);
+    }
+
+    @Override
+    public PluginResult unload(Plugin plugin, boolean force) {
+        return serialized(() -> unloadLocked(plugin, force));
+    }
+
+    private PluginResult unloadLocked(Plugin plugin, boolean force) {
         if (!runtimeAvailable() || !(plugin instanceof VelocityPlugin velocityPlugin)) {
             return new PluginResult(false, "unload.failed", plugin == null ? UNKNOWN_PLUGIN : plugin.getName());
         }
-        if (isProtected(plugin)) return new PluginResult(false, "error.ignored", plugin.getName());
+        if (isAlwaysProtected(plugin)) return new PluginResult(false, "error.ignored", plugin.getName());
+        if (!force && requiresForce(plugin)) {
+            return new PluginResult(false, "velocity.force-required", plugin.getName());
+        }
 
         var container = velocityPlugin.pluginContainer();
         var file = plugin.getFile();
         var startedAt = System.nanoTime();
         debug("Starting unload for {}", plugin.getName());
         try {
+            prepareReloadBackup(plugin);
             runtime.unload(getServer(), container, debugConsumer());
             if (file != null) {
                 var id = plugin.getName().toLowerCase(Locale.ROOT);
@@ -237,7 +326,8 @@ public class VelocityPluginManager implements PluginManager {
             }
             debug("Completed unload for {} in {} ms", plugin.getName(), elapsedMillis(startedAt));
             return new PluginResult(true, "unload.unloaded", plugin.getName());
-        } catch (ReflectiveOperationException | RuntimeException exception) {
+        } catch (ReflectiveOperationException | IOException | RuntimeException exception) {
+            discardReloadBackup(plugin.getName());
             debug("Unload for {} failed after {} ms: {}", plugin.getName(), elapsedMillis(startedAt), exception);
             logFailure("unload", plugin.getName(), exception);
             return new PluginResult(false, "unload.failed", plugin.getName());
@@ -288,6 +378,10 @@ public class VelocityPluginManager implements PluginManager {
     }
 
     public PluginResult loadPluginFromFile(File file) {
+        return serialized(() -> loadPluginFromFileLocked(file));
+    }
+
+    private PluginResult loadPluginFromFileLocked(File file) {
         if (!runtimeAvailable() || file == null || !file.isFile()) {
             return new PluginResult(false, LOAD_INVALID_PLUGIN, file == null ? UNKNOWN_PLUGIN : file.getName());
         }
@@ -297,7 +391,7 @@ public class VelocityPluginManager implements PluginManager {
         try {
             var description = runtime.readDescription(getServer(), file.toPath());
             debug("Read plugin description for {} after {} ms", description.getId(), elapsedMillis(startedAt));
-            if (isProtected(description.getId()) || isIgnored(description.getId())) {
+            if (isAlwaysProtected(description.getId()) || isIgnored(description.getId())) {
                 return new PluginResult(false, "error.ignored", description.getId());
             }
             if (getServer().getPluginManager().isLoaded(description.getId())) {
@@ -314,6 +408,8 @@ public class VelocityPluginManager implements PluginManager {
             var id = container.getDescription().getId().toLowerCase(Locale.ROOT);
             unloadedPluginFiles.remove(id);
             unloadedPlugins.remove(id);
+            discardReloadBackup(id);
+            cacheKnownGoodPluginJar(id, file.toPath());
             debug("Completed load for {} in {} ms", container.getDescription().getId(), elapsedMillis(startedAt));
             return new PluginResult(true, "load.loaded", container.getDescription().getId());
         } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
@@ -329,6 +425,146 @@ public class VelocityPluginManager implements PluginManager {
                 .map(dependency -> dependency.getId())
                 .filter(dependency -> !getServer().getPluginManager().isLoaded(dependency))
                 .toList();
+    }
+
+    static List<Plugin> dependencyOrder(Collection<? extends Plugin> plugins) {
+        var byId = new java.util.LinkedHashMap<String, Plugin>();
+        for (var plugin : plugins) {
+            byId.putIfAbsent(plugin.getName().toLowerCase(Locale.ROOT), plugin);
+        }
+        var ordered = new ArrayList<Plugin>();
+        var visiting = new HashSet<String>();
+        var visited = new HashSet<String>();
+        byId.values().stream()
+                .sorted(java.util.Comparator.comparing(Plugin::getName, String.CASE_INSENSITIVE_ORDER))
+                .forEach(plugin -> visitDependencies(plugin, byId, visiting, visited, ordered));
+        return ordered;
+    }
+
+    private static void visitDependencies(Plugin plugin,
+                                          Map<String, Plugin> byId,
+                                          Set<String> visiting,
+                                          Set<String> visited,
+                                          List<Plugin> ordered) {
+        var id = plugin.getName().toLowerCase(Locale.ROOT);
+        if (visited.contains(id) || !visiting.add(id)) return;
+        for (var dependencyId : plugin.getDepend()) {
+            var dependency = byId.get(dependencyId.toLowerCase(Locale.ROOT));
+            if (dependency != null) visitDependencies(dependency, byId, visiting, visited, ordered);
+        }
+        visiting.remove(id);
+        if (visited.add(id)) ordered.add(plugin);
+    }
+
+    private void prepareReloadBackup(Plugin plugin) throws IOException {
+        if (operationBatchDepth.get() <= 0 || plugin == null) return;
+        var source = plugin.getFile();
+        if (source == null || !source.isFile()) return;
+
+        var backupDirectory = PlugManVelocity.getInstance().getDataDirectory().resolve("reload-backups");
+        Files.createDirectories(backupDirectory);
+        var id = plugin.getName().toLowerCase(Locale.ROOT);
+        if (reloadBackups.containsKey(id)) return;
+        var knownGoodSource = knownGoodPluginJars.getOrDefault(id, source.toPath());
+        var backup = Files.createTempFile(backupDirectory, sanitizeFileName(id) + "-", ".jar");
+        Files.copy(knownGoodSource, backup, StandardCopyOption.REPLACE_EXISTING);
+        reloadBackups.put(id, new ReloadBackup(source.toPath(), backup));
+        debug("Created reload backup for {}", plugin.getName());
+    }
+
+    private PluginResult restoreReloadBackup(String id, PluginResult loadFailure) {
+        var backup = reloadBackups.remove(id.toLowerCase(Locale.ROOT));
+        if (backup == null) return loadFailure;
+
+        try {
+            Files.copy(backup.backup(), backup.original(), StandardCopyOption.REPLACE_EXISTING);
+            var restored = loadPluginFromFileLocked(backup.original().toFile());
+            if (!restored.success()) return loadFailure;
+            debug("Restored previous plugin jar for {} after failed reload", id);
+            return new PluginResult(false, "load.rollback-restored", id);
+        } catch (IOException exception) {
+            PlugManVelocity.getInstance().getLogger().error("Failed to restore reload backup for {}", id, exception);
+            return loadFailure;
+        } finally {
+            deleteBackup(backup);
+        }
+    }
+
+    private void discardReloadBackup(String id) {
+        if (id == null) return;
+        var backup = reloadBackups.remove(id.toLowerCase(Locale.ROOT));
+        if (backup != null) deleteBackup(backup);
+    }
+
+    private void discardAllReloadBackups() {
+        for (var id : List.copyOf(reloadBackups.keySet())) discardReloadBackup(id);
+    }
+
+    private void deleteBackup(ReloadBackup backup) {
+        try {
+            Files.deleteIfExists(backup.backup());
+        } catch (IOException exception) {
+            PlugManVelocity.getInstance().getLogger().warn(
+                    "Failed to delete temporary reload backup {}", backup.backup(), exception);
+        }
+    }
+
+    private static String sanitizeFileName(String value) {
+        return value.replaceAll("[^a-zA-Z0-9._-]", "_");
+    }
+
+    private void initializeKnownGoodPluginCache() {
+        try {
+            var cacheDirectory = knownGoodCacheDirectory();
+            Files.createDirectories(cacheDirectory);
+            try (Stream<Path> files = Files.list(cacheDirectory)) {
+                files.filter(Files::isRegularFile).forEach(path -> {
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (IOException exception) {
+                        PlugManVelocity.getInstance().getLogger().warn(
+                                "Failed to delete stale Velocity reload cache file {}", path, exception);
+                    }
+                });
+            }
+            for (var container : getServer().getPluginManager().getPlugins()) {
+                var source = container.getDescription().getSource();
+                if (source.isPresent() && Files.isRegularFile(source.get())) {
+                    cacheKnownGoodPluginJar(container.getDescription().getId(), source.get());
+                }
+            }
+        } catch (IOException | RuntimeException exception) {
+            PlugManVelocity.getInstance().getLogger().warn(
+                    "Failed to initialize the Velocity known-good plugin cache", exception);
+        }
+    }
+
+    private void cacheKnownGoodPluginJar(String pluginId, Path source) {
+        if (pluginId == null || source == null || !Files.isRegularFile(source)) return;
+        var id = pluginId.toLowerCase(Locale.ROOT);
+        try {
+            var cacheDirectory = knownGoodCacheDirectory();
+            Files.createDirectories(cacheDirectory);
+            var cachedJar = cacheDirectory.resolve(sanitizeFileName(id) + ".jar");
+            Files.copy(source, cachedJar, StandardCopyOption.REPLACE_EXISTING);
+            knownGoodPluginJars.put(id, cachedJar);
+        } catch (IOException exception) {
+            PlugManVelocity.getInstance().getLogger().warn(
+                    "Failed to update the known-good reload cache for {}", pluginId, exception);
+        }
+    }
+
+    private Path knownGoodCacheDirectory() {
+        return PlugManVelocity.getInstance().getDataDirectory().resolve("reload-cache");
+    }
+
+    private <T> T serialized(Supplier<T> operation) {
+        operationLock.lock();
+        try {
+            return operation.get();
+        } finally {
+            operationLock.unlock();
+        }
     }
 
     private boolean hasPluginId(Path file, String expectedName) {
@@ -354,15 +590,15 @@ public class VelocityPluginManager implements PluginManager {
         return runtime != null;
     }
 
-    public boolean isExperimentalRuntimeAvailable() {
+    public boolean isDevelopmentRuntimeAvailable() {
         return runtimeAvailable();
     }
 
-    public String getExperimentalRuntimeAdapterName() {
+    public String getDevelopmentRuntimeAdapterName() {
         return runtimeAvailable() ? runtime.adapterName() : "unavailable";
     }
 
-    public String getExperimentalRuntimeCompatibilityWarning() {
+    public String getDevelopmentRuntimeCompatibilityWarning() {
         return runtimeAvailable() ? runtime.compatibilityWarning() : null;
     }
 
@@ -385,18 +621,44 @@ public class VelocityPluginManager implements PluginManager {
         return (System.nanoTime() - startedAt) / 1_000_000L;
     }
 
-    private boolean isProtected(Plugin plugin) {
-        return plugin != null && isProtected(plugin.getName());
+    @Override
+    public boolean requiresForce(Plugin plugin) {
+        return plugin != null && isForceProtectedPluginId(plugin.getName());
     }
 
-    private boolean isProtected(String id) {
-        return id != null && PROTECTED_PLUGIN_IDS.contains(id.toLowerCase(Locale.ROOT));
+    @Override
+    public boolean supportsForceFlag() {
+        return true;
+    }
+
+    private boolean isAlwaysProtected(Plugin plugin) {
+        return plugin != null && isAlwaysProtected(plugin.getName());
+    }
+
+    private boolean isAlwaysProtected(String id) {
+        return id != null && ALWAYS_PROTECTED_PLUGIN_IDS.contains(id.toLowerCase(Locale.ROOT));
+    }
+
+    static boolean isForceProtectedPluginId(String id) {
+        return id != null && FORCE_PROTECTED_PLUGIN_IDS.contains(id.toLowerCase(Locale.ROOT));
     }
 
     private void logFailure(String operation, String plugin, Throwable throwable) {
         var cause = throwable instanceof InvocationTargetException invocation && invocation.getCause() != null
                 ? invocation.getCause() : throwable;
         PlugManVelocity.getInstance().getLogger().error(
-                "Experimental Velocity plugin {} failed for {}", operation, plugin, cause);
+                "Velocity development runtime {} failed for {}", operation, plugin, cause);
+        if (areVelocityCrashDumpsEnabled()) {
+            VelocityCrashDumpWriter.write(operation + " failed for " + plugin, cause);
+        }
+    }
+
+    private boolean areVelocityCrashDumpsEnabled() {
+        var configurationManager = PlugManVelocity.getInstance().get(PlugManConfigurationManager.class);
+        return !(configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig)
+                || velocityConfig.areVelocityCrashDumpsEnabled();
+    }
+
+    private record ReloadBackup(Path original, Path backup) {
     }
 }

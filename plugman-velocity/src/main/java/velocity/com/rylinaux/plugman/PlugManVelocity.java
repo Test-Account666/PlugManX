@@ -164,12 +164,12 @@ public final class PlugManVelocity {
 
         var pluginManager = get(core.com.rylinaux.plugman.plugins.PluginManager.class);
         var runtimeAvailable = pluginManager instanceof VelocityPluginManager velocityManager
-                && velocityManager.isExperimentalRuntimeAvailable();
+                && velocityManager.isDevelopmentRuntimeAvailable();
         var runtimeAdapter = pluginManager instanceof VelocityPluginManager velocityManager
-                ? velocityManager.getExperimentalRuntimeAdapterName()
+                ? velocityManager.getDevelopmentRuntimeAdapterName()
                 : "unavailable";
         var runtimeCompatibilityWarning = pluginManager instanceof VelocityPluginManager velocityManager
-                ? velocityManager.getExperimentalRuntimeCompatibilityWarning()
+                ? velocityManager.getDevelopmentRuntimeCompatibilityWarning()
                 : null;
         var proxyVersion = server.getVersion();
 
@@ -185,11 +185,17 @@ public final class PlugManVelocity {
             sendDiagnosticLine("Velocity reload strategy: ", runtimeAdapter);
             sendDiagnosticLine("Runtime reload capabilities available: ", runtimeAvailable ? "yes" : "no");
             sendDiagnosticLine("Velocity reload debug enabled: ", reloadDebugEnabled ? "yes" : "no");
+            if (configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig) {
+                sendDiagnosticLine("Velocity crash dumps enabled: ",
+                        velocityConfig.areVelocityCrashDumpsEnabled() ? "yes" : "no");
+                sendDiagnosticLine("Velocity dev test functions enabled: ",
+                        velocityConfig.areVelocityDevTestFunctionsEnabled() ? "yes" : "no");
+            }
         }
         sendWarningLine(Component.text(
-                "The PlugManX Velocity build is experimental.", NamedTextColor.YELLOW));
+                "This PlugManX Velocity artifact is a development build.", NamedTextColor.YELLOW));
         sendWarningLine(Component.text(
-                "PlugManX Velocity plugin reload support is experimental.", NamedTextColor.YELLOW));
+                "Velocity runtime plugin management uses unsupported internal APIs.", NamedTextColor.YELLOW));
         if (runtimeCompatibilityWarning != null) {
             sendWarningLine(Component.text(runtimeCompatibilityWarning, NamedTextColor.RED));
         }

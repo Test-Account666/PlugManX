@@ -29,7 +29,13 @@ package velocity.com.rylinaux.plugman.commands;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import core.com.rylinaux.plugman.commands.executables.*;
+import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import velocity.com.rylinaux.plugman.PlugManVelocity;
+import velocity.com.rylinaux.plugman.config.VelocityPlugManConfigurationManager;
+import velocity.com.rylinaux.plugman.logging.VelocityCrashDumpWriter;
+import velocity.com.rylinaux.plugman.pluginmanager.VelocityPluginManager;
 
 import java.util.Arrays;
 import java.util.List;
@@ -52,6 +58,8 @@ public class PlugManCommandHandler implements SimpleCommand {
         var args = invocation.arguments();
         
         var commandName = args.length > 0 ? args[0].toLowerCase() : "help";
+
+        if ("dev".equals(commandName) && executeDevelopmentCommand(sender, args)) return;
 
         var plugManSender = new VelocityCommandSender(sender);
         var registry = PlugManVelocity.getInstance().getServiceRegistry();
@@ -84,7 +92,17 @@ public class PlugManCommandHandler implements SimpleCommand {
         var args = invocation.arguments();
         
         if (args.length <= 1) {
+            if (areDevelopmentTestFunctionsEnabled() && invocation.source().hasPermission("plugman.dev")) {
+                var commands = new java.util.ArrayList<>(Arrays.asList(COMMANDS));
+                commands.add("dev");
+                return commands;
+            }
             return Arrays.asList(COMMANDS);
+        }
+        if (args.length == 2 && "dev".equalsIgnoreCase(args[0])
+                && areDevelopmentTestFunctionsEnabled()
+                && invocation.source().hasPermission("plugman.dev")) {
+            return List.of("status", "crashdump");
         }
         
         // For now, return empty list for sub-command suggestions
@@ -94,5 +112,52 @@ public class PlugManCommandHandler implements SimpleCommand {
     @Override
     public boolean hasPermission(Invocation invocation) {
         return invocation.source().hasPermission("plugman.admin");
+    }
+
+    private boolean executeDevelopmentCommand(CommandSource sender, String[] args) {
+        if (!areDevelopmentTestFunctionsEnabled()) return false;
+        if (!sender.hasPermission("plugman.dev")) {
+            sender.sendMessage(Component.text("[PlugManX] You do not have permission to use development functions.",
+                    NamedTextColor.RED));
+            return true;
+        }
+
+        var action = args.length > 1 ? args[1].toLowerCase() : "status";
+        if ("crashdump".equals(action)) {
+            var result = VelocityCrashDumpWriter.write("Development crash dump test",
+                    new IllegalStateException("User-requested Velocity development dump test"));
+            if (result == null) {
+                sender.sendMessage(Component.text("[PlugManX] Failed to write the test crash dump.",
+                        NamedTextColor.RED));
+            } else {
+                sender.sendMessage(Component.text("[PlugManX] Test crash dump written with ID " + result.id(),
+                        NamedTextColor.GREEN));
+            }
+            return true;
+        }
+
+        if (!"status".equals(action)) {
+            sender.sendMessage(Component.text("[PlugManX] Usage: /plugman dev [status|crashdump]",
+                    NamedTextColor.YELLOW));
+            return true;
+        }
+
+        var plugin = PlugManVelocity.getInstance();
+        var manager = plugin.get(core.com.rylinaux.plugman.plugins.PluginManager.class);
+        var runtimeStatus = manager instanceof VelocityPluginManager velocityManager
+                && velocityManager.isDevelopmentRuntimeAvailable() ? "available" : "unavailable";
+        sender.sendMessage(Component.text("[PlugManX] Velocity development runtime: " + runtimeStatus,
+                NamedTextColor.GREEN));
+        sender.sendMessage(Component.text("[PlugManX] Proxy: " + plugin.getServer().getVersion().getVersion()
+                + ", Java: " + System.getProperty("java.version"), NamedTextColor.GRAY));
+        return true;
+    }
+
+    private static boolean areDevelopmentTestFunctionsEnabled() {
+        var plugin = PlugManVelocity.getInstance();
+        if (plugin == null) return false;
+        var configurationManager = plugin.get(PlugManConfigurationManager.class);
+        return configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig
+                && velocityConfig.areVelocityDevTestFunctionsEnabled();
     }
 }

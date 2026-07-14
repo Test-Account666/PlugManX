@@ -60,6 +60,18 @@ public class FlagUtil {
      * @return the parsed flags and cleaned arguments
      */
     public static ParsedArguments parse(String[] args, char... supportedFlags) {
+        return parse(args, null, supportedFlags);
+    }
+
+    /**
+     * Parse a named long flag and its short equivalent.
+     *
+     * @param args           the command arguments
+     * @param longFlag       the long flag name without leading dashes
+     * @param supportedFlags the supported short flags
+     * @return the parsed flags and cleaned arguments
+     */
+    public static ParsedArguments parse(String[] args, String longFlag, char... supportedFlags) {
         var supported = new HashSet<Character>();
         for (var flag : supportedFlags) supported.add(Character.toLowerCase(flag));
 
@@ -68,6 +80,11 @@ public class FlagUtil {
 
         for (var argument : args) {
             if (argument == null) continue;
+
+            if (longFlag != null && argument.equalsIgnoreCase("--" + longFlag)) {
+                if (!supported.isEmpty()) flags.add(supportedFlags[0]);
+                continue;
+            }
 
             if (argument.length() == 2 && argument.charAt(0) == '-') {
                 var flag = Character.toLowerCase(argument.charAt(1));

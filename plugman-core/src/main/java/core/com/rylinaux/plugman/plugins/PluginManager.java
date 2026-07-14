@@ -52,10 +52,18 @@ public interface PluginManager {
      */
     PluginResult disable(Plugin plugin);
 
+    default PluginResult disable(Plugin plugin, boolean force) {
+        return disable(plugin);
+    }
+
     /**
      * Disable all plugins.
      */
     PluginResult disableAll();
+
+    default PluginResult disableAll(boolean force) {
+        return disableAll();
+    }
 
     /**
      * Returns the formatted name of the plugin.
@@ -204,6 +212,21 @@ public interface PluginManager {
      * @return the message to send to the user.
      */
     PluginResult unload(Plugin plugin);
+
+    default PluginResult unload(Plugin plugin, boolean force) {
+        return unload(plugin);
+    }
+
+    default boolean requiresForce(Plugin plugin) {
+        return false;
+    }
+
+    /**
+     * Returns whether this platform exposes the Velocity-only force flag.
+     */
+    default boolean supportsForceFlag() {
+        return false;
+    }
 
     /**
      * Returns if the plugin is a Paper plugin.

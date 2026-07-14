@@ -84,6 +84,7 @@ load:
   enable-failed: '&c{0} se cargó, pero falló durante onEnable. Revisa el stacktrace anterior.'
   loaded: '&9{0} ha sido cargado y activado.'
   missing-dependencies: '&cNo se pudo cargar {0}. Dependencias requeridas faltantes: {1}'
+  rollback-restored: '&eLa recarga de {0} falló, pero el archivo JAR anterior fue restaurado y cargado.'
   plugin-dir: '&cCarpeta de plugins no encontrada.'
 lookup:
   found: '&9/{0} está registrado a {1}.'

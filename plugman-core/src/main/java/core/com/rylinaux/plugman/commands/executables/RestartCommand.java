@@ -59,7 +59,7 @@ public class RestartCommand extends CascadingPluginCommand {
     /**
      * The sub permissions of the command.
      */
-    public static final String[] SUB_PERMISSIONS = {"all"};
+    public static final String[] SUB_PERMISSIONS = {"all", "force"};
 
     /**
      * Construct out object.

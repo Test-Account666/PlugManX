@@ -1,6 +1,8 @@
 package velocity.com.rylinaux.plugman.pluginmanager;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -14,21 +16,17 @@ class VelocityRuntimeAdaptersTest {
         assertThrows(IllegalStateException.class, () -> VelocityRuntimeAdapters.find("3.3.9"));
     }
 
-    @Test
-    void selectsVelocity34AdapterForSupportedVelocity3Versions() {
-        var selection = VelocityRuntimeAdapters.find("3.4.0-SNAPSHOT-523");
+    @ParameterizedTest(name = "Velocity {0} uses {1}")
+    @CsvSource({
+            "3.4.0, Velocity 3.4 runtime adapter",
+            "3.5.1, Velocity 3.4 runtime adapter",
+            "3.6.0-SNAPSHOT, Velocity 3.4 runtime adapter",
+            "4.0.0, Velocity 4.0 runtime adapter"
+    })
+    void selectsAdapterForSupportedVelocityVersions(String version, String expectedAdapter) {
+        var selection = VelocityRuntimeAdapters.find(version);
 
-        assertEquals("Velocity 3.4 runtime adapter", selection.adapter().name());
-        assertNull(selection.warning());
-        assertEquals("Velocity 3.4 runtime adapter",
-                VelocityRuntimeAdapters.find("3.9.0").adapter().name());
-    }
-
-    @Test
-    void selectsVelocity40AdapterWithoutWarningForTestedVersion() {
-        var selection = VelocityRuntimeAdapters.find("4.0.0");
-
-        assertEquals("Velocity 4.0 runtime adapter", selection.adapter().name());
+        assertEquals(expectedAdapter, selection.adapter().name());
         assertNull(selection.warning());
     }
 

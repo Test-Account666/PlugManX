@@ -84,6 +84,7 @@ load:
   enable-failed: '&c{0} は読み込まれましたが、onEnable 中に失敗しました。上のスタックトレースを確認してください。'
   loaded: '&9{0} を読み込み、有効化しました。'
   missing-dependencies: '&c{0} を読み込めませんでした。必要な依存関係が不足しています: {1}'
+  rollback-restored: '&e{0} の再読み込みに失敗しましたが、以前のプラグイン JAR を復元して読み込みました。'
   plugin-dir: '&cplugins フォルダーが見つかりません。'
 lookup:
   found: '&9/{0} は {1} に登録されています。'

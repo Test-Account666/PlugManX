@@ -27,4 +27,12 @@ class FlagUtilTest {
         assertFalse(parsed.hasFlag('v'));
         assertArrayEquals(new String[]{"list", "-x"}, parsed.argumentArray());
     }
+
+    @Test
+    void parsesNamedLongFlag() {
+        var parsed = FlagUtil.parse(new String[]{"reload", "luckperms", "--force"}, "force", 'f');
+
+        assertTrue(parsed.hasFlag('f'));
+        assertArrayEquals(new String[]{"reload", "luckperms"}, parsed.argumentArray());
+    }
 }

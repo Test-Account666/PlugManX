@@ -85,6 +85,7 @@ load:
   enable-failed: '&c{0} loaded, but failed during onEnable. Check the stacktrace above.'
   loaded: '&9{0} has been loaded and enabled.'
   missing-dependencies: '&cCould not load {0}. Missing required dependencies: {1}'
+  rollback-restored: '&eReloading {0} failed, but the previous plugin jar was restored and loaded.'
   plugin-dir: '&cPlugin directory not found.'
 lookup:
   found: '&9/{0} is registered to {1}.'

@@ -12,6 +12,7 @@ import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.plugin.PluginDescription;
 import com.velocitypowered.api.plugin.PluginManager;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.scheduler.ScheduledTask;
 import velocity.com.rylinaux.plugman.PlugManVelocity;
 
@@ -25,15 +26,18 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
  * Capability-checked access to Velocity's unsupported runtime plugin lifecycle.
  */
-final class ExperimentalVelocityRuntime {
+final class VelocityDevelopmentRuntime {
     private final String adapterName;
     private final String compatibilityWarning;
     private final Constructor<?> loaderConstructor;
@@ -50,8 +54,11 @@ final class ExperimentalVelocityRuntime {
     private final Field handlerComparator;
     private final Field handlerPlugin;
     private final Method targetedFire;
+    private final Field channelIdentifiers;
+    private final Field pluginClassLoaders;
+    private final Map<ClassLoader, Set<ChannelIdentifier>> pluginChannelsByClassLoader = new ConcurrentHashMap<>();
 
-    private ExperimentalVelocityRuntime(VelocityRuntimeAdapters.Selection selection) throws ReflectiveOperationException {
+    private VelocityDevelopmentRuntime(VelocityRuntimeAdapters.Selection selection) throws ReflectiveOperationException {
         var adapter = selection.adapter();
         adapterName = adapter.name();
         compatibilityWarning = selection.warning();
@@ -79,19 +86,23 @@ final class ExperimentalVelocityRuntime {
         var handlerClass = Class.forName(layout.handlerRegistrationClass());
         handlerPlugin = findField(handlerClass, layout.handlerPluginFields());
         targetedFire = findTargetedFire(eventManagerClass, handlerClass, layout.targetedFireMethods());
+        var channelRegistrarClass = PlugManVelocity.getInstance().getServer().getChannelRegistrar().getClass();
+        channelIdentifiers = findOptionalField(channelRegistrarClass, List.of("identifierMap"));
+        var pluginClassLoaderClass = Class.forName("com.velocitypowered.proxy.plugin.PluginClassLoader");
+        pluginClassLoaders = findOptionalField(pluginClassLoaderClass, List.of("loaders"));
     }
 
-    static ExperimentalVelocityRuntime detect() {
+    static VelocityDevelopmentRuntime detect() {
         try {
             var version = PlugManVelocity.getInstance().getServer().getVersion().getVersion();
             var selection = VelocityRuntimeAdapters.find(version);
             if (selection.warning() != null) {
                 PlugManVelocity.getInstance().getLogger().warn("{}", selection.warning());
             }
-            return new ExperimentalVelocityRuntime(selection);
+            return new VelocityDevelopmentRuntime(selection);
         } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
             PlugManVelocity.getInstance().getLogger().warn(
-                    "Experimental Velocity plugin reload is unavailable on this Velocity build: {}",
+                    "Velocity development runtime is unavailable on this Velocity build: {}",
                     exception.toString());
             return null;
         }
@@ -112,15 +123,18 @@ final class ExperimentalVelocityRuntime {
 
     PluginContainer load(ProxyServer server, Path source, Consumer<String> debug) throws ReflectiveOperationException {
         var startedAt = System.nanoTime();
+        var channelsBeforeLoad = registeredChannels(server);
+        var classLoadersBeforeLoad = registeredPluginClassLoaders();
         var loader = loaderConstructor.newInstance(server, source.getParent());
         debug(debug, startedAt, "Created JavaPluginLoader");
         var candidate = (PluginDescription) loadCandidate.invoke(loader, source);
         debug(debug, startedAt, "Loaded plugin candidate");
-        var description = (PluginDescription) createPluginFromCandidate.invoke(loader, candidate);
-        var container = (PluginContainer) containerConstructor.newInstance(description);
-        debug(debug, startedAt, "Created plugin description and container");
+        PluginContainer container = null;
         var registered = false;
         try {
+            var description = (PluginDescription) createPluginFromCandidate.invoke(loader, candidate);
+            container = (PluginContainer) containerConstructor.newInstance(description);
+            debug(debug, startedAt, "Created plugin description and container");
             var pluginModule = (Module) createModule.invoke(loader, container);
             var commonModule = createCommonModule(server, container);
             debug(debug, startedAt, "Created dependency injection modules");
@@ -137,9 +151,17 @@ final class ExperimentalVelocityRuntime {
             debug(debug, startedAt, "Registered annotated event handlers");
             var initializeHandlers = fireForPlugin(server.getEventManager(), container, new ProxyInitializeEvent());
             debug(debug, startedAt, "Ran " + initializeHandlers + " ProxyInitializeEvent handlers");
+            trackPluginChannels(server, container, channelsBeforeLoad, debug, startedAt);
             return container;
         } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
-            var rollbackFailure = rollbackFailedLoad(server, container, registered, debug, startedAt);
+            VelocityCleanupException rollbackFailure;
+            if (container == null) {
+                rollbackFailure = rollbackFailedCandidateLoad(classLoadersBeforeLoad, debug, startedAt);
+            } else {
+                trackPluginChannels(server, container, channelsBeforeLoad, debug, startedAt);
+                rollbackFailure = rollbackFailedLoad(
+                        server, container, registered, classLoadersBeforeLoad, debug, startedAt);
+            }
             if (rollbackFailure != null) exception.addSuppressed(rollbackFailure);
             throw exception;
         }
@@ -167,7 +189,11 @@ final class ExperimentalVelocityRuntime {
             var commandCount = unregisterCommands(server, container, instance);
             debug(debug, startedAt, "Unregistered " + commandCount + " command aliases");
         });
-        var leakSnapshot = captureLeakSnapshot(server, container, instance, debug, startedAt);
+        cleanupStep("messaging channels", failures, debug, startedAt, () -> {
+            var channelCount = unregisterPluginChannels(server, container, classLoader);
+            debug(debug, startedAt, "Unregistered " + channelCount + " messaging channels");
+        });
+        var leakSnapshot = captureLeakSnapshot(server, container, instance, classLoader, debug, startedAt);
         cleanupStep("plugin registry", failures, debug, startedAt, () -> {
             var removed = pluginMap(server.getPluginManager()).remove(container.getDescription().getId()) != null;
             debug(debug, startedAt, "Removed plugin registry entry: " + removed);
@@ -186,6 +212,7 @@ final class ExperimentalVelocityRuntime {
         });
 
         if (classLoader != null) inspectLeaks(leakSnapshot, classLoader, debug, startedAt);
+        pluginChannelsByClassLoader.remove(classLoader);
         if (!failures.isEmpty()) {
             throw new VelocityCleanupException(container.getDescription().getId(), failures);
         }
@@ -194,6 +221,7 @@ final class ExperimentalVelocityRuntime {
     private LeakSnapshot captureLeakSnapshot(ProxyServer server,
                                              PluginContainer container,
                                              Object instance,
+                                             ClassLoader classLoader,
                                              Consumer<String> debug,
                                              long startedAt) {
         if (debug == null) return null;
@@ -202,7 +230,8 @@ final class ExperimentalVelocityRuntime {
             return new LeakSnapshot(
                     countListeners(server.getEventManager(), container),
                     server.getScheduler().tasksByPlugin(instance).size(),
-                    findOwnedCommandAliases(server, container, instance));
+                    findOwnedCommandAliases(server, container, instance),
+                    findRemainingPluginChannels(server, classLoader));
         } catch (ReflectiveOperationException | RuntimeException exception) {
             debug(debug, startedAt, "WARNING: unload registration leak check failed: " + exception);
             return null;
@@ -219,24 +248,34 @@ final class ExperimentalVelocityRuntime {
             var remainingListeners = snapshot == null ? -1 : snapshot.listeners();
             var remainingTasks = snapshot == null ? -1 : snapshot.tasks();
             var remainingCommands = snapshot == null ? List.<String>of() : snapshot.commands();
+            var remainingChannels = snapshot == null ? List.<String>of() : snapshot.channels();
             var remainingThreads = findOwnedThreads(classLoader);
 
             if (snapshot != null && remainingListeners == 0 && remainingTasks == 0
-                    && remainingCommands.isEmpty() && remainingThreads.isEmpty()) {
-                debug(debug, startedAt, "Leak check passed: no listeners, tasks, commands, or plugin threads remain");
+                    && remainingCommands.isEmpty() && remainingChannels.isEmpty() && remainingThreads.isEmpty()) {
+                debug(debug, startedAt,
+                        "Leak check passed: no listeners, tasks, commands, classloader-owned messaging channels, "
+                                + "or plugin threads remain");
                 return;
             }
 
             if (snapshot != null) {
                 debug(debug, startedAt, "WARNING: unload leak check found " + remainingListeners
                         + " listeners, " + remainingTasks + " tasks, " + remainingCommands.size()
-                        + " command aliases, and " + remainingThreads.size() + " plugin threads still registered");
+                        + " command aliases, " + remainingChannels.size()
+                        + " classloader-owned messaging channels, and "
+                        + remainingThreads.size() + " plugin threads still registered");
             } else if (!remainingThreads.isEmpty()) {
                 debug(debug, startedAt, "WARNING: unload leak check found " + remainingThreads.size()
                         + " plugin threads still running; registration leak counts were unavailable");
             }
             if (!remainingCommands.isEmpty()) {
                 debug(debug, startedAt, "WARNING: remaining command aliases: " + String.join(", ", remainingCommands));
+            }
+            if (!remainingChannels.isEmpty()) {
+                debug(debug, startedAt,
+                        "WARNING: messaging channels still owned by the unloaded classloader: "
+                                + String.join(", ", remainingChannels));
             }
             if (!remainingThreads.isEmpty()) {
                 debug(debug, startedAt, "WARNING: remaining plugin threads: " + String.join(", ", remainingThreads));
@@ -283,6 +322,77 @@ final class ExperimentalVelocityRuntime {
         return threads;
     }
 
+    private void trackPluginChannels(ProxyServer server,
+                                     PluginContainer container,
+                                     Set<ChannelIdentifier> channelsBeforeLoad,
+                                     Consumer<String> debug,
+                                     long startedAt) {
+        if (channelIdentifiers == null) return;
+        try {
+            var addedChannels = new HashSet<>(registeredChannels(server));
+            addedChannels.removeAll(channelsBeforeLoad);
+            if (addedChannels.isEmpty()) return;
+            var instance = container.getInstance().orElse(null);
+            if (instance == null) return;
+            var classLoader = instance.getClass().getClassLoader();
+            pluginChannelsByClassLoader.merge(classLoader, addedChannels, (tracked, added) -> {
+                var merged = new HashSet<>(tracked);
+                merged.addAll(added);
+                return merged;
+            });
+            debug(debug, startedAt, "Associated " + addedChannels.size()
+                    + " newly registered messaging channels with classloader " + describeClassLoader(classLoader));
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            debug(debug, startedAt, "WARNING: messaging channel tracking failed: " + exception);
+        }
+    }
+
+    private int unregisterPluginChannels(ProxyServer server,
+                                         PluginContainer container,
+                                         ClassLoader classLoader) throws IllegalAccessException {
+        var channels = findPluginChannels(server, container, classLoader);
+        if (channels == null || channels.isEmpty()) return 0;
+        server.getChannelRegistrar().unregister(channels.toArray(ChannelIdentifier[]::new));
+        return channels.size();
+    }
+
+    private Set<ChannelIdentifier> findPluginChannels(ProxyServer server,
+                                                       PluginContainer container,
+                                                       ClassLoader classLoader)
+            throws IllegalAccessException {
+        var pluginId = container.getDescription().getId().toLowerCase(java.util.Locale.ROOT);
+        var channels = classLoader == null
+                ? new HashSet<ChannelIdentifier>()
+                : new HashSet<>(pluginChannelsByClassLoader.getOrDefault(classLoader, Set.of()));
+        var namespace = pluginId + ":";
+        registeredChannels(server).stream()
+                .filter(channel -> channel.getId().toLowerCase(java.util.Locale.ROOT).startsWith(namespace))
+                .forEach(channels::add);
+        return channels;
+    }
+
+    private List<String> findRemainingPluginChannels(ProxyServer server, ClassLoader classLoader)
+            throws IllegalAccessException {
+        if (classLoader == null) return List.of();
+        var tracked = pluginChannelsByClassLoader.get(classLoader);
+        if (tracked == null || tracked.isEmpty()) return List.of();
+        var registered = registeredChannels(server);
+        return tracked.stream().filter(registered::contains).map(ChannelIdentifier::getId)
+                .sorted(String.CASE_INSENSITIVE_ORDER).toList();
+    }
+
+    private static String describeClassLoader(ClassLoader classLoader) {
+        return classLoader.getClass().getName() + "@"
+                + Integer.toHexString(System.identityHashCode(classLoader));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Set<ChannelIdentifier> registeredChannels(ProxyServer server) throws IllegalAccessException {
+        if (channelIdentifiers == null) return Set.of();
+        var identifiers = (Map<String, ChannelIdentifier>) channelIdentifiers.get(server.getChannelRegistrar());
+        return new HashSet<>(identifiers.values());
+    }
+
     private static void cleanupStep(String name,
                                     List<CleanupFailure> failures,
                                     Consumer<String> debug,
@@ -316,6 +426,7 @@ final class ExperimentalVelocityRuntime {
     private VelocityCleanupException rollbackFailedLoad(ProxyServer server,
                                                         PluginContainer container,
                                                         boolean registered,
+                                                        Set<Closeable> classLoadersBeforeLoad,
                                                         Consumer<String> debug,
                                                         long startedAt) {
         var instance = container.getInstance().orElse(null);
@@ -328,18 +439,34 @@ final class ExperimentalVelocityRuntime {
                 () -> cancelRollbackTasks(server, instance));
         cleanupStep("rollback commands", failures, debug, startedAt,
                 () -> unregisterRollbackCommands(server, container, instance));
-        var leakSnapshot = captureRollbackLeakSnapshot(server, container, instance, registered, debug, startedAt);
+        cleanupStep("rollback messaging channels", failures, debug, startedAt,
+                () -> unregisterPluginChannels(server, container, classLoader));
+        var leakSnapshot = captureRollbackLeakSnapshot(
+                server, container, instance, classLoader, registered, debug, startedAt);
         cleanupStep("rollback plugin registry", failures, debug, startedAt,
                 () -> removeRollbackPlugin(server, container, registered));
         cleanupStep("rollback instance registry", failures, debug, startedAt,
                 () -> removeRollbackInstance(server, instance, registered));
         cleanupStep("rollback plugin classloader", failures, debug, startedAt,
                 () -> closeRollbackClassLoader(classLoader));
+        cleanupStep("rollback orphaned plugin classloaders", failures, debug, startedAt,
+                () -> closeNewPluginClassLoaders(classLoadersBeforeLoad));
 
         if (classLoader != null) inspectLeaks(leakSnapshot, classLoader, debug, startedAt);
+        if (classLoader != null) pluginChannelsByClassLoader.remove(classLoader);
         if (failures.isEmpty()) return null;
 
         return new VelocityCleanupException(container.getDescription().getId(), failures);
+    }
+
+    private VelocityCleanupException rollbackFailedCandidateLoad(Set<Closeable> classLoadersBeforeLoad,
+                                                                 Consumer<String> debug,
+                                                                 long startedAt) {
+        var failures = new ArrayList<CleanupFailure>();
+        cleanupStep("rollback candidate classloader", failures, debug, startedAt,
+                () -> closeNewPluginClassLoaders(classLoadersBeforeLoad));
+        if (failures.isEmpty()) return null;
+        return new VelocityCleanupException("candidate", failures);
     }
 
     private void unregisterRollbackListeners(ProxyServer server, Object instance) {
@@ -360,11 +487,12 @@ final class ExperimentalVelocityRuntime {
     private LeakSnapshot captureRollbackLeakSnapshot(ProxyServer server,
                                                       PluginContainer container,
                                                       Object instance,
+                                                      ClassLoader classLoader,
                                                       boolean registered,
                                                       Consumer<String> debug,
                                                       long startedAt) {
         if (!registered || instance == null) return null;
-        return captureLeakSnapshot(server, container, instance, debug, startedAt);
+        return captureLeakSnapshot(server, container, instance, classLoader, debug, startedAt);
     }
 
     private void removeRollbackPlugin(ProxyServer server, PluginContainer container, boolean registered)
@@ -379,6 +507,28 @@ final class ExperimentalVelocityRuntime {
 
     private void closeRollbackClassLoader(ClassLoader classLoader) throws IOException {
         if (classLoader instanceof Closeable closeable) closeable.close();
+    }
+
+    private void closeNewPluginClassLoaders(Set<Closeable> classLoadersBeforeLoad)
+            throws IllegalAccessException, IOException {
+        var currentClassLoaders = registeredPluginClassLoaders();
+        currentClassLoaders.removeAll(classLoadersBeforeLoad);
+        IOException failure = null;
+        for (var classLoader : currentClassLoaders) {
+            try {
+                classLoader.close();
+            } catch (IOException exception) {
+                if (failure == null) failure = exception;
+                else failure.addSuppressed(exception);
+            }
+        }
+        if (failure != null) throw failure;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Set<Closeable> registeredPluginClassLoaders() throws IllegalAccessException {
+        if (pluginClassLoaders == null) return Set.of();
+        return new HashSet<>((Set<Closeable>) pluginClassLoaders.get(null));
     }
 
     private AbstractModule createCommonModule(ProxyServer server, PluginContainer loadingContainer) {
@@ -477,6 +627,14 @@ final class ExperimentalVelocityRuntime {
         throw new NoSuchFieldException(type.getName() + "." + String.join("/", names));
     }
 
+    private static Field findOptionalField(Class<?> type, List<String> names) {
+        try {
+            return findField(type, names);
+        } catch (NoSuchFieldException ignored) {
+            return null;
+        }
+    }
+
     private static <T extends java.lang.reflect.AccessibleObject> T accessible(T object) {
         object.setAccessible(true);
         return object;
@@ -490,7 +648,7 @@ final class ExperimentalVelocityRuntime {
     private record CleanupFailure(String step, Throwable cause) {
     }
 
-    private record LeakSnapshot(int listeners, int tasks, List<String> commands) {
+    private record LeakSnapshot(int listeners, int tasks, List<String> commands, List<String> channels) {
     }
 
     private static final class VelocityCleanupException extends ReflectiveOperationException {
