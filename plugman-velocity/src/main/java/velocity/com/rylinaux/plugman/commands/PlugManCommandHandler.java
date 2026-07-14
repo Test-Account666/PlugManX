@@ -62,8 +62,10 @@ public class PlugManCommandHandler implements SimpleCommand {
             case "info" -> new InfoCommand(plugManSender, registry);
             case "lookup" -> new LookupCommand(plugManSender, registry);
             case "usage" -> new UsageCommand(plugManSender, registry);
-            case "enable", "load" -> new LoadCommand(plugManSender, registry);
-            case "disable", "unload" -> new UnloadCommand(plugManSender, registry);
+            case "enable" -> new EnableCommand(plugManSender, registry);
+            case "load" -> new LoadCommand(plugManSender, registry);
+            case "disable" -> new DisableCommand(plugManSender, registry);
+            case "unload" -> new UnloadCommand(plugManSender, registry);
             case "restart", "reload" -> new ReloadCommand(plugManSender, registry);
             case "check" -> new CheckCommand(plugManSender, registry);
             default -> new HelpCommand(plugManSender, registry);

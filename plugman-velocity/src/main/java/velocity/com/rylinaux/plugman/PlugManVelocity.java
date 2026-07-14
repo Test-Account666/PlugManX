@@ -168,6 +168,9 @@ public final class PlugManVelocity {
         var runtimeAdapter = pluginManager instanceof VelocityPluginManager velocityManager
                 ? velocityManager.getExperimentalRuntimeAdapterName()
                 : "unavailable";
+        var runtimeCompatibilityWarning = pluginManager instanceof VelocityPluginManager velocityManager
+                ? velocityManager.getExperimentalRuntimeCompatibilityWarning()
+                : null;
         var proxyVersion = server.getVersion();
 
         sendWarningLine(Component.text(WARNING_BORDER, NamedTextColor.DARK_GRAY));
@@ -187,6 +190,9 @@ public final class PlugManVelocity {
                 "The PlugManX Velocity build is experimental.", NamedTextColor.YELLOW));
         sendWarningLine(Component.text(
                 "PlugManX Velocity plugin reload support is experimental.", NamedTextColor.YELLOW));
+        if (runtimeCompatibilityWarning != null) {
+            sendWarningLine(Component.text(runtimeCompatibilityWarning, NamedTextColor.RED));
+        }
         sendWarningLine(Component.text(
                         "Also, if you encounter any issues, please join my discord: ", NamedTextColor.YELLOW)
                 .append(Component.text("https://discord.gg/GxEFhVY6ff", NamedTextColor.BLUE)));

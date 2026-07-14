@@ -92,6 +92,17 @@ public interface PluginManager {
     Plugin getPluginByName(String name);
 
     /**
+     * Returns a disabled or unloaded plugin when the platform keeps it outside the active plugin registry.
+     *
+     * @param args  the command arguments
+     * @param start the index to start at
+     * @return the disabled plugin, or {@code null} when unavailable
+     */
+    default Plugin getDisabledPluginByName(String[] args, int start) {
+        return null;
+    }
+
+    /**
      * Returns a List of plugin names.
      *
      * @return list of plugin names

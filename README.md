@@ -28,6 +28,8 @@ the need to restart the server.
 > [!WARNING]
 > Velocity reload support is experimental because Velocity does not expose an official runtime unload API. PlugManX
 > checks the required runtime capabilities before enabling it, but some plugins may still require a full proxy restart.
+> Velocity also has no separate enabled/disabled plugin state. On Velocity, `/plugman enable` loads a previously
+> unloaded plugin and `/plugman disable` fully unloads it.
 
 ## Commands
 
@@ -40,9 +42,9 @@ the need to restart the server.
 | /plugman usage [plugin]               | List commands that a plugin has registered.                       |
 | /plugman deps [plugin]                | Show dependencies and dependent plugins for a plugin.             |
 | /plugman lookup [command]             | Find the plugin a command is registered to.                       |
-| /plugman enable [plugin&#124;all]     | Enable a plugin.                                                  |
-| /plugman disable [plugin&#124;all]    | Disable a plugin.                                                 |
-| /plugman restart [plugin&#124;all]    | Restart (disable/enable) a plugin.                                |
+| /plugman enable [plugin&#124;all]     | Enable a plugin; on Velocity, this loads it.                       |
+| /plugman disable [plugin&#124;all]    | Disable a plugin; on Velocity, this fully unloads it.              |
+| /plugman restart [plugin&#124;all]    | Restart a plugin; on Velocity, this performs unload/load.          |
 | /plugman load [plugin]                | Load a plugin.                                                    |
 | /plugman reload [plugin&#124;all]     | Reload (unload/load) a plugin.                                    |
 | /plugman reloadconfig                 | Reload PlugMan config and messages.                               |

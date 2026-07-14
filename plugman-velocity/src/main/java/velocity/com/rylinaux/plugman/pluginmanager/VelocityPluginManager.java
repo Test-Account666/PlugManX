@@ -45,6 +45,7 @@ public class VelocityPluginManager implements PluginManager {
 
     private final ExperimentalVelocityRuntime runtime = ExperimentalVelocityRuntime.detect();
     private final Map<String, File> unloadedPluginFiles = new ConcurrentHashMap<>();
+    private final Map<String, VelocityPlugin> unloadedPlugins = new ConcurrentHashMap<>();
 
     private ProxyServer getServer() {
         return PlugManVelocity.getInstance().getServer();
@@ -53,10 +54,13 @@ public class VelocityPluginManager implements PluginManager {
     @Override
     public PluginResult enable(Plugin plugin) {
         if (plugin == null) return new PluginResult(false, "error.invalid-plugin");
-        if (getPluginByName(plugin.getName()) != null) {
+        if (getServer().getPluginManager().isLoaded(plugin.getName())) {
             return new PluginResult(false, "enable.already-enabled", plugin.getName());
         }
-        return load(plugin);
+        var result = load(plugin);
+        return result.success()
+                ? new PluginResult(true, "velocity.enabled", plugin.getName())
+                : result;
     }
 
     @Override
@@ -70,7 +74,10 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public PluginResult disable(Plugin plugin) {
-        return unload(plugin);
+        var result = unload(plugin);
+        return result.success()
+                ? new PluginResult(true, "velocity.disabled", plugin.getName())
+                : result;
     }
 
     @Override
@@ -111,6 +118,13 @@ public class VelocityPluginManager implements PluginManager {
     }
 
     @Override
+    public Plugin getDisabledPluginByName(String[] args, int start) {
+        if (args.length <= start) return null;
+        var name = String.join(" ", Arrays.copyOfRange(args, start, args.length));
+        return unloadedPlugins.get(name.toLowerCase(Locale.ROOT));
+    }
+
+    @Override
     public List<String> getPluginNames(boolean fullName) {
         return getPlugins().stream()
                 .map(plugin -> fullName ? getFormattedName(plugin, true) : plugin.getName())
@@ -120,7 +134,10 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public List<String> getDisabledPluginNames(boolean fullName) {
-        return Collections.emptyList();
+        return unloadedPlugins.values().stream()
+                .map(plugin -> fullName ? getFormattedName(plugin, true) : plugin.getName())
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
     }
 
     @Override
@@ -214,7 +231,9 @@ public class VelocityPluginManager implements PluginManager {
         try {
             runtime.unload(getServer(), container, debugConsumer());
             if (file != null) {
-                unloadedPluginFiles.put(plugin.getName().toLowerCase(Locale.ROOT), file);
+                var id = plugin.getName().toLowerCase(Locale.ROOT);
+                unloadedPluginFiles.put(id, file);
+                unloadedPlugins.put(id, velocityPlugin);
             }
             debug("Completed unload for {} in {} ms", plugin.getName(), elapsedMillis(startedAt));
             return new PluginResult(true, "unload.unloaded", plugin.getName());
@@ -292,10 +311,12 @@ public class VelocityPluginManager implements PluginManager {
             }
 
             var container = runtime.load(getServer(), file.toPath(), debugConsumer());
-            unloadedPluginFiles.remove(container.getDescription().getId().toLowerCase(Locale.ROOT));
+            var id = container.getDescription().getId().toLowerCase(Locale.ROOT);
+            unloadedPluginFiles.remove(id);
+            unloadedPlugins.remove(id);
             debug("Completed load for {} in {} ms", container.getDescription().getId(), elapsedMillis(startedAt));
             return new PluginResult(true, "load.loaded", container.getDescription().getId());
-        } catch (ReflectiveOperationException | RuntimeException exception) {
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
             debug("Load for {} failed after {} ms: {}", file.getName(), elapsedMillis(startedAt), exception);
             logFailure("load", file.getName(), exception);
             return new PluginResult(false, LOAD_INVALID_PLUGIN, file.getName());
@@ -339,6 +360,10 @@ public class VelocityPluginManager implements PluginManager {
 
     public String getExperimentalRuntimeAdapterName() {
         return runtimeAvailable() ? runtime.adapterName() : "unavailable";
+    }
+
+    public String getExperimentalRuntimeCompatibilityWarning() {
+        return runtimeAvailable() ? runtime.compatibilityWarning() : null;
     }
 
     private void debug(String message, Object... arguments) {

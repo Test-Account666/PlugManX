@@ -35,6 +35,7 @@ import java.util.function.Consumer;
  */
 final class ExperimentalVelocityRuntime {
     private final String adapterName;
+    private final String compatibilityWarning;
     private final Constructor<?> loaderConstructor;
     private final Constructor<?> containerConstructor;
     private final Method loadCandidate;
@@ -50,8 +51,10 @@ final class ExperimentalVelocityRuntime {
     private final Field handlerPlugin;
     private final Method targetedFire;
 
-    private ExperimentalVelocityRuntime(VelocityRuntimeAdapter adapter) throws ReflectiveOperationException {
+    private ExperimentalVelocityRuntime(VelocityRuntimeAdapters.Selection selection) throws ReflectiveOperationException {
+        var adapter = selection.adapter();
         adapterName = adapter.name();
+        compatibilityWarning = selection.warning();
         var layout = adapter.reflectionLayout();
         var loaderClass = Class.forName(layout.javaPluginLoaderClass());
         var containerClass = Class.forName(layout.pluginContainerClass());
@@ -81,8 +84,12 @@ final class ExperimentalVelocityRuntime {
     static ExperimentalVelocityRuntime detect() {
         try {
             var version = PlugManVelocity.getInstance().getServer().getVersion().getVersion();
-            return new ExperimentalVelocityRuntime(VelocityRuntimeAdapters.find(version));
-        } catch (ReflectiveOperationException | RuntimeException exception) {
+            var selection = VelocityRuntimeAdapters.find(version);
+            if (selection.warning() != null) {
+                PlugManVelocity.getInstance().getLogger().warn("{}", selection.warning());
+            }
+            return new ExperimentalVelocityRuntime(selection);
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
             PlugManVelocity.getInstance().getLogger().warn(
                     "Experimental Velocity plugin reload is unavailable on this Velocity build: {}",
                     exception.toString());
@@ -92,6 +99,10 @@ final class ExperimentalVelocityRuntime {
 
     String adapterName() {
         return adapterName;
+    }
+
+    String compatibilityWarning() {
+        return compatibilityWarning;
     }
 
     PluginDescription readDescription(ProxyServer server, Path source) throws ReflectiveOperationException {
@@ -127,8 +138,9 @@ final class ExperimentalVelocityRuntime {
             var initializeHandlers = fireForPlugin(server.getEventManager(), container, new ProxyInitializeEvent());
             debug(debug, startedAt, "Ran " + initializeHandlers + " ProxyInitializeEvent handlers");
             return container;
-        } catch (ReflectiveOperationException | RuntimeException exception) {
-            rollbackFailedLoad(server, container, registered);
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            var rollbackFailure = rollbackFailedLoad(server, container, registered, debug, startedAt);
+            if (rollbackFailure != null) exception.addSuppressed(rollbackFailure);
             throw exception;
         }
     }
@@ -173,7 +185,7 @@ final class ExperimentalVelocityRuntime {
             }
         });
 
-        inspectLeaks(leakSnapshot, classLoader, debug, startedAt);
+        if (classLoader != null) inspectLeaks(leakSnapshot, classLoader, debug, startedAt);
         if (!failures.isEmpty()) {
             throw new VelocityCleanupException(container.getDescription().getId(), failures);
         }
@@ -301,27 +313,44 @@ final class ExperimentalVelocityRuntime {
         return removed;
     }
 
-    private void rollbackFailedLoad(ProxyServer server, PluginContainer container, boolean registered) {
+    private VelocityCleanupException rollbackFailedLoad(ProxyServer server,
+                                                        PluginContainer container,
+                                                        boolean registered,
+                                                        Consumer<String> debug,
+                                                        long startedAt) {
         var instance = container.getInstance().orElse(null);
-        try {
-            if (registered && instance != null) {
-                server.getEventManager().unregisterListeners(instance);
-                for (ScheduledTask task : List.copyOf(server.getScheduler().tasksByPlugin(instance))) {
-                    task.cancel();
-                }
-                unregisterCommands(server, container, instance);
-                pluginMap(server.getPluginManager()).remove(container.getDescription().getId());
-                instanceMap(server.getPluginManager()).remove(instance);
-            }
+        var classLoader = instance == null ? null : instance.getClass().getClassLoader();
+        var failures = new ArrayList<CleanupFailure>();
 
-            if (instance != null && instance.getClass().getClassLoader() instanceof Closeable closeable) {
-                closeable.close();
+        cleanupStep("rollback event listeners", failures, debug, startedAt, () -> {
+            if (instance != null) server.getEventManager().unregisterListeners(instance);
+        });
+        cleanupStep("rollback scheduled tasks", failures, debug, startedAt, () -> {
+            if (instance == null) return;
+            for (ScheduledTask task : List.copyOf(server.getScheduler().tasksByPlugin(instance))) {
+                task.cancel();
             }
-        } catch (Exception rollbackException) {
-            PlugManVelocity.getInstance().getLogger().error(
-                    "Failed to roll back an incomplete experimental Velocity plugin load",
-                    rollbackException);
-        }
+        });
+        cleanupStep("rollback commands", failures, debug, startedAt, () -> {
+            if (instance != null) unregisterCommands(server, container, instance);
+        });
+        var leakSnapshot = registered && instance != null
+                ? captureLeakSnapshot(server, container, instance, debug, startedAt)
+                : null;
+        cleanupStep("rollback plugin registry", failures, debug, startedAt, () -> {
+            if (registered) pluginMap(server.getPluginManager()).remove(container.getDescription().getId());
+        });
+        cleanupStep("rollback instance registry", failures, debug, startedAt, () -> {
+            if (registered && instance != null) instanceMap(server.getPluginManager()).remove(instance);
+        });
+        cleanupStep("rollback plugin classloader", failures, debug, startedAt, () -> {
+            if (classLoader instanceof Closeable closeable) closeable.close();
+        });
+
+        if (classLoader != null) inspectLeaks(leakSnapshot, classLoader, debug, startedAt);
+        if (failures.isEmpty()) return null;
+
+        return new VelocityCleanupException(container.getDescription().getId(), failures);
     }
 
     private AbstractModule createCommonModule(ProxyServer server, PluginContainer loadingContainer) {

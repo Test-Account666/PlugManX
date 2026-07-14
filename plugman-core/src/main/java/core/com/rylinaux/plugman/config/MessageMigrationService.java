@@ -32,6 +32,14 @@ public class MessageMigrationService {
             "&cAbhängigkeitszyklus erkannt: {0}",
             "&9{0} Plugins wurden in {1} Sekunden neu geladen (&c{2} fehlgeschlagen&9, &e{3} übersprungen&9).",
             "&9{0} Plugins wurden in {1} Sekunden neu gestartet (&c{2} fehlgeschlagen&9, &e{3} übersprungen&9).");
+    private static final VelocityLifecycleMessages DEFAULT_VELOCITY_MESSAGES = new VelocityLifecycleMessages(
+            "&7- &eVelocity: enable loads a plugin; disable fully unloads it.",
+            "&9{0} has been loaded. On Velocity, enable means load; there is no separate enabled state.",
+            "&9{0} has been unloaded. On Velocity, disable means unload; there is no separate disabled state.");
+    private static final VelocityLifecycleMessages GERMAN_VELOCITY_MESSAGES = new VelocityLifecycleMessages(
+            "&7- &eVelocity: enable lädt ein Plugin; disable entlädt es vollständig.",
+            "&9{0} wurde geladen. Auf Velocity bedeutet enable: load; einen separaten Aktiviert-Zustand gibt es nicht.",
+            "&9{0} wurde entladen. Auf Velocity bedeutet disable: unload; einen separaten Deaktiviert-Zustand gibt es nicht.");
     private static final MessageDefaults DEFAULT_MESSAGES = new MessageDefaults(
             "&9Paper Plugins (&b{0}&9): {1}",
             "&9Bukkit Plugins (&e{0}&9): {1}",
@@ -198,7 +206,17 @@ public class MessageMigrationService {
         try {
             var lines = Files.readAllLines(messagesFile.toPath(), StandardCharsets.UTF_8);
             var updatedLines = new ArrayList<>(lines);
-            if (!addMissingMessageEntry(updatedLines, "list", "velocity", defaults.velocityMessage())) return;
+            var lifecycleMessages = messagesFile.getName().equals(GERMAN_MESSAGES_FILE)
+                    ? GERMAN_VELOCITY_MESSAGES
+                    : DEFAULT_VELOCITY_MESSAGES;
+            var changed = addMissingMessageEntry(updatedLines, "list", "velocity", defaults.velocityMessage());
+            changed |= addMissingMessageEntry(updatedLines, HELP_SECTION, "velocity-lifecycle",
+                    lifecycleMessages.helpMessage());
+            changed |= addMissingMessageEntry(updatedLines, "velocity", "enabled",
+                    lifecycleMessages.enabledMessage());
+            changed |= addMissingMessageEntry(updatedLines, "velocity", "disabled",
+                    lifecycleMessages.disabledMessage());
+            if (!changed) return;
 
             Files.write(messagesFile.toPath(), updatedLines, StandardCharsets.UTF_8);
             logger.info("Added missing Velocity messages to " + messagesFile.getName() + ".");
@@ -340,5 +358,10 @@ public class MessageMigrationService {
     private record BulkMessageDefaults(String dependencyCycleMessage,
                                        String reloadSummaryMessage,
                                        String restartSummaryMessage) {
+    }
+
+    private record VelocityLifecycleMessages(String helpMessage,
+                                             String enabledMessage,
+                                             String disabledMessage) {
     }
 }
