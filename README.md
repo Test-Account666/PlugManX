@@ -18,7 +18,7 @@ the need to restart the server.
 * Dump plugin list with versions to a file.
 * Check if a plugin is up-to-date with dev.bukkit.org
 * Load and reload modern Paper plugins that use `paper-plugin.yml`.
-* Development runtime load, unload, and reload support for Velocity plugins.
+* Runtime load, unload, and reload support for Velocity plugins.
 * Clean up Paper plugin manager state, commands, listeners, and provider storage on unload.
 * Reload/restart dependent plugins in a safer order and optionally limit dependent reloads.
 * Confirm dangerous bulk reload/restart operations before affecting many plugins.
@@ -26,7 +26,7 @@ the need to restart the server.
 * Permissions Support - All commands default to OP.
 
 > [!WARNING]
-> The Velocity artifact is a development build because Velocity does not expose an official runtime unload API. PlugManX
+> Velocity does not expose an official runtime unload API. PlugManX
 > checks the required runtime capabilities before enabling it, but some plugins may still require a full proxy restart.
 > Velocity also has no separate enabled/disabled plugin state. On Velocity, `/plugman enable` loads a previously
 > unloaded plugin and `/plugman disable` fully unloads it. All PlugManX Velocity commands are restricted to the proxy
@@ -106,11 +106,7 @@ Important options:
 | Option               | Default       | Description                                                        |
 |----------------------|---------------|--------------------------------------------------------------------|
 | ignored-plugins      | See config    | Plugins PlugManX should not manage.                                |
-| showVelocityWarning         | true  | Shows the Velocity development build warning at startup.           |
-| velocityReloadDebug         | false | Logs detailed Velocity reload phases and timings.                  |
-| velocityDevMode             | false | Enables verbose Velocity development runtime and command logs.     |
-| velocityCrashDumps          | true  | Writes identified crash dumps for Velocity runtime failures.       |
-| velocityDevTestFunctions    | false | Enables protected Velocity development test commands.              |
+| showVelocityWarning  | true          | Shows the Velocity runtime warning at startup.                     |
 | paperReloadDebug     | false         | Enables extra Paper reload diagnostics in console.                 |
 | reloadDependentsMode | REQUIRED_ONLY | Controls dependent reload behavior for reload/restart operations.  |
 

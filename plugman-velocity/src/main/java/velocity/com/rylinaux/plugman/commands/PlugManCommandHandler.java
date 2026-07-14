@@ -48,6 +48,8 @@ import java.util.Locale;
  * @author rylinaux
  */
 public class PlugManCommandHandler implements SimpleCommand {
+    private static final String DEV_PERMISSION = "plugman.dev";
+    private static final String STATUS_ACTION = "status";
     /**
      * Valid command names.
      */
@@ -102,7 +104,7 @@ public class PlugManCommandHandler implements SimpleCommand {
         var args = invocation.arguments();
         
         if (args.length <= 1) {
-            if (areDevelopmentTestFunctionsEnabled() && invocation.source().hasPermission("plugman.dev")) {
+            if (areDevelopmentTestFunctionsEnabled() && invocation.source().hasPermission(DEV_PERMISSION)) {
                 var commands = new java.util.ArrayList<>(Arrays.asList(COMMANDS));
                 commands.add("dev");
                 return commands;
@@ -111,8 +113,8 @@ public class PlugManCommandHandler implements SimpleCommand {
         }
         if (args.length == 2 && "dev".equalsIgnoreCase(args[0])
                 && areDevelopmentTestFunctionsEnabled()
-                && invocation.source().hasPermission("plugman.dev")) {
-            return List.of("status", "crashdump");
+                && invocation.source().hasPermission(DEV_PERMISSION)) {
+            return List.of(STATUS_ACTION, "crashdump");
         }
         
         // For now, return empty list for sub-command suggestions
@@ -126,13 +128,13 @@ public class PlugManCommandHandler implements SimpleCommand {
 
     private boolean executeDevelopmentCommand(CommandSource sender, String[] args) {
         if (!areDevelopmentTestFunctionsEnabled()) return false;
-        if (!sender.hasPermission("plugman.dev")) {
+        if (!sender.hasPermission(DEV_PERMISSION)) {
             sender.sendMessage(Component.text("[PlugManX] You do not have permission to use development functions.",
                     NamedTextColor.RED));
             return true;
         }
 
-        var action = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "status";
+        var action = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : STATUS_ACTION;
         if ("crashdump".equals(action)) {
             var result = VelocityCrashDumpWriter.write("Development crash dump test",
                     new IllegalStateException("User-requested Velocity development dump test"));
@@ -146,7 +148,7 @@ public class PlugManCommandHandler implements SimpleCommand {
             return true;
         }
 
-        if (!"status".equals(action)) {
+        if (!STATUS_ACTION.equals(action)) {
             sender.sendMessage(Component.text("[PlugManX] Usage: /plugman dev [status|crashdump]",
                     NamedTextColor.YELLOW));
             return true;

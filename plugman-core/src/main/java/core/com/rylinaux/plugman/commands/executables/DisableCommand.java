@@ -37,6 +37,7 @@ import core.com.rylinaux.plugman.util.FlagUtil;
  * @author rylinaux
  */
 public class DisableCommand extends AbstractCommand {
+    private static final String FORCE_PERMISSION = "force";
 
     /**
      * The name of the command.
@@ -61,7 +62,7 @@ public class DisableCommand extends AbstractCommand {
     /**
      * The sub permissions of the command.
      */
-    public static final String[] SUB_PERMISSIONS = {"all", "force"};
+    protected static final String[] SUB_PERMISSIONS = {"all", FORCE_PERMISSION};
 
     /**
      * Construct out object.
@@ -82,12 +83,12 @@ public class DisableCommand extends AbstractCommand {
     @Override
     public void execute(CommandSender sender, String label, String[] args) {
         var supportsForce = getPluginManager().supportsForceFlag();
-        var parsedArguments = supportsForce ? FlagUtil.parse(args, "force", 'f') : null;
+        var parsedArguments = supportsForce ? FlagUtil.parse(args, FORCE_PERMISSION, 'f') : null;
         if (parsedArguments != null) {
             args = parsedArguments.argumentArray();
         }
         var force = supportsForce && parsedArguments.hasFlag('f');
-        if (force && !hasPermission("force")) {
+        if (force && !hasPermission(FORCE_PERMISSION)) {
             sendNoPermissionMessage();
             return;
         }

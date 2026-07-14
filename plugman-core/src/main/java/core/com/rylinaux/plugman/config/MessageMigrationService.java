@@ -285,7 +285,7 @@ public class MessageMigrationService {
 
     private boolean removeUnsupportedForceFlags(List<String> lines) {
         var changed = false;
-        var forceCommands = List.of("disable", "reload", "restart", "unload");
+        var forceCommands = List.of("disable", RELOAD_SECTION, RESTART_SECTION, "unload");
         for (var i = 0; i < lines.size(); i++) {
             var trimmed = lines.get(i).trim();
             if (forceCommands.stream().noneMatch(command -> trimmed.startsWith(command + ":"))) continue;

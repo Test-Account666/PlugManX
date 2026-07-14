@@ -125,8 +125,7 @@ public class VelocityPluginManager implements PluginManager {
     private PluginResult disableAllLocked(boolean force) {
         var successful = true;
         var plugins = new ArrayList<>(dependencyOrder(getPlugins()));
-        Collections.reverse(plugins);
-        for (var plugin : plugins) {
+        for (var plugin : plugins.reversed()) {
             if (isAlwaysProtected(plugin) || isIgnored(plugin) || (!force && requiresForce(plugin))) continue;
             if (!unloadLocked(plugin, force).success()) successful = false;
         }
