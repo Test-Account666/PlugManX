@@ -39,6 +39,7 @@ import velocity.com.rylinaux.plugman.pluginmanager.VelocityPluginManager;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Velocity command handler for PlugMan commands.
@@ -56,8 +57,16 @@ public class PlugManCommandHandler implements SimpleCommand {
     public void execute(Invocation invocation) {
         var sender = invocation.source();
         var args = invocation.arguments();
+
+        if (!isVelocityConsole(sender)) {
+            // Normally unreachable because hasPermission() hides the proxy command from players.
+            // Stay silent so PlugManX never conflicts with a backend command of the same name.
+            return;
+        }
+
+        logDevelopmentCommand(args);
         
-        var commandName = args.length > 0 ? args[0].toLowerCase() : "help";
+        var commandName = args.length > 0 ? args[0].toLowerCase(Locale.ROOT) : "help";
 
         if ("dev".equals(commandName) && executeDevelopmentCommand(sender, args)) return;
 
@@ -89,6 +98,7 @@ public class PlugManCommandHandler implements SimpleCommand {
 
     @Override
     public List<String> suggest(Invocation invocation) {
+        if (!isVelocityConsole(invocation.source())) return List.of();
         var args = invocation.arguments();
         
         if (args.length <= 1) {
@@ -111,7 +121,7 @@ public class PlugManCommandHandler implements SimpleCommand {
 
     @Override
     public boolean hasPermission(Invocation invocation) {
-        return invocation.source().hasPermission("plugman.admin");
+        return isVelocityConsole(invocation.source());
     }
 
     private boolean executeDevelopmentCommand(CommandSource sender, String[] args) {
@@ -122,7 +132,7 @@ public class PlugManCommandHandler implements SimpleCommand {
             return true;
         }
 
-        var action = args.length > 1 ? args[1].toLowerCase() : "status";
+        var action = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "status";
         if ("crashdump".equals(action)) {
             var result = VelocityCrashDumpWriter.write("Development crash dump test",
                     new IllegalStateException("User-requested Velocity development dump test"));
@@ -160,4 +170,20 @@ public class PlugManCommandHandler implements SimpleCommand {
         return configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig
                 && velocityConfig.areVelocityDevTestFunctionsEnabled();
     }
+
+    private static boolean isVelocityConsole(CommandSource source) {
+        var plugin = PlugManVelocity.getInstance();
+        return plugin != null && source.equals(plugin.getServer().getConsoleCommandSource());
+    }
+
+    private static void logDevelopmentCommand(String[] args) {
+        var plugin = PlugManVelocity.getInstance();
+        var configurationManager = plugin.get(PlugManConfigurationManager.class);
+        if (!(configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig)
+                || !velocityConfig.isVelocityDevModeEnabled()) return;
+
+        var arguments = args.length == 0 ? "help" : String.join(" ", args);
+        plugin.getLogger().info("[VelocityDev] Console command: /plugman {}", arguments);
+    }
+
 }

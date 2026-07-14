@@ -18,7 +18,7 @@ the need to restart the server.
 * Dump plugin list with versions to a file.
 * Check if a plugin is up-to-date with dev.bukkit.org
 * Load and reload modern Paper plugins that use `paper-plugin.yml`.
-* Experimental runtime load, unload, and reload support for Velocity plugins.
+* Development runtime load, unload, and reload support for Velocity plugins.
 * Clean up Paper plugin manager state, commands, listeners, and provider storage on unload.
 * Reload/restart dependent plugins in a safer order and optionally limit dependent reloads.
 * Confirm dangerous bulk reload/restart operations before affecting many plugins.
@@ -29,7 +29,9 @@ the need to restart the server.
 > The Velocity artifact is a development build because Velocity does not expose an official runtime unload API. PlugManX
 > checks the required runtime capabilities before enabling it, but some plugins may still require a full proxy restart.
 > Velocity also has no separate enabled/disabled plugin state. On Velocity, `/plugman enable` loads a previously
-> unloaded plugin and `/plugman disable` fully unloads it.
+> unloaded plugin and `/plugman disable` fully unloads it. All PlugManX Velocity commands are restricted to the proxy
+> console. The proxy command is hidden from players so `/plugman` can be forwarded to a backend Paper server that also
+> runs PlugManX.
 
 ## Commands
 
@@ -43,10 +45,10 @@ the need to restart the server.
 | /plugman deps [plugin]                | Show dependencies and dependent plugins for a plugin.             |
 | /plugman lookup [command]             | Find the plugin a command is registered to.                       |
 | /plugman enable [plugin&#124;all]     | Enable a plugin; on Velocity, this loads it.                       |
-| /plugman disable [plugin&#124;all] | Disable a plugin; on Velocity, this fully unloads it.                 |
-| /plugman restart [plugin&#124;all] | Restart a plugin; on Velocity, this performs unload/load.             |
+| /plugman disable [plugin&#124;all] | Disable a plugin; on Velocity, this fully unloads it.             |
+| /plugman restart [plugin&#124;all] | Restart a plugin; on Velocity, this performs unload/load.         |
 | /plugman load [plugin]                | Load a plugin.                                                    |
-| /plugman reload [plugin&#124;all] | Reload (unload/load) a plugin.                                        |
+| /plugman reload [plugin&#124;all]  | Reload (unload/load) a plugin.                                    |
 | /plugman reloadconfig                 | Reload PlugMan config and messages.                               |
 | /plugman reloadmode [mode]            | View or change dependent reload mode.                             |
 | /plugman unload [plugin]              | Unload a plugin.                                                  |
@@ -106,6 +108,7 @@ Important options:
 | ignored-plugins      | See config    | Plugins PlugManX should not manage.                                |
 | showVelocityWarning         | true  | Shows the Velocity development build warning at startup.           |
 | velocityReloadDebug         | false | Logs detailed Velocity reload phases and timings.                  |
+| velocityDevMode             | false | Enables verbose Velocity development runtime and command logs.     |
 | velocityCrashDumps          | true  | Writes identified crash dumps for Velocity runtime failures.       |
 | velocityDevTestFunctions    | false | Enables protected Velocity development test commands.              |
 | paperReloadDebug     | false         | Enables extra Paper reload diagnostics in console.                 |

@@ -103,6 +103,7 @@ public final class PlugManVelocity {
         initializer = new VelocityPlugManInitializer(this, container, serviceRegistry, pluginLogger);
 
         initializer.initializeCoreServices();
+        logDevelopmentModeStatus();
         showVelocityWarningIfNeeded();
         initializer.setupMessaging();
 
@@ -190,6 +191,8 @@ public final class PlugManVelocity {
                         velocityConfig.areVelocityCrashDumpsEnabled() ? "yes" : "no");
                 sendDiagnosticLine("Velocity dev test functions enabled: ",
                         velocityConfig.areVelocityDevTestFunctionsEnabled() ? "yes" : "no");
+                sendDiagnosticLine("Velocity development mode enabled: ",
+                        velocityConfig.isVelocityDevModeEnabled() ? "yes" : "no");
             }
         }
         sendWarningLine(Component.text(
@@ -208,6 +211,24 @@ public final class PlugManVelocity {
         sendWarningLine(Component.text(
                 "You can disable this warning by setting 'showVelocityWarning' to false in config.yml",
                 NamedTextColor.YELLOW));
+    }
+
+    private void logDevelopmentModeStatus() {
+        var configurationManager = get(PlugManConfigurationManager.class);
+        if (!(configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig)
+                || !velocityConfig.isVelocityDevModeEnabled()) return;
+
+        var pluginManager = get(core.com.rylinaux.plugman.plugins.PluginManager.class);
+        var adapter = pluginManager instanceof VelocityPluginManager velocityManager
+                ? velocityManager.getDevelopmentRuntimeAdapterName()
+                : "unavailable";
+        logger.info("[VelocityDev] Development mode enabled");
+        logger.info("[VelocityDev] Proxy version: {}, Java version: {}",
+                server.getVersion().getVersion(), System.getProperty("java.version", "Unknown"));
+        logger.info("[VelocityDev] Runtime adapter: {}, crash dumps: {}, test functions: {}",
+                adapter, velocityConfig.areVelocityCrashDumpsEnabled(),
+                velocityConfig.areVelocityDevTestFunctionsEnabled());
+        logger.info("[VelocityDev] Proxy commands are console-only; player commands remain available to backends");
     }
 
     private void sendDiagnosticLine(String label, String value) {

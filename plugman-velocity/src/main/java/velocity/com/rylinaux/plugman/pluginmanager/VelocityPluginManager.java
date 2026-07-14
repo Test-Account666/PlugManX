@@ -603,18 +603,25 @@ public class VelocityPluginManager implements PluginManager {
     }
 
     private void debug(String message, Object... arguments) {
-        if (!isVelocityReloadDebugEnabled()) return;
-        PlugManVelocity.getInstance().getLogger().info("[VelocityReloadDebug] " + message, arguments);
+        if (!isVelocityRuntimeDebugEnabled()) return;
+        var prefix = isVelocityDevelopmentModeEnabled() ? "[VelocityDev] " : "[VelocityReloadDebug] ";
+        PlugManVelocity.getInstance().getLogger().info(prefix + message, arguments);
     }
 
-    private boolean isVelocityReloadDebugEnabled() {
+    private boolean isVelocityRuntimeDebugEnabled() {
         var configurationManager = PlugManVelocity.getInstance().get(PlugManConfigurationManager.class);
         return configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig
-                && velocityConfig.isVelocityReloadDebugEnabled();
+                && (velocityConfig.isVelocityReloadDebugEnabled() || velocityConfig.isVelocityDevModeEnabled());
+    }
+
+    private boolean isVelocityDevelopmentModeEnabled() {
+        var configurationManager = PlugManVelocity.getInstance().get(PlugManConfigurationManager.class);
+        return configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig
+                && velocityConfig.isVelocityDevModeEnabled();
     }
 
     private Consumer<String> debugConsumer() {
-        return isVelocityReloadDebugEnabled() ? this::debug : null;
+        return isVelocityRuntimeDebugEnabled() ? this::debug : null;
     }
 
     private static long elapsedMillis(long startedAt) {

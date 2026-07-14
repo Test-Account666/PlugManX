@@ -16,6 +16,7 @@ auto-reload:
   check-every-seconds: 10
 showVelocityWarning: true
 velocityReloadDebug: false
+velocityDevMode: false
 velocityCrashDumps: true
 velocityDevTestFunctions: false
 

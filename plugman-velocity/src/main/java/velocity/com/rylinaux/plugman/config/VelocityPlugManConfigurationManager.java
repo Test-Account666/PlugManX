@@ -15,6 +15,7 @@ import velocity.com.rylinaux.plugman.logging.VelocityPluginLogger;
  */
 public class VelocityPlugManConfigurationManager extends PlugManConfigurationManager {
     private static final String VELOCITY_RELOAD_DEBUG_KEY = "velocityReloadDebug";
+    private static final String VELOCITY_DEV_MODE_KEY = "velocityDevMode";
     private static final String VELOCITY_CRASH_DUMPS_KEY = "velocityCrashDumps";
     private static final String VELOCITY_DEV_TEST_FUNCTIONS_KEY = "velocityDevTestFunctions";
 
@@ -45,6 +46,9 @@ public class VelocityPlugManConfigurationManager extends PlugManConfigurationMan
         if (!configProvider.contains(VELOCITY_RELOAD_DEBUG_KEY)) {
             configProvider.set(VELOCITY_RELOAD_DEBUG_KEY, false);
         }
+        if (!configProvider.contains(VELOCITY_DEV_MODE_KEY)) {
+            configProvider.set(VELOCITY_DEV_MODE_KEY, false);
+        }
         if (!configProvider.contains(VELOCITY_CRASH_DUMPS_KEY)) {
             configProvider.set(VELOCITY_CRASH_DUMPS_KEY, true);
         }
@@ -56,6 +60,10 @@ public class VelocityPlugManConfigurationManager extends PlugManConfigurationMan
 
     public boolean isVelocityReloadDebugEnabled() {
         return configProvider.getBoolean(VELOCITY_RELOAD_DEBUG_KEY, false);
+    }
+
+    public boolean isVelocityDevModeEnabled() {
+        return configProvider.getBoolean(VELOCITY_DEV_MODE_KEY, false);
     }
 
     public boolean areVelocityCrashDumpsEnabled() {
