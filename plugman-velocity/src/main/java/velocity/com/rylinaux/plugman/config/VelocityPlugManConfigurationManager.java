@@ -15,6 +15,7 @@ import velocity.com.rylinaux.plugman.logging.VelocityPluginLogger;
  */
 public class VelocityPlugManConfigurationManager extends PlugManConfigurationManager {
     private static final String VELOCITY_RELOAD_DEBUG_KEY = "velocityReloadDebug";
+    private static final String SHOW_VELOCITY_WARNING_KEY = "showVelocityWarning";
     private static final String[] REMOVED_DEV_KEYS = {
             "velocityDevMode", "velocityCrashDumps", "velocityDevTestFunctions"
     };
@@ -36,13 +37,21 @@ public class VelocityPlugManConfigurationManager extends PlugManConfigurationMan
     }
 
     @Override
-    protected int getCurrentConfigVersion() {
-        return 6;
+    public void initializeConfiguration() {
+        super.initializeConfiguration();
+        ensureVelocityOptions();
     }
 
     @Override
-    public void initializeConfiguration() {
-        super.initializeConfiguration();
+    public void reloadConfiguration() {
+        super.reloadConfiguration();
+        ensureVelocityOptions();
+    }
+
+    private void ensureVelocityOptions() {
+        if (!configProvider.contains(SHOW_VELOCITY_WARNING_KEY)) {
+            configProvider.set(SHOW_VELOCITY_WARNING_KEY, true);
+        }
         if (!configProvider.contains(VELOCITY_RELOAD_DEBUG_KEY)) {
             configProvider.set(VELOCITY_RELOAD_DEBUG_KEY, false);
         }
@@ -52,6 +61,10 @@ public class VelocityPlugManConfigurationManager extends PlugManConfigurationMan
 
     public boolean isVelocityReloadDebugEnabled() {
         return configProvider.getBoolean(VELOCITY_RELOAD_DEBUG_KEY, false);
+    }
+
+    public boolean isShowVelocityWarningEnabled() {
+        return configProvider.getBoolean(SHOW_VELOCITY_WARNING_KEY, true);
     }
 
     static void removeLegacyDevOptions(YamlConfigurationProvider configProvider) {

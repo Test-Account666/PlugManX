@@ -157,8 +157,8 @@ public final class PlugManVelocity {
 
     private void showVelocityWarningIfNeeded() {
         var configurationManager = get(PlugManConfigurationManager.class);
-        var showDiagnostics = configurationManager != null
-                && configurationManager.getPlugManConfig().isShowVelocityWarning();
+        var showDiagnostics = configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig
+                && velocityConfig.isShowVelocityWarningEnabled();
         var startupState = createVelocityStartupState();
         var proxyVersion = server.getVersion();
 

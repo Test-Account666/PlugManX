@@ -127,21 +127,6 @@
                                 <filter>
                                     <artifact>com.rylinaux:plugman-core</artifact>
                                     <excludes>
-                                        <exclude>core/com/rylinaux/plugman/commands/AbstractCommand*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/commands/executables/CascadingPluginCommand*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/commands/executables/DisableCommand*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/commands/executables/EnableCommand*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/commands/executables/HelpCommand*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/commands/executables/ListCommand*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/commands/executables/ReloadCommand*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/commands/executables/RestartCommand*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/commands/executables/UnloadCommand*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/config/MessageMigrationService*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/config/PlugManConfigurationManager*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/config/model/PlugManConfig*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/initialization/BasePlugManInitializer*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/plugins/PluginManager*</exclude>
-                                        <exclude>core/com/rylinaux/plugman/util/FlagUtil*</exclude>
                                         <exclude>config.yml</exclude>
                                         <exclude>messages*.yml</exclude>
                                     </excludes>

@@ -58,6 +58,7 @@ public class VelocityPluginManager implements PluginManager {
     private final Map<String, String> pendingCleanupWarnings = new ConcurrentHashMap<>();
     private final ReentrantLock operationLock = new ReentrantLock(true);
     private final ThreadLocal<Integer> operationBatchDepth = ThreadLocal.withInitial(() -> 0);
+    private final ThreadLocal<Boolean> forceRequested = ThreadLocal.withInitial(() -> false);
 
     public VelocityPluginManager() {
         initializeKnownGoodPluginCache();
@@ -98,12 +99,7 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public PluginResult disable(Plugin plugin) {
-        return disable(plugin, false);
-    }
-
-    @Override
-    public PluginResult disable(Plugin plugin, boolean force) {
-        return serialized(() -> disableLocked(plugin, force));
+        return serialized(() -> disableLocked(plugin, forceRequested.get()));
     }
 
     private PluginResult disableLocked(Plugin plugin, boolean force) {
@@ -115,12 +111,7 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public PluginResult disableAll() {
-        return disableAll(false);
-    }
-
-    @Override
-    public PluginResult disableAll(boolean force) {
-        return serialized(() -> disableAllLocked(force));
+        return serialized(() -> disableAllLocked(forceRequested.get()));
     }
 
     private PluginResult disableAllLocked(boolean force) {
@@ -160,8 +151,7 @@ public class VelocityPluginManager implements PluginManager {
                 .findFirst().map(this::wrap).orElse(null);
     }
 
-    @Override
-    public Plugin getDisabledPluginByName(String[] args, int start) {
+    public Plugin getUnloadedPluginByName(String[] args, int start) {
         if (args.length <= start) return null;
         var name = String.join(" ", Arrays.copyOfRange(args, start, args.length));
         return unloadedPlugins.get(name.toLowerCase(Locale.ROOT));
@@ -299,14 +289,8 @@ public class VelocityPluginManager implements PluginManager {
         return new CommandMapWrap<>(commandMetas, VelocityCommand::new);
     }
 
-    @Override
     public PluginResult unload(Plugin plugin) {
-        return unload(plugin, false);
-    }
-
-    @Override
-    public PluginResult unload(Plugin plugin, boolean force) {
-        return serialized(() -> unloadLocked(plugin, force));
+        return serialized(() -> unloadLocked(plugin, forceRequested.get()));
     }
 
     private PluginResult unloadLocked(Plugin plugin, boolean force) {
@@ -357,16 +341,6 @@ public class VelocityPluginManager implements PluginManager {
     @Override
     public boolean isPaperPlugin(Plugin plugin) {
         return false;
-    }
-
-    @Override
-    public List<String> getPluginListMessageKeys() {
-        return List.of("list.velocity");
-    }
-
-    @Override
-    public String getPluginListMessageKey(Plugin plugin) {
-        return "list.velocity";
     }
 
     @Override
@@ -657,19 +631,19 @@ public class VelocityPluginManager implements PluginManager {
         return (System.nanoTime() - startedAt) / 1_000_000L;
     }
 
-    @Override
     public boolean requiresForce(Plugin plugin) {
         return plugin != null && isForceProtectedPluginId(plugin.getName());
     }
 
-    @Override
-    public boolean supportsForceFlag() {
-        return true;
-    }
-
-    @Override
-    public boolean supportsTwoPhaseBulkReload() {
-        return true;
+    public void runWithForce(boolean force, Runnable operation) {
+        var previous = forceRequested.get();
+        forceRequested.set(force);
+        try {
+            operation.run();
+        } finally {
+            if (previous) forceRequested.set(true);
+            else forceRequested.remove();
+        }
     }
 
     private boolean isAlwaysProtected(Plugin plugin) {

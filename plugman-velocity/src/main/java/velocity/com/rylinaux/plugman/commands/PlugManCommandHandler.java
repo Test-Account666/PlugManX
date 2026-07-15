@@ -29,11 +29,14 @@ package velocity.com.rylinaux.plugman.commands;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import core.com.rylinaux.plugman.commands.executables.*;
+import core.com.rylinaux.plugman.plugins.PluginManager;
 import velocity.com.rylinaux.plugman.PlugManVelocity;
+import velocity.com.rylinaux.plugman.pluginmanager.VelocityPluginManager;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Velocity command handler for PlugMan commands.
@@ -49,19 +52,23 @@ public class PlugManCommandHandler implements SimpleCommand {
             "check", "deps", "disable", "dump", "enable", "help", "info", "list", "load", "lookup",
             "reload", "reloadconfig", "reloadmode", "restart", "unload", "usage"
     };
+    private static final Set<String> FORCE_COMMANDS = Set.of("disable", "reload", "restart", "unload");
 
     @Override
     public void execute(Invocation invocation) {
         var sender = invocation.source();
-        var args = invocation.arguments();
+        var rawArguments = invocation.arguments();
+        var commandName = rawArguments.length > 0 ? rawArguments[0].toLowerCase(Locale.ROOT) : "help";
+        var parsedArguments = FORCE_COMMANDS.contains(commandName)
+                ? parseArguments(rawArguments)
+                : new ParsedArguments(rawArguments, false);
+        var args = parsedArguments.arguments();
 
         if (!isVelocityConsole(sender)) {
             // Normally unreachable because hasPermission() hides the proxy command from players.
             // Stay silent so PlugManX never conflicts with a backend command of the same name.
             return;
         }
-
-        var commandName = args.length > 0 ? args[0].toLowerCase(Locale.ROOT) : "help";
 
         var plugManSender = new VelocityCommandSender(sender);
         var registry = PlugManVelocity.getInstance().getServiceRegistry();
@@ -90,7 +97,17 @@ public class PlugManCommandHandler implements SimpleCommand {
             return;
         }
 
-        cmd.execute(cmd.getSender(), "plugman", args);
+        if (parsedArguments.force() && (!FORCE_COMMANDS.contains(commandName) || !cmd.hasPermission("force"))) {
+            cmd.sendNoPermissionMessage();
+            return;
+        }
+
+        var pluginManager = registry.get(PluginManager.class);
+        if (pluginManager instanceof VelocityPluginManager velocityManager) {
+            velocityManager.runWithForce(parsedArguments.force(), () -> cmd.execute(cmd.getSender(), "plugman", args));
+        } else {
+            cmd.execute(cmd.getSender(), "plugman", args);
+        }
     }
 
     @Override
@@ -114,6 +131,19 @@ public class PlugManCommandHandler implements SimpleCommand {
     private static boolean isVelocityConsole(CommandSource source) {
         var plugin = PlugManVelocity.getInstance();
         return plugin != null && source.equals(plugin.getServer().getConsoleCommandSource());
+    }
+
+    private static ParsedArguments parseArguments(String[] arguments) {
+        var force = Arrays.stream(arguments)
+                .anyMatch(argument -> argument.equalsIgnoreCase("--force") || argument.equalsIgnoreCase("-f"));
+        if (!force) return new ParsedArguments(arguments, false);
+        var cleaned = Arrays.stream(arguments)
+                .filter(argument -> !argument.equalsIgnoreCase("--force") && !argument.equalsIgnoreCase("-f"))
+                .toArray(String[]::new);
+        return new ParsedArguments(cleaned, true);
+    }
+
+    private record ParsedArguments(String[] arguments, boolean force) {
     }
 
 }

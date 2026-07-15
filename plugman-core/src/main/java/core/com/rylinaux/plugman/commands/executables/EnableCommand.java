@@ -28,6 +28,7 @@ package core.com.rylinaux.plugman.commands.executables;
 
 import core.com.rylinaux.plugman.commands.AbstractCommand;
 import core.com.rylinaux.plugman.commands.CommandSender;
+import core.com.rylinaux.plugman.platform.PlatformCommandAdapter;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 
 /**
@@ -85,7 +86,9 @@ public class EnableCommand extends AbstractCommand {
 
         if (handleAllArgument(args, "all", () -> getPluginManager().enableAll(), "enable.all")) return;
 
-        var target = getPluginManager().getPluginByName(args, 1);
+        var target = getOptional(PlatformCommandAdapter.class)
+                .map(adapter -> adapter.resolveEnableTarget(getPluginManager(), args, 1))
+                .orElseGet(() -> getPluginManager().getPluginByName(args, 1));
 
         if (!validatePlugin(label, target)) return;
 
