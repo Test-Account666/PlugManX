@@ -31,6 +31,7 @@ import core.com.rylinaux.plugman.commands.AbstractCommand;
 import core.com.rylinaux.plugman.commands.CommandSender;
 import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
+import core.com.rylinaux.plugman.util.FlagUtil;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
@@ -86,19 +87,27 @@ public class ListCommand extends AbstractCommand {
      */
     @Override
     public void execute(CommandSender sender, String label, String[] args) {
-        var includeVersions = core.com.rylinaux.plugman.util.FlagUtil.hasFlag(args, 'v');
+        var includeVersions = FlagUtil.parse(args, 'v').hasFlag('v');
 
-        var pluginList = new ArrayList<String>();
         var formatFunction = new PluginStringFunction(includeVersions);
+        var paperPlugins = new ArrayList<String>();
+        var bukkitPlugins = new ArrayList<String>();
 
-        getPluginManager().getPlugins().stream().map(formatFunction).forEach(pluginList::add);
+        getPluginManager().getPlugins().forEach(plugin -> {
+            var pluginList = getPluginManager().isPaperPlugin(plugin) ? paperPlugins : bukkitPlugins;
+            pluginList.add(formatFunction.apply(plugin));
+        });
 
-        pluginList.sort(String.CASE_INSENSITIVE_ORDER);
+        paperPlugins.sort(String.CASE_INSENSITIVE_ORDER);
+        bukkitPlugins.sort(String.CASE_INSENSITIVE_ORDER);
 
-        var plugins = Joiner.on(", ").join(pluginList);
+        sender.sendMessage("list.paper", paperPlugins.size(), formatPluginList(paperPlugins));
+        sender.sendMessage("list.bukkit", bukkitPlugins.size(), formatPluginList(bukkitPlugins));
 
-        sender.sendMessage("list.list", pluginList.size(), plugins);
+    }
 
+    private String formatPluginList(ArrayList<String> plugins) {
+        return plugins.isEmpty() ? "&7None" : Joiner.on(", ").join(plugins);
     }
 
     @RequiredArgsConstructor
@@ -106,8 +115,8 @@ public class ListCommand extends AbstractCommand {
         private final boolean includeVersions;
 
         @Override
-        public String apply(Plugin test) {
-            return getPluginManager().getFormattedName(test, includeVersions);
+        public String apply(Plugin plugin) {
+            return getPluginManager().getFormattedName(plugin, includeVersions);
         }
     }
 }

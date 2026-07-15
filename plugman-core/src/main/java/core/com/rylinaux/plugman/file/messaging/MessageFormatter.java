@@ -29,9 +29,13 @@ package core.com.rylinaux.plugman.file.messaging;
 import core.com.rylinaux.plugman.config.YamlConfigurationProvider;
 import core.com.rylinaux.plugman.messaging.ColorFormatter;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import org.yaml.snakeyaml.Yaml;
 
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Manages custom messages.
@@ -39,10 +43,10 @@ import java.nio.file.Path;
  * @author rylinaux
  */
 @Getter
-@RequiredArgsConstructor
 public class MessageFormatter {
     private final MessageFile messageFile;
     private final ColorFormatter colorFormatter;
+    private final Map<String, String> defaultMessages;
 
     /**
      * Construct our object.
@@ -53,6 +57,7 @@ public class MessageFormatter {
     public MessageFormatter(YamlConfigurationProvider yamlProvider, ColorFormatter colorFormatter) {
         messageFile = new MessageFile(Path.of("plugins", "PlugManX", "messages.yml").toFile(), yamlProvider);
         this.colorFormatter = colorFormatter;
+        defaultMessages = loadDefaultMessages();
     }
 
     /**
@@ -66,6 +71,10 @@ public class MessageFormatter {
         return formatMessage(true, key, args);
     }
 
+    public void reloadMessages() {
+        messageFile.reload();
+    }
+
     /**
      * Returns the formatted version of the message.
      *
@@ -75,13 +84,51 @@ public class MessageFormatter {
      * @return the formatted String
      */
     public String formatMessage(boolean prefix, String key, Object... args) {
-        var rawMessage = messageFile.getString(key);
+        var rawMessage = getMessage(key);
         if (rawMessage == null) return "Error: '" + key + "' not found in messages.yml";
 
-        var message = prefix? messageFile.getString("prefix") + rawMessage : rawMessage;
+        var message = prefix ? getPrefix() + rawMessage : rawMessage;
 
         for (var i = 0; i < args.length; i++) message = message.replace("{" + i + "}", String.valueOf(args[i]));
         return colorFormatter.translateAlternateColorCodes('&', message);
+    }
+
+    private String getMessage(String key) {
+        var message = messageFile.getString(key);
+        return message == null ? defaultMessages.get(key) : message;
+    }
+
+    private String getPrefix() {
+        var prefix = getMessage("prefix");
+        return prefix == null ? "" : prefix;
+    }
+
+    private Map<String, String> loadDefaultMessages() {
+        var messages = new LinkedHashMap<String, String>();
+        try (var input = getClass().getClassLoader().getResourceAsStream("messages.yml")) {
+            if (input == null) return messages;
+
+            var yamlData = new Yaml().load(new InputStreamReader(input, StandardCharsets.UTF_8));
+            if (yamlData instanceof Map<?, ?> map) flattenMessages("", map, messages);
+        } catch (RuntimeException ignored) {
+            return new LinkedHashMap<>();
+        } catch (java.io.IOException ignored) {
+            return new LinkedHashMap<>();
+        }
+
+        return messages;
+    }
+
+    private void flattenMessages(String prefix, Map<?, ?> source, Map<String, String> target) {
+        for (var entry : source.entrySet()) {
+            var key = prefix.isEmpty() ? String.valueOf(entry.getKey()) : prefix + "." + entry.getKey();
+            if (entry.getValue() instanceof Map<?, ?> map) {
+                flattenMessages(key, map, target);
+                continue;
+            }
+
+            if (entry.getValue() != null) target.put(key, String.valueOf(entry.getValue()));
+        }
     }
 
     /**
@@ -91,6 +138,6 @@ public class MessageFormatter {
      * @return the message with the prefix.
      */
     public String prefix(String msg) {
-        return colorFormatter.translateAlternateColorCodes('&', messageFile.getString("prefix") + msg);
+        return colorFormatter.translateAlternateColorCodes('&', getPrefix() + msg);
     }
 }

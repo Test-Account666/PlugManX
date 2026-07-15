@@ -54,12 +54,12 @@ public class PaperThreadUtil extends BukkitThreadUtil {
     @Override
     public void asyncLater(Runnable runnable, long delay) {
         if (!shouldUseFolia()) {
-            super.async(runnable);
+            super.asyncLater(runnable, delay);
             return;
         }
 
         var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
-        foliaLib.getScheduler().runLaterAsync((ignored) -> runnable.run(), delay);
+        foliaLib.getScheduler().runLaterAsync(runnable, delay, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -73,7 +73,7 @@ public class PaperThreadUtil extends BukkitThreadUtil {
         }
 
         var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
-        foliaLib.getScheduler().runLater(runnable, delay);
+        foliaLib.getScheduler().runLater(runnable, delay, TimeUnit.MILLISECONDS);
     }
 
     /**

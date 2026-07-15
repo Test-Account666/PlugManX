@@ -30,7 +30,9 @@ enable:
   all: '&9Alle Plugins wurden aktiviert.'
   already-enabled: '&c{0} ist bereits aktiviert.'
   enabled: '&9{0} wurde aktiviert.'
+  failed: '&c{0} konnte nicht aktiviert werden. Prüfe den Server-Log für den Plugin-Fehler.'
 error:
+  dependency-cycle: '&cAbhaengigkeitszyklus erkannt: {0}'
   ignored: '&cPlugMan ist darauf konfiguriert, dieses Plugin zu ignorieren.'
   invalid-plugin: '&cDies ist kein gültiges Plugin.'
   no-permission: '&cDu hast hierzu keine Berechtigung.'
@@ -47,6 +49,7 @@ help:
   list: '&7- &a/plugman list [-v] &f- &7Listet alle Plugins auf (-v zeigt Versionen).'
   dump: '&7- &a/plugman dump &f- &7Listet Plugin-Namen und Versionen in Datei auf.'
   info: '&7- &a/plugman info <plugin> &f- &7Informationen zu einem Plugin abrufen.'
+  deps: '&7- &a/plugman deps <plugin> &f- &7Zeigt Plugin-Abhängigkeiten an.'
   usage: '&7- &a/plugman usage <plugin> &f- &7Listet die von einem Plugin registrierten Befehle auf.'
   lookup: '&7- &a/plugman lookup <command> &f- &7Ermittelt, zu welchem Plugin ein Befehl registriert ist.'
   enable: '&7- &a/plugman enable <plugin|all> &f- &7Aktiviert ein Plugin.'
@@ -54,6 +57,8 @@ help:
   restart: '&7- &a/plugman restart <plugin|all> &f- &7Startet ein Plugin neu.'
   load: '&7- &a/plugman load <plugin> &f- &7Lädt ein Plugin.'
   reload: '&7- &a/plugman reload <plugin|all> &f- &7Lädt ein Plugin neu.'
+  reloadconfig: '&7- &a/plugman reloadconfig &f- &7Lädt PlugMan-Konfiguration und Nachrichten neu.'
+  reloadmode: '&7- &a/plugman reloadmode [ALL|REQUIRED_ONLY|OFF] &f- &7Zeigt oder ändert das Dependent-Reload-Verhalten.'
   unload: '&7- &a/plugman unload <plugin> &f- &7Entlädt ein Plugin.'
   check: '&7- &a/plugman check <plugin|all> [-f] &f- &7Überprüft, ob ein Plugin aktuell ist (-f legt alle in Datei ab).'
 info:
@@ -63,24 +68,45 @@ info:
   status: '&7- Status: {0}'
   depends: '&7- Abhängigkeiten: {0}'
   softdepends: '&7- Soft-Abhängigkeiten: &a{0}'
+deps:
+  header: 'Plugin-Abhängigkeiten: {0}'
+  depends: '&7- Abhängigkeiten: &a{0}'
+  softdepends: '&7- Soft-Abhängigkeiten: &a{0}'
+  used-by: '&7- Genutzt von: &a{0}'
 list:
-  list: '&9Plugins ({0}): {1}'
+  paper: '&9Paper-Plugins (&b{0}&9): {1}'
+  bukkit: '&9Bukkit-Plugins (&e{0}&9): {1}'
 load:
   already-loaded: '&c{0} ist bereits geladen.'
   cannot-find: '&cKonnte Datei nicht finden und konnte Beschreibungen nicht durchsuchen.'
   invalid-description: '&cDas Plugin hat eine ungültige Beschreibung.'
   invalid-plugin: '&cDiese Datei ist kein gültiges Plugin.'
+  enable-failed: '&c{0} wurde geladen, ist aber in onEnable fehlgeschlagen. Prüfe den Stacktrace oben.'
   loaded: '&9{0} wurde geladen und aktiviert.'
+  missing-dependencies: '&c{0} konnte nicht geladen werden. Fehlende Pflicht-Abhängigkeiten: {1}'
   plugin-dir: '&cPlugin-Verzeichnis nicht gefunden.'
 lookup:
   found: '&9/{0} ist bei {1} registriert.'
   not-found: '&cDer Befehl "/{0}" ist in keiner plugin.yml registriert.'
 reload:
+  summary: '&9{0} Plugins wurden in {1} Sekunden neu geladen (&c{2} fehlgeschlagen&9, &e{3} uebersprungen&9).'
   all: '&9Alle Plugins wurden neu geladen.'
   all-failed: '&cEinige Plugins konnten nicht neu geladen werden: {0}'
+  blocked-dependents: '&c{0} konnte nicht neu geladen werden; aktive Plugins hängen davon ab: {1}. Lade oder stoppe diese Plugins zuerst, oder starte den Server neu.'
+  confirm-all: '&cDas Neuladen von {0} Plugins kann den Server abstürzen lassen oder instabil machen. Führe &e/plugman reload all {1}&c aus, um zu bestätigen.'
   reloaded: '&9{0} wurde neu geladen.'
+reloadconfig:
+  reloaded: '&9PlugMan-Konfiguration und Nachrichten wurden neu geladen.'
+reloadmode:
+  changed: '&9Dependent-Reload-Modus wurde auf &a{0}&9 gesetzt.'
+  current: '&9Aktueller Dependent-Reload-Modus: &a{0}&9.'
+  invalid: '&cUngültiger Dependent-Reload-Modus: {0}. Nutze ALL, REQUIRED_ONLY oder OFF.'
+  save-failed: '&cDependent-Reload-Modus konnte nicht gespeichert werden. Prüfe den Server-Log.'
 restart:
+  summary: '&9{0} Plugins wurden in {1} Sekunden neu gestartet (&c{2} fehlgeschlagen&9, &e{3} uebersprungen&9).'
   all: '&9Alle Plugins wurden neu gestartet.'
+  confirm-all: '&cDas Neustarten von {0} Plugins kann den Server abstürzen lassen oder instabil machen. Führe &e/plugman restart all {1}&c aus, um zu bestätigen.'
+  blocked-dependents: '&c{0} konnte nicht neu gestartet werden; aktive Plugins hängen davon ab: {1}. Starte oder stoppe diese Plugins zuerst, oder starte den Server neu.'
   restarted: '&9{0} wurde neu gestartet.'
 unload:
   failed: '&cKonnte {0} nicht entladen.'

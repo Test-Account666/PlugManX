@@ -50,11 +50,14 @@ public class PlugManCommandHandler implements CommandExecutor {
             case "list" -> new ListCommand(plugManSender, registry);
             case "dump" -> new DumpCommand(plugManSender, registry);
             case "info" -> new InfoCommand(plugManSender, registry);
+            case "deps" -> new DepsCommand(plugManSender, registry);
             case "lookup" -> new LookupCommand(plugManSender, registry);
             case "usage" -> new UsageCommand(plugManSender, registry);
             case "enable" -> new EnableCommand(plugManSender, registry);
             case "disable" -> new DisableCommand(plugManSender, registry);
             case "restart" -> new RestartCommand(plugManSender, registry);
+            case "reloadmode" -> new ReloadModeCommand(plugManSender, registry);
+            case "reloadconfig" -> new ReloadConfigCommand(plugManSender, registry);
             case "load" -> new LoadCommand(plugManSender, registry);
             case "reload" -> new ReloadCommand(plugManSender, registry);
             case "unload" -> new UnloadCommand(plugManSender, registry);

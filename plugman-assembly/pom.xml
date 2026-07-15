@@ -45,6 +45,30 @@
             <artifactId>plugman-bungee</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>2.0</version>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -84,6 +108,10 @@
                                             <include>com.rylinaux:plugman-bungee</include>
                                             <include>com.rylinaux:plugman-velocity</include>
                                             <include>com.tcoded:FoliaLib</include>
+                                            <include>com.fasterxml.jackson.core:jackson-databind</include>
+                                            <include>com.fasterxml.jackson.core:jackson-core</include>
+                                            <include>com.fasterxml.jackson.core:jackson-annotations</include>
+                                            <include>org.yaml:snakeyaml</include>
                                         </includes>
                                     </artifactSet>
                                     <filters>
@@ -98,6 +126,14 @@
                                         <relocation>
                                             <pattern>com.tcoded</pattern>
                                             <shadedPattern>com.rylinaux.folia</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>com.fasterxml.jackson</pattern>
+                                            <shadedPattern>core.com.rylinaux.plugman.libs.jackson</shadedPattern>
+                                        </relocation>
+                                        <relocation>
+                                            <pattern>org.yaml.snakeyaml</pattern>
+                                            <shadedPattern>core.com.rylinaux.plugman.libs.snakeyaml</shadedPattern>
                                         </relocation>
                                     </relocations>
                                 </configuration>
@@ -142,6 +178,10 @@
                                     <include>com.rylinaux:plugman-paper</include>
                                     <include>com.rylinaux:plugman-bungee</include>
                                     <include>com.tcoded:FoliaLib</include>
+                                    <include>com.fasterxml.jackson.core:jackson-databind</include>
+                                    <include>com.fasterxml.jackson.core:jackson-core</include>
+                                    <include>com.fasterxml.jackson.core:jackson-annotations</include>
+                                    <include>org.yaml:snakeyaml</include>
                                 </includes>
                             </artifactSet>
                             <filters>
@@ -156,6 +196,14 @@
                                 <relocation>
                                     <pattern>com.tcoded</pattern>
                                     <shadedPattern>com.rylinaux.folia</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.fasterxml.jackson</pattern>
+                                    <shadedPattern>core.com.rylinaux.plugman.libs.jackson</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.yaml.snakeyaml</pattern>
+                                    <shadedPattern>core.com.rylinaux.plugman.libs.snakeyaml</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>

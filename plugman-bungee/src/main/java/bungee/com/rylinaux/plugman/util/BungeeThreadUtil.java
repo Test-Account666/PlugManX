@@ -20,7 +20,7 @@ public class BungeeThreadUtil implements ThreadUtil {
 
     @Override
     public void syncLater(Runnable runnable, long delay) {
-        ProxyServer.getInstance().getScheduler().schedule(PlugManBungee.getInstance(), runnable, delay / 20, TimeUnit.SECONDS);
+        ProxyServer.getInstance().getScheduler().schedule(PlugManBungee.getInstance(), runnable, delay, TimeUnit.MILLISECONDS);
     }
 
     @Override

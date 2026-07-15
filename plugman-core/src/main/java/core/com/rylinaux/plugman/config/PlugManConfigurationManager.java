@@ -17,12 +17,12 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 public class PlugManConfigurationManager {
-    public static final int CURRENT_CONFIG_VERSION = 3;
+    public static final int CURRENT_CONFIG_VERSION = 5;
+    private static final String CONFIG_FILE_NAME = "config.yml";
 
     private final YamlConfigurationProvider configProvider;
     private final PluginLogger logger;
     private final JacksonConfigurationService jacksonConfigService;
-
 
     /**
      * List of plugins to ignore, partially.
@@ -47,12 +47,19 @@ public class PlugManConfigurationManager {
         loadIgnoredPlugins();
     }
 
+    public void reloadConfiguration() {
+        configProvider.loadConfiguration(new File(configProvider.getDataFolder(), CONFIG_FILE_NAME));
+        loadJacksonConfigurations();
+        validateAndMigrateConfig();
+        loadIgnoredPlugins();
+    }
+
     /**
      * Load Jackson-based configurations
      */
     private void loadJacksonConfigurations() {
         try {
-            var configFile = new File(configProvider.getDataFolder(), "config.yml");
+            var configFile = new File(configProvider.getDataFolder(), CONFIG_FILE_NAME);
             plugManConfig = jacksonConfigService.loadPlugManConfig(configFile);
 
             var resourceMappingsFile = new File(configProvider.getDataFolder(), "resourcemaps.yml");
@@ -77,6 +84,7 @@ public class PlugManConfigurationManager {
         }
 
         migrateConfigIfNeeded();
+        new MessageMigrationService(configProvider.getDataFolder(), logger).migrateToVersion5();
     }
 
     /**
@@ -94,8 +102,8 @@ public class PlugManConfigurationManager {
      * Backup old configuration file
      */
     private void backupOldConfig() {
-        var oldConfig = new File(configProvider.getDataFolder(), "config.yml");
-        var backupConfig = new File(configProvider.getDataFolder(), "config.yml.old-" + System.currentTimeMillis());
+        var oldConfig = new File(configProvider.getDataFolder(), CONFIG_FILE_NAME);
+        var backupConfig = new File(configProvider.getDataFolder(), CONFIG_FILE_NAME + ".old-" + System.currentTimeMillis());
         oldConfig.renameTo(backupConfig);
     }
 
@@ -120,8 +128,40 @@ public class PlugManConfigurationManager {
                 continue;
             }
 
-            if (configVersion == 2) migrateToVersion3();
+            if (configVersion == 2) {
+                migrateToVersion3();
+                continue;
+            }
+
+            if (configVersion == 3) {
+                migrateToVersion4();
+                continue;
+            }
+
+            if (configVersion == 4) {
+                migrateToVersion5();
+                continue;
+            }
+
+            break;
         }
+    }
+
+    private void migrateToVersion5() {
+        plugManConfig.setVersion(5);
+        new MessageMigrationService(configProvider.getDataFolder(), logger).migrateToVersion5();
+        saveJacksonConfiguration();
+
+        logger.info("Migrated config to version 5, added reload safety messages.");
+    }
+
+    private void migrateToVersion4() {
+        plugManConfig.setVersion(4);
+        plugManConfig.setPaperReloadDebug(false);
+        new MessageMigrationService(configProvider.getDataFolder(), logger).migrateToVersion4();
+        saveJacksonConfiguration();
+
+        logger.info("Migrated config to version 4, you can now enable Paper reload debug logs with 'paperReloadDebug: true'.");
     }
 
     private void migrateToVersion3() {
@@ -149,12 +189,18 @@ public class PlugManConfigurationManager {
     /**
      * Save Jackson configuration to file
      */
-    private void saveJacksonConfiguration() {
+    public boolean savePlugManConfig() {
+        return saveJacksonConfiguration();
+    }
+
+    private boolean saveJacksonConfiguration() {
         try {
-            var configFile = new File(configProvider.getDataFolder(), "config.yml");
+            var configFile = new File(configProvider.getDataFolder(), CONFIG_FILE_NAME);
             jacksonConfigService.savePlugManConfig(plugManConfig, configFile);
+            return true;
         } catch (Exception e) {
             logger.severe("Failed to save Jackson configuration: " + e.getMessage());
+            return false;
         }
     }
 
@@ -170,7 +216,6 @@ public class PlugManConfigurationManager {
 
         ignoredPlugins = new ImmutableWarnList<>(ignoredPluginsTemp);
     }
-
 
     /**
      * Get notification setting for broken command removal

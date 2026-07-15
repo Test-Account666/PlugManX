@@ -26,9 +26,6 @@ package core.com.rylinaux.plugman.util.updatechecker;
  * #L%
  */
 
-import com.google.common.hash.HashCode;
-import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -37,14 +34,11 @@ import core.com.rylinaux.plugman.pojo.UpdateResult;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.TreeMap;
@@ -118,28 +112,7 @@ public class CurseForgeUtil {
 
         var currentVersion = plugin.getVersion();
 
-        var latestVersion = latest.get("md5").getAsString();
-        HashCode currentPluginHashCode;
-
-        var file = plugin.getFile();
-        // Fetch file manually, not sure why `Plugin#getFile` can fail in the first place, tbh
-        if (file == null) {
-            var path = plugin.getClass()
-                    .getProtectionDomain().getCodeSource()
-                    .getLocation().getFile();
-            path = URLDecoder.decode(path, StandardCharsets.UTF_8);
-            file = new File(path);
-        }
-        try {
-            currentPluginHashCode = Files.asByteSource(file).hash(Hashing.md5());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        currentPluginHashCode.toString();
-
-        if (latestVersion == null) return new UpdateResult(UpdateResult.ResultType.INVALID_PLUGIN, currentVersion, latestVersion);
-
-        latestVersion = latest.get("name").getAsString();
+        var latestVersion = latest.get("name").getAsString();
 
         if (currentVersion == null) return new UpdateResult(UpdateResult.ResultType.NOT_INSTALLED, currentVersion, latestVersion);
         else if (latestVersion == null) return new UpdateResult(UpdateResult.ResultType.INVALID_PLUGIN, currentVersion, latestVersion);

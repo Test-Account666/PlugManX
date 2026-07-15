@@ -27,6 +27,11 @@ public record BukkitPlugin(@Delegate org.bukkit.plugin.Plugin bukkitPlugin) impl
     }
 
     @Override
+    public List<String> getProvides() {
+        return getDescription().getProvides();
+    }
+
+    @Override
     public List<String> getAuthors() {
         return getDescription().getAuthors();
     }

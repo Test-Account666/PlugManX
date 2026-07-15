@@ -125,7 +125,7 @@ public class PlugManFileManager {
             }
         } catch (IOException exception) {
             if (exception instanceof ZipException) logger.info("Possible broken plugin detected: " + file.getName());
-            else logger.severe("Error reading plugin description: " + exception.getMessage());
+            else logger.severe("Error reading plugin description for " + file.getName() + ": " + exception.getMessage());
             return null;
         }
     }

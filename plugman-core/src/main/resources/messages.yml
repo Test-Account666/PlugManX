@@ -30,7 +30,9 @@ enable:
   all: '&9All plugins have been enabled.'
   already-enabled: '&c{0} is already enabled.'
   enabled: '&9{0} has been enabled.'
+  failed: '&c{0} could not be enabled. Check the server log for the plugin error.'
 error:
+  dependency-cycle: '&cDependency cycle detected: {0}'
   ignored: '&cPlugMan is configured to ignore that plugin.'
   invalid-plugin: '&cThat is not a valid plugin.'
   no-permission: '&cYou do not have permission to do this.'
@@ -47,6 +49,7 @@ help:
   list: '&7- &a/{0} list [-v] &f- &7List all plugins (-v shows versions).'
   dump: '&7- &a/{0} dump &f- &7Dump plugin names and versions to file.'
   info: '&7- &a/{0} info <plugin> &f- &7Get info on a plugin.'
+  deps: '&7- &a/{0} deps <plugin> &f- &7Show plugin dependency relationships.'
   usage: '&7- &a/{0} usage <plugin> &f- &7List commands a plugin has registered.'
   lookup: '&7- &a/{0} lookup <command> &f- &7Find the plugin a command is registered to.'
   enable: '&7- &a/{0} enable <plugin|all> &f- &7Enable a plugin.'
@@ -54,6 +57,8 @@ help:
   restart: '&7- &a/{0} restart <plugin|all> &f- &7Restart a plugin.'
   load: '&7- &a/{0} load <plugin> &f- &7Load a plugin.'
   reload: '&7- &a/{0} reload <plugin|all> &f- &7Reload a plugin.'
+  reloadconfig: '&7- &a/{0} reloadconfig &f- &7Reload PlugMan config and messages.'
+  reloadmode: '&7- &a/{0} reloadmode [ALL|REQUIRED_ONLY|OFF] &f- &7View or change dependent reload behavior.'
   unload: '&7- &a/{0} unload <plugin> &f- &7Unload a plugin.'
   check: '&7- &a/{0} check <plugin|all> [-f] &f- &7Check if a plugin is up-to-date (-f dumps to file for all).'
 info:
@@ -63,24 +68,46 @@ info:
   status: '&7- Status: {0}'
   depends: '&7- Depends: {0}'
   softdepends: '&7- SoftDepends: &a{0}'
+deps:
+  header: 'Plugin Dependencies: {0}'
+  depends: '&7- Depends: &a{0}'
+  softdepends: '&7- SoftDepends: &a{0}'
+  used-by: '&7- Used by: &a{0}'
 list:
-  list: '&9Plugins ({0}): {1}'
+  paper: '&9Paper Plugins (&b{0}&9): {1}'
+  bukkit: '&9Bukkit Plugins (&e{0}&9): {1}'
 load:
   already-loaded: '&c{0} is already loaded.'
   cannot-find: '&cCould not find file and failed to search descriptions.'
   invalid-description: '&cThat plugin has an invalid description.'
   invalid-plugin: '&cThat file is not a valid plugin.'
+  enable-failed: '&c{0} loaded, but failed during onEnable. Check the stacktrace above.'
   loaded: '&9{0} has been loaded and enabled.'
+  missing-dependencies: '&cCould not load {0}. Missing required dependencies: {1}'
   plugin-dir: '&cPlugin directory not found.'
 lookup:
   found: '&9/{0} is registered to {1}.'
   not-found: '&cCommand "/{0}" not registered in any plugin.yml'
 reload:
+  summary: '&9Reloaded {0} plugins in {1} seconds (&c{2} failed&9, &e{3} skipped&9).'
   all: '&9All plugins have been reloaded.'
   all-failed: '&cSome plugins failed to reload: {0}'
+  blocked-dependents: '&cCould not reload {0}; active plugins depend on it: {1}. Reload or stop those plugins first, or restart the server.'
+  confirm-all: '&cReloading {0} plugins can crash or destabilize the server. Run &e/plugman reload all {1}&c to confirm.'
   reloaded: '&9{0} has been reloaded.'
+reloadconfig:
+  reloaded: '&9PlugMan config and messages have been reloaded.'
+reloadmode:
+  changed: '&9Dependent reload mode set to &a{0}&9.'
+  current: '&9Current dependent reload mode: &a{0}&9.'
+  invalid: '&cInvalid dependent reload mode: {0}. Use ALL, REQUIRED_ONLY, or OFF.'
+  save-failed: '&cCould not save dependent reload mode. Check the server log.'
 restart:
+  summary: '&9Restarted {0} plugins in {1} seconds (&c{2} failed&9, &e{3} skipped&9).'
   all: '&9All plugins have been restarted.'
+  all-failed: '&cSome plugins failed to restart: {0}'
+  blocked-dependents: '&cCould not restart {0}; active plugins depend on it: {1}. Restart or stop those plugins first, or restart the server.'
+  confirm-all: '&cRestarting {0} plugins can crash or destabilize the server. Run &e/plugman restart all {1}&c to confirm.'
   restarted: '&9{0} has been restarted.'
 unload:
   failed: '&cFailed to unload {0}.'
