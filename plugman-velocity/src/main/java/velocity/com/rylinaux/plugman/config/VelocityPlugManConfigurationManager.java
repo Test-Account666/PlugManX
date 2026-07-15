@@ -15,9 +15,9 @@ import velocity.com.rylinaux.plugman.logging.VelocityPluginLogger;
  */
 public class VelocityPlugManConfigurationManager extends PlugManConfigurationManager {
     private static final String VELOCITY_RELOAD_DEBUG_KEY = "velocityReloadDebug";
-    private static final String VELOCITY_DEV_MODE_KEY = "velocityDevMode";
-    private static final String VELOCITY_CRASH_DUMPS_KEY = "velocityCrashDumps";
-    private static final String VELOCITY_DEV_TEST_FUNCTIONS_KEY = "velocityDevTestFunctions";
+    private static final String[] REMOVED_DEV_KEYS = {
+            "velocityDevMode", "velocityCrashDumps", "velocityDevTestFunctions"
+    };
 
     private final YamlConfigurationProvider configProvider;
 
@@ -46,15 +46,7 @@ public class VelocityPlugManConfigurationManager extends PlugManConfigurationMan
         if (!configProvider.contains(VELOCITY_RELOAD_DEBUG_KEY)) {
             configProvider.set(VELOCITY_RELOAD_DEBUG_KEY, false);
         }
-        if (!configProvider.contains(VELOCITY_DEV_MODE_KEY)) {
-            configProvider.set(VELOCITY_DEV_MODE_KEY, false);
-        }
-        if (!configProvider.contains(VELOCITY_CRASH_DUMPS_KEY)) {
-            configProvider.set(VELOCITY_CRASH_DUMPS_KEY, true);
-        }
-        if (!configProvider.contains(VELOCITY_DEV_TEST_FUNCTIONS_KEY)) {
-            configProvider.set(VELOCITY_DEV_TEST_FUNCTIONS_KEY, false);
-        }
+        removeLegacyDevOptions(configProvider);
         configProvider.save();
     }
 
@@ -62,15 +54,8 @@ public class VelocityPlugManConfigurationManager extends PlugManConfigurationMan
         return configProvider.getBoolean(VELOCITY_RELOAD_DEBUG_KEY, false);
     }
 
-    public boolean isVelocityDevModeEnabled() {
-        return configProvider.getBoolean(VELOCITY_DEV_MODE_KEY, false);
+    static void removeLegacyDevOptions(YamlConfigurationProvider configProvider) {
+        for (var removedKey : REMOVED_DEV_KEYS) configProvider.set(removedKey, null);
     }
 
-    public boolean areVelocityCrashDumpsEnabled() {
-        return configProvider.getBoolean(VELOCITY_CRASH_DUMPS_KEY, true);
-    }
-
-    public boolean areVelocityDevTestFunctionsEnabled() {
-        return configProvider.getBoolean(VELOCITY_DEV_TEST_FUNCTIONS_KEY, false);
-    }
 }

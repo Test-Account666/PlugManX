@@ -108,6 +108,12 @@ final class VelocityDevelopmentRuntime {
         }
     }
 
+    static String cleanupFailureSummary(Throwable throwable) {
+        return throwable instanceof VelocityCleanupException cleanupException
+                ? cleanupException.failureSummary()
+                : null;
+    }
+
     String adapterName() {
         return adapterName;
     }
@@ -644,12 +650,18 @@ final class VelocityDevelopmentRuntime {
 
     private static final class VelocityCleanupException extends ReflectiveOperationException {
         private static final long serialVersionUID = 1L;
+        private final String failureSummary;
 
         private VelocityCleanupException(String pluginId, List<CleanupFailure> failures) {
             super("Velocity cleanup for " + pluginId + " failed in " + failures.size() + " step(s): "
                     + failures.stream().map(CleanupFailure::step).toList());
+            failureSummary = String.join(", ", failures.stream().map(CleanupFailure::step).toList());
             failures.forEach(failure -> addSuppressed(
                     new IllegalStateException("Cleanup step failed: " + failure.step(), failure.cause())));
+        }
+
+        private String failureSummary() {
+            return failureSummary;
         }
     }
 }

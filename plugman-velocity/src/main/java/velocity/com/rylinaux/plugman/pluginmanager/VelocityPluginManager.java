@@ -55,6 +55,7 @@ public class VelocityPluginManager implements PluginManager {
     private final Map<String, VelocityPlugin> unloadedPlugins = new ConcurrentHashMap<>();
     private final Map<String, ReloadBackup> reloadBackups = new ConcurrentHashMap<>();
     private final Map<String, Path> knownGoodPluginJars = new ConcurrentHashMap<>();
+    private final Map<String, String> pendingCleanupWarnings = new ConcurrentHashMap<>();
     private final ReentrantLock operationLock = new ReentrantLock(true);
     private final ThreadLocal<Integer> operationBatchDepth = ThreadLocal.withInitial(() -> 0);
 
@@ -256,8 +257,14 @@ public class VelocityPluginManager implements PluginManager {
         var file = unloadedPluginFiles.get(id);
         if (file == null) file = plugin.getFile();
         var result = loadPluginFromFileLocked(file);
-        if (result.success() || !reloadBackups.containsKey(id)) return result;
-        return restoreReloadBackup(id, result);
+        if (result.success()) return result;
+        if (!reloadBackups.containsKey(id)) {
+            reportCleanupRecoveryFailure(id);
+            return result;
+        }
+        var rollbackResult = restoreReloadBackup(id, result);
+        reportCleanupRecoveryFailure(id);
+        return rollbackResult;
     }
 
     @Override
@@ -326,8 +333,13 @@ public class VelocityPluginManager implements PluginManager {
             logFailure("unload", plugin.getName(), exception);
             if (!getServer().getPluginManager().isLoaded(plugin.getName())) {
                 rememberUnloadedPlugin(velocityPlugin, file);
-                debug("Velocity removed {} despite cleanup warnings; continuing so it can be loaded again",
-                        plugin.getName());
+                var id = plugin.getName().toLowerCase(Locale.ROOT);
+                var failedSteps = VelocityDevelopmentRuntime.cleanupFailureSummary(exception);
+                if (failedSteps == null) failedSteps = exception.getClass().getSimpleName();
+                pendingCleanupWarnings.put(id, failedSteps);
+                PlugManVelocity.getInstance().getLogger().warn(
+                        "Velocity removed {} despite cleanup warnings in: {}. Attempting to load it again.",
+                        plugin.getName(), failedSteps);
                 return new PluginResult(true, "unload.unloaded", plugin.getName());
             }
             discardReloadBackup(plugin.getName());
@@ -418,6 +430,7 @@ public class VelocityPluginManager implements PluginManager {
             unloadedPlugins.remove(id);
             discardReloadBackup(id);
             cacheKnownGoodPluginJar(id, file.toPath());
+            reportCleanupRecoverySuccess(id, container.getDescription().getId());
             debug("Completed load for {} in {} ms", container.getDescription().getId(), elapsedMillis(startedAt));
             return new PluginResult(true, "load.loaded", container.getDescription().getId());
         } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
@@ -562,6 +575,21 @@ public class VelocityPluginManager implements PluginManager {
         }
     }
 
+    private void reportCleanupRecoverySuccess(String id, String pluginName) {
+        var failedSteps = pendingCleanupWarnings.remove(id);
+        if (failedSteps == null) return;
+        PlugManVelocity.getInstance().getLogger().warn(
+                "{} was successfully loaded again after cleanup warnings in: {}.", pluginName, failedSteps);
+    }
+
+    private void reportCleanupRecoveryFailure(String id) {
+        var failedSteps = pendingCleanupWarnings.get(id);
+        if (failedSteps == null) return;
+        PlugManVelocity.getInstance().getLogger().error(
+                "{} could not be loaded again after cleanup warnings in: {}. The plugin remains unloaded.",
+                id, failedSteps);
+    }
+
     private Path knownGoodCacheDirectory() {
         return PlugManVelocity.getInstance().getDataDirectory().resolve("reload-cache");
     }
@@ -612,20 +640,13 @@ public class VelocityPluginManager implements PluginManager {
 
     private void debug(String message, Object... arguments) {
         if (!isVelocityRuntimeDebugEnabled()) return;
-        var prefix = isVelocityDevelopmentModeEnabled() ? "[VelocityDev] " : "[VelocityReloadDebug] ";
-        PlugManVelocity.getInstance().getLogger().info(prefix + message, arguments);
+        PlugManVelocity.getInstance().getLogger().info("[PlugManDebug] " + message, arguments);
     }
 
     private boolean isVelocityRuntimeDebugEnabled() {
         var configurationManager = PlugManVelocity.getInstance().get(PlugManConfigurationManager.class);
         return configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig
-                && (velocityConfig.isVelocityReloadDebugEnabled() || velocityConfig.isVelocityDevModeEnabled());
-    }
-
-    private boolean isVelocityDevelopmentModeEnabled() {
-        var configurationManager = PlugManVelocity.getInstance().get(PlugManConfigurationManager.class);
-        return configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig
-                && velocityConfig.isVelocityDevModeEnabled();
+                && velocityConfig.isVelocityReloadDebugEnabled();
     }
 
     private Consumer<String> debugConsumer() {
@@ -663,15 +684,7 @@ public class VelocityPluginManager implements PluginManager {
                 ? invocation.getCause() : throwable;
         PlugManVelocity.getInstance().getLogger().error(
                 "Velocity development runtime {} failed for {}", operation, plugin, cause);
-        if (areVelocityCrashDumpsEnabled()) {
-            VelocityCrashDumpWriter.write(operation + " failed for " + plugin, cause);
-        }
-    }
-
-    private boolean areVelocityCrashDumpsEnabled() {
-        var configurationManager = PlugManVelocity.getInstance().get(PlugManConfigurationManager.class);
-        return !(configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig)
-                || velocityConfig.areVelocityCrashDumpsEnabled();
+        VelocityCrashDumpWriter.write(operation + " failed for " + plugin, cause);
     }
 
     private record ReloadBackup(Path original, Path backup) {
