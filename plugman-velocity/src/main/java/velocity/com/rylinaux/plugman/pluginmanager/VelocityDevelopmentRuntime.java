@@ -199,6 +199,10 @@ final class VelocityDevelopmentRuntime {
             var channelCount = unregisterPluginChannels(server, container, classLoader);
             debug(debug, startedAt, "Unregistered " + channelCount + " messaging channels");
         });
+        cleanupStep("plugin threads", failures, debug, startedAt, () -> {
+            var interruptedThreads = interruptOwnedThreads(classLoader);
+            debug(debug, startedAt, "Interrupted " + interruptedThreads + " plugin-owned threads");
+        });
         var leakSnapshot = captureLeakSnapshot(server, container, instance, classLoader, debug, startedAt);
         cleanupStep("plugin registry", failures, debug, startedAt, () -> {
             var removed = pluginMap(server.getPluginManager()).remove(container.getDescription().getId()) != null;
@@ -317,15 +321,36 @@ final class VelocityDevelopmentRuntime {
     }
 
     private List<String> findOwnedThreads(ClassLoader classLoader) {
-        var threads = new ArrayList<String>();
-        for (var thread : Thread.getAllStackTraces().keySet()) {
-            if (thread.getContextClassLoader() == classLoader
-                    || thread.getClass().getClassLoader() == classLoader) {
-                threads.add(thread.getName() + " [" + thread.getState() + "]");
-            }
-        }
+        var threads = findOwnedThreadObjects(classLoader).stream()
+                .map(thread -> thread.getName() + " [" + thread.getState() + "]")
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         threads.sort(String.CASE_INSENSITIVE_ORDER);
         return threads;
+    }
+
+    private int interruptOwnedThreads(ClassLoader classLoader) {
+        if (classLoader == null) return 0;
+        var interruptedThreads = 0;
+        var fallbackClassLoader = classLoader.getParent() == null
+                ? ClassLoader.getSystemClassLoader()
+                : classLoader.getParent();
+        for (var thread : findOwnedThreadObjects(classLoader)) {
+            if (thread == Thread.currentThread()) continue;
+            thread.interrupt();
+            if (thread.getContextClassLoader() == classLoader) {
+                thread.setContextClassLoader(fallbackClassLoader);
+            }
+            interruptedThreads++;
+        }
+        return interruptedThreads;
+    }
+
+    private List<Thread> findOwnedThreadObjects(ClassLoader classLoader) {
+        if (classLoader == null) return List.of();
+        return Thread.getAllStackTraces().keySet().stream()
+                .filter(thread -> thread.getContextClassLoader() == classLoader
+                        || thread.getClass().getClassLoader() == classLoader)
+                .toList();
     }
 
     private void trackPluginChannels(ProxyServer server,

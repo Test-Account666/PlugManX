@@ -52,7 +52,7 @@ public class VelocityPluginManager implements PluginManager {
 
     private final VelocityDevelopmentRuntime runtime = VelocityDevelopmentRuntime.detect();
     private final Map<String, File> unloadedPluginFiles = new ConcurrentHashMap<>();
-    private final Map<String, VelocityPlugin> unloadedPlugins = new ConcurrentHashMap<>();
+    private final Map<String, Plugin> unloadedPlugins = new ConcurrentHashMap<>();
     private final Map<String, ReloadBackup> reloadBackups = new ConcurrentHashMap<>();
     private final Map<String, Path> knownGoodPluginJars = new ConcurrentHashMap<>();
     private final Map<String, String> pendingCleanupWarnings = new ConcurrentHashMap<>();
@@ -351,7 +351,7 @@ public class VelocityPluginManager implements PluginManager {
         if (file == null) return;
         var id = plugin.getName().toLowerCase(Locale.ROOT);
         unloadedPluginFiles.put(id, file);
-        unloadedPlugins.put(id, plugin);
+        unloadedPlugins.put(id, UnloadedPluginSnapshot.from(plugin, file));
     }
 
     @Override
@@ -688,5 +688,62 @@ public class VelocityPluginManager implements PluginManager {
     }
 
     private record ReloadBackup(Path original, Path backup) {
+    }
+
+    private record UnloadedPluginSnapshot(String name,
+                                          String version,
+                                          List<String> dependencies,
+                                          List<String> softDependencies,
+                                          List<String> authors,
+                                          File file) implements Plugin {
+        private static UnloadedPluginSnapshot from(VelocityPlugin plugin, File file) {
+            return new UnloadedPluginSnapshot(
+                    plugin.getName(),
+                    plugin.getVersion(),
+                    List.copyOf(plugin.getDepend()),
+                    List.copyOf(plugin.getSoftDepend()),
+                    List.copyOf(plugin.getAuthors()),
+                    file);
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return false;
+        }
+
+        @Override
+        public String getVersion() {
+            return version;
+        }
+
+        @Override
+        public List<String> getDepend() {
+            return dependencies;
+        }
+
+        @Override
+        public List<String> getSoftDepend() {
+            return softDependencies;
+        }
+
+        @Override
+        public List<String> getAuthors() {
+            return authors;
+        }
+
+        @Override
+        public File getFile() {
+            return file;
+        }
+
+        @Override
+        public <T> T getHandle() {
+            return null;
+        }
     }
 }
