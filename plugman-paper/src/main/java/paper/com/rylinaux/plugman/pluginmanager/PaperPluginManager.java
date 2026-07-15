@@ -80,7 +80,6 @@ import java.util.logging.Level;
  * @author rylinaux
  */
 public class PaperPluginManager extends BasePluginManager {
-    private static final String ERROR_INVALID_PLUGIN = "error.invalid-plugin";
     private static final String PREPARE_CONTEXT_METHOD = "prepareContext";
     private static final String PREPARE_CONTEXT_LOG_PREFIX = "prepareContext method=";
     private static final String REGISTER_PROVIDERS_METHOD = "registerProviders";
@@ -184,7 +183,7 @@ public class PaperPluginManager extends BasePluginManager {
 
     @Override
     public PluginResult enable(Plugin plugin) {
-        if (plugin == null) return new PluginResult(false, ERROR_INVALID_PLUGIN);
+        if (plugin == null) return new PluginResult(false, "error.invalid-plugin");
         if (plugin.isEnabled()) return new PluginResult(false, "enable.already-enabled");
 
         var pluginName = plugin.getName();
@@ -199,8 +198,8 @@ public class PaperPluginManager extends BasePluginManager {
 
     @Override
     public PluginResult disable(Plugin plugin) {
-        if (plugin == null) return new PluginResult(false, ERROR_INVALID_PLUGIN);
-        if (!plugin.isEnabled()) return new PluginResult(false, "disable.already-disabled", plugin.getName());
+        if (plugin == null) return new PluginResult(false, "plugin.null");
+        if (!plugin.isEnabled()) return new PluginResult(false, "plugin.already-disabled");
 
         var unloadData = extractPluginManagerData(plugin);
         if (unloadData == null) return new PluginResult(false, "unload.failed");
@@ -208,7 +207,7 @@ public class PaperPluginManager extends BasePluginManager {
         cleanupCommands(plugin, unloadData);
         cleanupPermissions(plugin);
 
-        return new PluginResult(true, "disable.disabled", plugin.getName());
+        return new PluginResult(true, "plugin.disabled");
     }
 
     /**
@@ -259,7 +258,7 @@ public class PaperPluginManager extends BasePluginManager {
 
     @Override
     public PluginResult load(Plugin plugin) {
-        if (plugin == null) return new PluginResult(false, ERROR_INVALID_PLUGIN);
+        if (plugin == null) return new PluginResult(false, "error.invalid-plugin");
         return load(plugin.getName());
     }
 

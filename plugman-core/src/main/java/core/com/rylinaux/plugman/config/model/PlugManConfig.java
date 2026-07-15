@@ -1,6 +1,5 @@
 package core.com.rylinaux.plugman.config.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -13,7 +12,6 @@ import java.util.List;
  * @author rylinaux
  */
 @Data
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class PlugManConfig {
 
     /**
@@ -57,12 +55,6 @@ public class PlugManConfig {
      */
     @JsonProperty("showPaperWarning")
     private boolean showPaperWarning = true;
-
-    /**
-     * Whether to show the Velocity development build warning
-     */
-    @JsonProperty("showVelocityWarning")
-    private boolean showVelocityWarning = true;
 
     /**
      * Whether to log verbose Paper runtime reload debug output

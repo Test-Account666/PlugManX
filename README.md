@@ -134,9 +134,14 @@ Building PlugManX is simple:
    mvn clean install
    ```
 
+   Velocity is built separately after the main project has installed `plugman-core`:
+   ```bash
+   mvn -f plugman-velocity/pom.xml clean package
+   ```
+
 4. **Find the built artifacts:**
     - Individual module JARs will be in each module's `target/` directory
-    - For Velocity, use `plugman-velocity/target/PlugManVelocity.jar`; the versioned module JAR is not standalone
+    - For Velocity, use `plugman-velocity/target/PlugManX-<version>.jar`
     - The assembled distribution will be in `plugman-assembly/target/`
 
 ## Version Management

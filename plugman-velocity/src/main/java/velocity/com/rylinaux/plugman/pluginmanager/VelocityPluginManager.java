@@ -667,6 +667,11 @@ public class VelocityPluginManager implements PluginManager {
         return true;
     }
 
+    @Override
+    public boolean supportsTwoPhaseBulkReload() {
+        return true;
+    }
+
     private boolean isAlwaysProtected(Plugin plugin) {
         return plugin != null && isAlwaysProtected(plugin.getName());
     }

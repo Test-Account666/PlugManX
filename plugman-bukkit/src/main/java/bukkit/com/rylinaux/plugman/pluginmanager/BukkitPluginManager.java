@@ -120,11 +120,11 @@ public class BukkitPluginManager extends BasePluginManager {
      */
     @Override
     public PluginResult disable(Plugin plugin) {
-        if (plugin == null) return new PluginResult(false, "error.invalid-plugin");
-        if (!plugin.isEnabled()) return new PluginResult(false, "disable.already-disabled", plugin.getName());
+        if (plugin == null) return new PluginResult(false, "plugin.null");
+        if (!plugin.isEnabled()) return new PluginResult(false, "plugin.already-disabled");
         var bukkitPlugin = plugin.<org.bukkit.plugin.Plugin>getHandle();
         Bukkit.getPluginManager().disablePlugin(bukkitPlugin);
-        return new PluginResult(true, "disable.disabled", plugin.getName());
+        return new PluginResult(true, "plugin.disabled");
     }
 
     /**

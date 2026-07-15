@@ -76,7 +76,6 @@ deps:
 list:
   paper: '&9Paper-Plugins (&b{0}&9): {1}'
   bukkit: '&9Bukkit-Plugins (&e{0}&9): {1}'
-  velocity: '&9Velocity-Plugins (&a{0}&9): {1}'
 load:
   already-loaded: '&c{0} ist bereits geladen.'
   cannot-find: '&cKonnte Datei nicht finden und konnte Beschreibungen nicht durchsuchen.'
@@ -85,7 +84,6 @@ load:
   enable-failed: '&c{0} wurde geladen, ist aber in onEnable fehlgeschlagen. Prüfe den Stacktrace oben.'
   loaded: '&9{0} wurde geladen und aktiviert.'
   missing-dependencies: '&c{0} konnte nicht geladen werden. Fehlende Pflicht-Abhängigkeiten: {1}'
-  rollback-restored: '&eDas Neuladen von {0} ist fehlgeschlagen, aber die vorherige Plugin-JAR wurde wiederhergestellt und geladen.'
   plugin-dir: '&cPlugin-Verzeichnis nicht gefunden.'
 lookup:
   found: '&9/{0} ist bei {1} registriert.'

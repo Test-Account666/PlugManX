@@ -36,9 +36,6 @@ import core.com.rylinaux.plugman.services.ServiceRegistry;
  * @author rylinaux
  */
 public class HelpCommand extends AbstractCommand {
-    private static final java.util.Set<String> FORCE_COMMANDS =
-            java.util.Set.of("disable", "reload", "restart", "unload");
-    private static final String VELOCITY_MESSAGE_PREFIX = "velocity-";
 
     /**
      * The name of the command.
@@ -89,18 +86,9 @@ public class HelpCommand extends AbstractCommand {
         var help = config.getConfigurationSection("help");
 
         for (var section : help.getKeys(false)) {
-            if (section.toLowerCase(java.util.Locale.ROOT).startsWith(VELOCITY_MESSAGE_PREFIX)) continue;
             if (!section.equalsIgnoreCase("header") && !sender.hasPermission("plugman." + section)) continue;
 
-            var messageKey = getPluginManager().supportsForceFlag() && FORCE_COMMANDS.contains(section.toLowerCase())
-                    ? help.getName() + ".velocity-" + section
-                    : help.getName() + "." + section;
-            sender.sendMessage(false, messageKey, label);
-        }
-
-        if (getPluginManager().supportsForceFlag()) {
-            sender.sendMessage(false, help.getName() + ".velocity-lifecycle", label);
-            sender.sendMessage(false, help.getName() + ".velocity-force", label);
+            sender.sendMessage(false, help.getName() + "." + section, label);
         }
     }
 }

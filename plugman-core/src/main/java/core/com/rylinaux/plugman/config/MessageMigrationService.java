@@ -24,11 +24,6 @@ public class MessageMigrationService {
     private static final String RELOAD_MODE_SECTION = "reloadmode";
     private static final String RELOAD_SECTION = "reload";
     private static final String RESTART_SECTION = "restart";
-    private static final String VELOCITY_SECTION = "velocity";
-    private static final String DEFAULT_ROLLBACK_RESTORED_MESSAGE =
-            "&eReloading {0} failed, but the previous plugin jar was restored and loaded.";
-    private static final String GERMAN_ROLLBACK_RESTORED_MESSAGE =
-            "&eDas Neuladen von {0} ist fehlgeschlagen, aber die vorherige Plugin-JAR wurde wiederhergestellt und geladen.";
     private static final BulkMessageDefaults DEFAULT_BULK_MESSAGES = new BulkMessageDefaults(
             "&cDependency cycle detected: {0}",
             "&9Reloaded {0} plugins in {1} seconds (&c{2} failed&9, &e{3} skipped&9).",
@@ -37,32 +32,9 @@ public class MessageMigrationService {
             "&cAbhängigkeitszyklus erkannt: {0}",
             "&9{0} Plugins wurden in {1} Sekunden neu geladen (&c{2} fehlgeschlagen&9, &e{3} übersprungen&9).",
             "&9{0} Plugins wurden in {1} Sekunden neu gestartet (&c{2} fehlgeschlagen&9, &e{3} übersprungen&9).");
-    private static final VelocityLifecycleMessages DEFAULT_VELOCITY_MESSAGES = new VelocityLifecycleMessages(
-            "&7- &eVelocity: enable loads a plugin; disable fully unloads it.",
-            "&9{0} has been loaded. On Velocity, enable means load; there is no separate enabled state.",
-            "&9{0} has been unloaded. On Velocity, disable means unload; there is no separate disabled state.",
-            "&c{0} is protected because reloading it can destabilize the proxy. Re-run with --force to continue.",
-            "&7- &eVelocity: critical plugins require --force and the matching .force permission.");
-    private static final VelocityLifecycleMessages GERMAN_VELOCITY_MESSAGES = new VelocityLifecycleMessages(
-            "&7- &eVelocity: enable lädt ein Plugin; disable entlädt es vollständig.",
-            "&9{0} wurde geladen. Auf Velocity bedeutet enable: load; einen separaten Aktiviert-Zustand gibt es nicht.",
-            "&9{0} wurde entladen. Auf Velocity bedeutet disable: unload; einen separaten Deaktiviert-Zustand gibt es nicht.",
-            "&c{0} ist geschützt, weil ein Reload den Proxy destabilisieren kann. Nutze --force, um fortzufahren.",
-            "&7- &eVelocity: Kritische Plugins benötigen --force und die passende .force-Berechtigung.");
-    private static final VelocityForceHelpMessages DEFAULT_VELOCITY_FORCE_HELP = new VelocityForceHelpMessages(
-            "&7- &a/{0} disable <plugin|all> [--force] &f- &7Disable and unload a plugin.",
-            "&7- &a/{0} reload <plugin|all> [--force] &f- &7Reload a plugin.",
-            "&7- &a/{0} restart <plugin|all> [--force] &f- &7Restart a plugin.",
-            "&7- &a/{0} unload <plugin> [--force] &f- &7Unload a plugin.");
-    private static final VelocityForceHelpMessages GERMAN_VELOCITY_FORCE_HELP = new VelocityForceHelpMessages(
-            "&7- &a/{0} disable <plugin|all> [--force] &f- &7Deaktiviert und entlaedt ein Plugin.",
-            "&7- &a/{0} reload <plugin|all> [--force] &f- &7Laedt ein Plugin neu.",
-            "&7- &a/{0} restart <plugin|all> [--force] &f- &7Startet ein Plugin neu.",
-            "&7- &a/{0} unload <plugin> [--force] &f- &7Entlaedt ein Plugin.");
     private static final MessageDefaults DEFAULT_MESSAGES = new MessageDefaults(
             "&9Paper Plugins (&b{0}&9): {1}",
             "&9Bukkit Plugins (&e{0}&9): {1}",
-            "&9Velocity Plugins (&a{0}&9): {1}",
             "&7- &a/{0} deps <plugin> &f- &7Show plugin dependency relationships.",
             "&7- &a/{0} reloadmode [ALL|REQUIRED_ONLY|OFF] &f- &7View or change dependent reload behavior.",
             "Plugin Dependencies: {0}",
@@ -92,7 +64,6 @@ public class MessageMigrationService {
     private static final MessageDefaults GERMAN_MESSAGES = new MessageDefaults(
             "&9Paper-Plugins (&b{0}&9): {1}",
             "&9Bukkit-Plugins (&e{0}&9): {1}",
-            "&9Velocity-Plugins (&a{0}&9): {1}",
             "&7- &a/{0} deps <plugin> &f- &7Zeigt Plugin-Abhängigkeiten an.",
             "&7- &a/{0} reloadmode [ALL|REQUIRED_ONLY|OFF] &f- &7Zeigt oder ändert das Dependent-Reload-Verhalten.",
             "Plugin-Abhängigkeiten: {0}",
@@ -140,16 +111,6 @@ public class MessageMigrationService {
         migrateMessages();
     }
 
-    public void migrateVelocityMessages() {
-        migrateVelocityMessageFile(new File(dataFolder, DEFAULT_MESSAGES_FILE), MESSAGE_DEFAULTS.get(DEFAULT_MESSAGES_FILE));
-
-        var messagesFolder = new File(dataFolder, MESSAGES_FOLDER);
-        for (var entry : MESSAGE_DEFAULTS.entrySet()) {
-            if (entry.getKey().equals(DEFAULT_MESSAGES_FILE)) continue;
-            migrateVelocityMessageFile(new File(messagesFolder, entry.getKey()), entry.getValue());
-        }
-    }
-
     private void migrateMessages() {
         migrateMessagesFile(new File(dataFolder, DEFAULT_MESSAGES_FILE), MESSAGE_DEFAULTS.get(DEFAULT_MESSAGES_FILE));
 
@@ -168,14 +129,8 @@ public class MessageMigrationService {
             var bulkDefaults = messagesFile.getName().equals(GERMAN_MESSAGES_FILE)
                     ? GERMAN_BULK_MESSAGES
                     : DEFAULT_BULK_MESSAGES;
-            var rollbackRestoredMessage = messagesFile.getName().equals(GERMAN_MESSAGES_FILE)
-                    ? GERMAN_ROLLBACK_RESTORED_MESSAGE
-                    : DEFAULT_ROLLBACK_RESTORED_MESSAGE;
-            var updatedLines = addMissingEntries(lines, defaults, bulkDefaults, rollbackRestoredMessage);
-            var addedMessages = updatedLines != null;
-            if (updatedLines == null) updatedLines = new ArrayList<>(lines);
-            var removedForceFlags = removeUnsupportedForceFlags(updatedLines);
-            if (!addedMessages && !removedForceFlags) return;
+            var updatedLines = addMissingEntries(lines, defaults, bulkDefaults);
+            if (updatedLines == null) return;
 
             Files.write(messagesFile.toPath(), updatedLines, StandardCharsets.UTF_8);
             logger.info("Added missing messages to " + messagesFile.getName() + ".");
@@ -186,8 +141,7 @@ public class MessageMigrationService {
 
     private List<String> addMissingEntries(List<String> lines,
                                            MessageDefaults defaults,
-                                           BulkMessageDefaults bulkDefaults,
-                                           String rollbackRestoredMessage) {
+                                           BulkMessageDefaults bulkDefaults) {
         var updatedLines = new ArrayList<>(lines);
         var changed = false;
 
@@ -216,7 +170,6 @@ public class MessageMigrationService {
         changed |= addMissingNestedMessageEntry(updatedLines, ERROR_SECTION, USAGE_SECTION, USAGE_SECTION, defaults.errorUsageUsageMessage());
         changed |= addMissingMessageEntry(updatedLines, "load", "enable-failed", defaults.loadEnableFailedMessage());
         changed |= addMissingMessageEntry(updatedLines, "load", "missing-dependencies", defaults.missingDependenciesMessage());
-        changed |= addMissingMessageEntry(updatedLines, "load", "rollback-restored", rollbackRestoredMessage);
         changed |= addMissingMessageEntry(updatedLines, RELOAD_SECTION, "blocked-dependents", defaults.reloadBlockedDependentsMessage());
         changed |= addMissingMessageEntry(updatedLines, RELOAD_SECTION, "confirm-all", defaults.reloadConfirmAllMessage());
         changed |= addMissingMessageEntry(updatedLines, RELOAD_SECTION, "summary", bulkDefaults.reloadSummaryMessage());
@@ -225,46 +178,6 @@ public class MessageMigrationService {
         changed |= addMissingMessageEntry(updatedLines, RESTART_SECTION, "summary", bulkDefaults.restartSummaryMessage());
 
         return changed ? updatedLines : null;
-    }
-
-    private void migrateVelocityMessageFile(File messagesFile, MessageDefaults defaults) {
-        if (!messagesFile.exists()) return;
-
-        try {
-            var lines = Files.readAllLines(messagesFile.toPath(), StandardCharsets.UTF_8);
-            var updatedLines = new ArrayList<>(lines);
-            var lifecycleMessages = messagesFile.getName().equals(GERMAN_MESSAGES_FILE)
-                    ? GERMAN_VELOCITY_MESSAGES
-                    : DEFAULT_VELOCITY_MESSAGES;
-            var forceHelpMessages = messagesFile.getName().equals(GERMAN_MESSAGES_FILE)
-                    ? GERMAN_VELOCITY_FORCE_HELP
-                    : DEFAULT_VELOCITY_FORCE_HELP;
-            var changed = addMissingMessageEntry(updatedLines, "list", VELOCITY_SECTION, defaults.velocityMessage());
-            changed |= addMissingMessageEntry(updatedLines, HELP_SECTION, "velocity-lifecycle",
-                    lifecycleMessages.helpMessage());
-            changed |= addMissingMessageEntry(updatedLines, HELP_SECTION, "velocity-force",
-                    lifecycleMessages.forceHelpMessage());
-            changed |= addMissingMessageEntry(updatedLines, HELP_SECTION, "velocity-disable",
-                    forceHelpMessages.disableMessage());
-            changed |= addMissingMessageEntry(updatedLines, HELP_SECTION, "velocity-reload",
-                    forceHelpMessages.reloadMessage());
-            changed |= addMissingMessageEntry(updatedLines, HELP_SECTION, "velocity-restart",
-                    forceHelpMessages.restartMessage());
-            changed |= addMissingMessageEntry(updatedLines, HELP_SECTION, "velocity-unload",
-                    forceHelpMessages.unloadMessage());
-            changed |= addMissingMessageEntry(updatedLines, VELOCITY_SECTION, "enabled",
-                    lifecycleMessages.enabledMessage());
-            changed |= addMissingMessageEntry(updatedLines, VELOCITY_SECTION, "disabled",
-                    lifecycleMessages.disabledMessage());
-            changed |= addMissingMessageEntry(updatedLines, VELOCITY_SECTION, "force-required",
-                    lifecycleMessages.forceRequiredMessage());
-            if (!changed) return;
-
-            Files.write(messagesFile.toPath(), updatedLines, StandardCharsets.UTF_8);
-            logger.info("Added missing Velocity messages to " + messagesFile.getName() + ".");
-        } catch (IOException exception) {
-            logger.warning("Failed to migrate " + messagesFile.getName() + " Velocity messages: " + exception.getMessage());
-        }
     }
 
     private boolean addMissingMessageEntry(List<String> lines, String section, String key, String message) {
@@ -281,20 +194,6 @@ public class MessageMigrationService {
 
         lines.add(sectionEnd, formatMessageLine("  ", key, message));
         return true;
-    }
-
-    private boolean removeUnsupportedForceFlags(List<String> lines) {
-        var changed = false;
-        var forceCommands = List.of("disable", RELOAD_SECTION, RESTART_SECTION, "unload");
-        for (var i = 0; i < lines.size(); i++) {
-            var trimmed = lines.get(i).trim();
-            if (forceCommands.stream().noneMatch(command -> trimmed.startsWith(command + ":"))) continue;
-            var updated = lines.get(i).replace(" [--force]", "");
-            if (updated.equals(lines.get(i))) continue;
-            lines.set(i, updated);
-            changed = true;
-        }
-        return changed;
     }
 
     private boolean addMissingNestedMessageEntry(List<String> lines, String section, String nestedSection, String key, String message) {
@@ -382,7 +281,6 @@ public class MessageMigrationService {
 
     private record MessageDefaults(String paperMessage,
                                    String bukkitMessage,
-                                   String velocityMessage,
                                    String helpDepsMessage,
                                    String helpReloadModeMessage,
                                    String depsHeaderMessage,
@@ -414,18 +312,5 @@ public class MessageMigrationService {
     private record BulkMessageDefaults(String dependencyCycleMessage,
                                        String reloadSummaryMessage,
                                        String restartSummaryMessage) {
-    }
-
-    private record VelocityLifecycleMessages(String helpMessage,
-                                             String enabledMessage,
-                                             String disabledMessage,
-                                             String forceRequiredMessage,
-                                             String forceHelpMessage) {
-    }
-
-    private record VelocityForceHelpMessages(String disableMessage,
-                                             String reloadMessage,
-                                             String restartMessage,
-                                             String unloadMessage) {
     }
 }

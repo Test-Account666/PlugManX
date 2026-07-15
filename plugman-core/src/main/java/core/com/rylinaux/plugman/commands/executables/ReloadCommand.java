@@ -59,7 +59,7 @@ public class ReloadCommand extends CascadingPluginCommand {
     /**
      * The sub permissions of the command.
      */
-    protected static final String[] SUB_PERMISSIONS = {"all", "force"};
+    public static final String[] SUB_PERMISSIONS = {"all"};
 
     /**
      * Construct out object.

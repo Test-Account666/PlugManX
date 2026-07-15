@@ -29,7 +29,6 @@ package core.com.rylinaux.plugman.commands.executables;
 import core.com.rylinaux.plugman.commands.AbstractCommand;
 import core.com.rylinaux.plugman.commands.CommandSender;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
-import core.com.rylinaux.plugman.util.FlagUtil;
 
 /**
  * Command that disables plugin(s).
@@ -37,7 +36,6 @@ import core.com.rylinaux.plugman.util.FlagUtil;
  * @author rylinaux
  */
 public class DisableCommand extends AbstractCommand {
-    private static final String FORCE_PERMISSION = "force";
 
     /**
      * The name of the command.
@@ -62,7 +60,7 @@ public class DisableCommand extends AbstractCommand {
     /**
      * The sub permissions of the command.
      */
-    protected static final String[] SUB_PERMISSIONS = {"all", FORCE_PERMISSION};
+    public static final String[] SUB_PERMISSIONS = {"all"};
 
     /**
      * Construct out object.
@@ -82,19 +80,9 @@ public class DisableCommand extends AbstractCommand {
      */
     @Override
     public void execute(CommandSender sender, String label, String[] args) {
-        var supportsForce = getPluginManager().supportsForceFlag();
-        var parsedArguments = supportsForce ? FlagUtil.parse(args, FORCE_PERMISSION, 'f') : null;
-        if (parsedArguments != null) {
-            args = parsedArguments.argumentArray();
-        }
-        var force = supportsForce && parsedArguments.hasFlag('f');
-        if (force && !hasPermission(FORCE_PERMISSION)) {
-            sendNoPermissionMessage();
-            return;
-        }
         if (!validateArguments(label, args, 2)) return;
 
-        if (handleAllArgument(args, "all", () -> getPluginManager().disableAll(force), "disable.all")) return;
+        if (handleAllArgument(args, "all", () -> getPluginManager().disableAll(), "disable.all")) return;
 
         var target = getPluginManager().getPluginByName(args, 1);
 
@@ -105,8 +93,8 @@ public class DisableCommand extends AbstractCommand {
             return;
         }
 
-        var result = getPluginManager().disable(target, force);
-        sender.sendMessage(result.messageId(),
-                result.messageArgs().length == 0 ? new Object[]{target.getName()} : result.messageArgs());
+        getPluginManager().disable(target);
+
+        sender.sendMessage("disable.disabled", target.getName());
     }
 }

@@ -112,13 +112,12 @@ public class PlugManConfigurationManager {
      */
     private void migrateConfigIfNeeded() {
         var configVersion = plugManConfig.getVersion();
-        var currentConfigVersion = getCurrentConfigVersion();
 
         var startTime = System.currentTimeMillis();
 
-        while (configVersion < currentConfigVersion) {
+        while (configVersion < CURRENT_CONFIG_VERSION) {
             if (System.currentTimeMillis() - startTime > 10000) {
-                logger.severe("PlugMan failed to migrate config to version " + currentConfigVersion + "! (Timed out)");
+                logger.severe("PlugMan failed to migrate config to version " + CURRENT_CONFIG_VERSION + "! (Timed out)");
                 break;
             }
 
@@ -144,25 +143,8 @@ public class PlugManConfigurationManager {
                 continue;
             }
 
-            if (configVersion == 5) {
-                migrateToVersion6();
-                continue;
-            }
-
             break;
         }
-    }
-
-    protected int getCurrentConfigVersion() {
-        return CURRENT_CONFIG_VERSION;
-    }
-
-    private void migrateToVersion6() {
-        plugManConfig.setVersion(6);
-        plugManConfig.setShowVelocityWarning(true);
-        saveJacksonConfiguration();
-
-        logger.info("Migrated config to version 6, you can now disable the Velocity warning in config.yml.");
     }
 
     private void migrateToVersion5() {

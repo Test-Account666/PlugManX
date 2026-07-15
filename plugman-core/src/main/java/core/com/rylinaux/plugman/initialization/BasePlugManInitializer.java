@@ -34,9 +34,6 @@ import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 import core.com.rylinaux.plugman.util.ThreadUtil;
-import core.com.rylinaux.plugman.util.reflection.ClassAccessor;
-import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
-import core.com.rylinaux.plugman.util.reflection.MethodAccessor;
 import lombok.Getter;
 
 import java.io.File;
@@ -76,7 +73,6 @@ public abstract class BasePlugManInitializer {
      * Initialize core services in the service registry
      */
     public void initializeCoreServices() {
-        initializeReflectionCaches();
         serviceRegistry.register(PluginLogger.class, logger);
 
         var configurationManager = createConfigurationManager();
@@ -94,7 +90,6 @@ public abstract class BasePlugManInitializer {
      */
     public void setupMessaging() {
         setupMessageFiles();
-        migratePlatformMessages();
 
         try {
             var messageFormatter = createMessageFormatter();
@@ -121,23 +116,18 @@ public abstract class BasePlugManInitializer {
     }
 
     private void clearReflectionCaches() {
-        clearReflectionCache("class", () -> ClassAccessor.clearCache());
-        clearReflectionCache("field", () -> FieldAccessor.clearCache());
-        clearReflectionCache("method", () -> MethodAccessor.clearCache());
+        clearReflectionCache("class", "core.com.rylinaux.plugman.util.reflection.ClassAccessor");
+        clearReflectionCache("field", "core.com.rylinaux.plugman.util.reflection.FieldAccessor");
+        clearReflectionCache("method", "core.com.rylinaux.plugman.util.reflection.MethodAccessor");
     }
 
-    private void initializeReflectionCaches() {
-        ClassAccessor.getCacheSize();
-        FieldAccessor.getCacheSize();
-        MethodAccessor.getCacheSize();
-    }
-
-    private void clearReflectionCache(String cacheName, Runnable cacheCleanup) {
+    private void clearReflectionCache(String cacheName, String accessorClassName) {
         try {
-            cacheCleanup.run();
-        } catch (NoClassDefFoundError ignored) {
-            // Velocity may close plugin classloaders before dispatching ProxyShutdownEvent.
+            var accessorClass = Class.forName(accessorClassName);
+            accessorClass.getMethod("clearCache").invoke(null);
         } catch (LinkageError | RuntimeException exception) {
+            logger.warning("Failed to clear " + cacheName + " reflection cache during shutdown: " + exception.getMessage());
+        } catch (ReflectiveOperationException exception) {
             logger.warning("Failed to clear " + cacheName + " reflection cache during shutdown: " + exception.getMessage());
         }
     }
@@ -172,10 +162,6 @@ public abstract class BasePlugManInitializer {
 
     protected InputStream getResourceAsStream(String resource) {
         return getClass().getClassLoader().getResourceAsStream(resource);
-    }
-
-    protected void migratePlatformMessages() {
-        // Platforms can add messages that do not belong in every distribution.
     }
 
     protected abstract PlugManConfigurationManager createConfigurationManager();

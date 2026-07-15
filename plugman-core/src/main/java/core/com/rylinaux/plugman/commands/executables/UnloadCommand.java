@@ -29,7 +29,6 @@ package core.com.rylinaux.plugman.commands.executables;
 import core.com.rylinaux.plugman.commands.AbstractCommand;
 import core.com.rylinaux.plugman.commands.CommandSender;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
-import core.com.rylinaux.plugman.util.FlagUtil;
 
 /**
  * Command that unloads plugin(s).
@@ -37,7 +36,6 @@ import core.com.rylinaux.plugman.util.FlagUtil;
  * @author rylinaux
  */
 public class UnloadCommand extends AbstractCommand {
-    private static final String FORCE_PERMISSION = "force";
 
     /**
      * The name of the command.
@@ -62,7 +60,7 @@ public class UnloadCommand extends AbstractCommand {
     /**
      * The sub permissions of the command.
      */
-    protected static final String[] SUB_PERMISSIONS = {FORCE_PERMISSION};
+    public static final String[] SUB_PERMISSIONS = {""};
 
     /**
      * Construct out object.
@@ -82,25 +80,14 @@ public class UnloadCommand extends AbstractCommand {
      */
     @Override
     public void execute(CommandSender sender, String label, String[] args) {
-        var supportsForce = getPluginManager().supportsForceFlag();
-        var parsedArguments = supportsForce ? FlagUtil.parse(args, FORCE_PERMISSION, 'f') : null;
-        if (parsedArguments != null) {
-            args = parsedArguments.argumentArray();
-        }
-        var force = supportsForce && parsedArguments.hasFlag('f');
-        if (force && !hasPermission(FORCE_PERMISSION)) {
-            sendNoPermissionMessage();
-            return;
-        }
         if (!validateArguments(label, args, 2)) return;
 
         var target = getPluginManager().getPluginByName(args, 1);
 
         if (!validatePlugin(label, target)) return;
 
-        var message = getPluginManager().unload(target, force);
+        var message = getPluginManager().unload(target);
 
-        sender.sendMessage(message.messageId(),
-                message.messageArgs().length == 0 ? new Object[]{target.getName()} : message.messageArgs());
+        sender.sendMessage(message.messageId(), target.getName());
     }
 }

@@ -32,7 +32,6 @@ import core.com.rylinaux.plugman.commands.CommandSender;
 import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
 import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
-import core.com.rylinaux.plugman.util.FlagUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,16 +58,6 @@ abstract class CascadingPluginCommand extends AbstractCommand {
 
     @Override
     public void execute(CommandSender sender, String label, String[] args) {
-        var supportsForce = getPluginManager().supportsForceFlag();
-        var parsedArguments = supportsForce ? FlagUtil.parse(args, "force", 'f') : null;
-        if (parsedArguments != null) {
-            args = parsedArguments.argumentArray();
-        }
-        var force = supportsForce && parsedArguments.hasFlag('f');
-        if (force && !hasPermission("force")) {
-            sendNoPermissionMessage();
-            return;
-        }
         if (!validateArguments(label, args, 2)) return;
 
         if (args[1].equalsIgnoreCase("all") || args[1].equalsIgnoreCase("*")) {
@@ -77,14 +66,14 @@ abstract class CascadingPluginCommand extends AbstractCommand {
                 return;
             }
 
-            runAllPlugins(sender, args, force);
+            runAllPlugins(sender, args);
             return;
         }
 
         var target = getPluginManager().getPluginByName(args, 1);
         if (!validatePlugin(label, target)) return;
 
-        runPluginWithCommandBatch(sender, target, force);
+        runPluginWithCommandBatch(sender, target);
     }
 
     protected abstract String allSuccessMessage();
@@ -103,10 +92,9 @@ abstract class CascadingPluginCommand extends AbstractCommand {
         return null;
     }
 
-    private void runAllPlugins(CommandSender sender, String[] args, boolean force) {
+    private void runAllPlugins(CommandSender sender, String[] args) {
         var managedPlugins = getPluginManager().getPlugins().stream().filter(plugin ->
-                plugin != null && !getPluginManager().isIgnored(plugin)
-                        && (force || !getPluginManager().requiresForce(plugin))).toList();
+                plugin != null && !getPluginManager().isIgnored(plugin)).toList();
         var plugins = managedPlugins.stream().filter(Plugin::isEnabled).toList();
         var skippedPlugins = managedPlugins.size() - plugins.size();
 
@@ -119,11 +107,11 @@ abstract class CascadingPluginCommand extends AbstractCommand {
         var includeSoftDependencies = get(PlugManConfigurationManager.class).getPlugManConfig().shouldReloadSoftDependents();
         var dependencyPlan = createDependencyPlan(plugins, includeSoftDependencies);
         dependencyPlan.cycles().forEach(cycle -> sender.sendMessage("error.dependency-cycle", cycle));
-        var result = executeBulkOperation(sender, dependencyPlan.loadOrder(), force);
+        var result = executeBulkOperation(sender, dependencyPlan.loadOrder());
         sendBulkResult(sender, result, skippedPlugins, startedAt);
     }
 
-    private BulkOperationResult executeBulkOperation(CommandSender sender, List<Plugin> loadOrder, boolean force) {
+    private BulkOperationResult executeBulkOperation(CommandSender sender, List<Plugin> loadOrder) {
         var unloadOrder = new ArrayList<>(loadOrder);
         Collections.reverse(unloadOrder);
         var unloadedPlugins = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
@@ -132,7 +120,7 @@ abstract class CascadingPluginCommand extends AbstractCommand {
 
         getPluginManager().beginCommandUpdateBatch();
         try {
-            unloadPlugins(sender, unloadOrder, unloadedPlugins, failedPlugins, force);
+            unloadPlugins(sender, unloadOrder, unloadedPlugins, failedPlugins);
             successfulPlugins = loadPlugins(sender, loadOrder, unloadedPlugins, failedPlugins);
         } finally {
             getPluginManager().endCommandUpdateBatch();
@@ -144,10 +132,9 @@ abstract class CascadingPluginCommand extends AbstractCommand {
     private void unloadPlugins(CommandSender sender,
                                List<Plugin> unloadOrder,
                                Set<String> unloadedPlugins,
-                               Set<String> failedPlugins,
-                               boolean force) {
+                               Set<String> failedPlugins) {
         for (var plugin : unloadOrder) {
-            var result = getPluginManager().unload(plugin, force);
+            var result = getPluginManager().unload(plugin);
             if (result.success()) {
                 unloadedPlugins.add(plugin.getName());
                 continue;
@@ -306,16 +293,16 @@ abstract class CascadingPluginCommand extends AbstractCommand {
                 && (args.length < 3 || !args[2].equalsIgnoreCase(CONFIRM_ARGUMENT));
     }
 
-    private boolean runPluginWithCommandBatch(CommandSender sender, Plugin target, boolean force) {
+    private boolean runPluginWithCommandBatch(CommandSender sender, Plugin target) {
         getPluginManager().beginCommandUpdateBatch();
         try {
-            return runPlugin(sender, target, force);
+            return runPlugin(sender, target);
         } finally {
             getPluginManager().endCommandUpdateBatch();
         }
     }
 
-    private boolean runPlugin(CommandSender sender, Plugin target, boolean force) {
+    private boolean runPlugin(CommandSender sender, Plugin target) {
         if (target == null) {
             sendInvalidPluginMessage();
             return false;
@@ -325,7 +312,7 @@ abstract class CascadingPluginCommand extends AbstractCommand {
         var unloadedDependents = new ArrayList<Plugin>();
 
         for (var dependent : dependents) {
-            var result = getPluginManager().unload(dependent, force);
+            var result = getPluginManager().unload(dependent);
             if (!result.success()) {
                 sender.sendMessage(result.messageId(), dependent.getName());
                 loadDependents(sender, unloadedDependents);
@@ -335,7 +322,7 @@ abstract class CascadingPluginCommand extends AbstractCommand {
             unloadedDependents.add(dependent);
         }
 
-        var result = getPluginManager().unload(target, force);
+        var result = getPluginManager().unload(target);
         if (!result.success()) {
             sender.sendMessage(result.messageId(), target.getName());
             loadDependents(sender, unloadedDependents);

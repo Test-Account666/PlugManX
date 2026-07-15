@@ -52,18 +52,10 @@ public interface PluginManager {
      */
     PluginResult disable(Plugin plugin);
 
-    default PluginResult disable(Plugin plugin, boolean force) {
-        return disable(plugin);
-    }
-
     /**
      * Disable all plugins.
      */
     PluginResult disableAll();
-
-    default PluginResult disableAll(boolean force) {
-        return disableAll();
-    }
 
     /**
      * Returns the formatted name of the plugin.
@@ -98,17 +90,6 @@ public interface PluginManager {
      * @return the plugin
      */
     Plugin getPluginByName(String name);
-
-    /**
-     * Returns a disabled or unloaded plugin when the platform keeps it outside the active plugin registry.
-     *
-     * @param args  the command arguments
-     * @param start the index to start at
-     * @return the disabled plugin, or {@code null} when unavailable
-     */
-    default Plugin getDisabledPluginByName(String[] args, int start) {
-        return null;
-    }
 
     /**
      * Returns a List of plugin names.
@@ -213,21 +194,6 @@ public interface PluginManager {
      */
     PluginResult unload(Plugin plugin);
 
-    default PluginResult unload(Plugin plugin, boolean force) {
-        return unload(plugin);
-    }
-
-    default boolean requiresForce(Plugin plugin) {
-        return false;
-    }
-
-    /**
-     * Returns whether this platform exposes the Velocity-only force flag.
-     */
-    default boolean supportsForceFlag() {
-        return false;
-    }
-
     /**
      * Returns if the plugin is a Paper plugin.
      *
@@ -235,14 +201,6 @@ public interface PluginManager {
      * @return if the plugin is a Paper plugin
      */
     boolean isPaperPlugin(Plugin plugin);
-
-    default List<String> getPluginListMessageKeys() {
-        return List.of("list.paper", "list.bukkit");
-    }
-
-    default String getPluginListMessageKey(Plugin plugin) {
-        return isPaperPlugin(plugin) ? "list.paper" : "list.bukkit";
-    }
 
     Set<Plugin> getPlugins();
 }

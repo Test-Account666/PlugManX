@@ -86,7 +86,6 @@ public class EnableCommand extends AbstractCommand {
         if (handleAllArgument(args, "all", () -> getPluginManager().enableAll(), "enable.all")) return;
 
         var target = getPluginManager().getPluginByName(args, 1);
-        if (target == null) target = getPluginManager().getDisabledPluginByName(args, 1);
 
         if (!validatePlugin(label, target)) return;
 

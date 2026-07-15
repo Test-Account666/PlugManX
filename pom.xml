@@ -17,15 +17,6 @@
         <module>plugman-assembly</module>
     </modules>
 
-    <profiles>
-        <profile>
-            <id>include-velocity</id>
-            <modules>
-                <module>plugman-velocity</module>
-            </modules>
-        </profile>
-    </profiles>
-
     <name>PlugManX</name>
     <description>Plugin manager for Bukkit servers.</description>
     <url>https://www.spigotmc.org/resources/plugmanx.88135/</url>

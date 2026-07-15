@@ -112,15 +112,9 @@ public abstract class AbstractCommand {
      * Sends the usage message to the sender.
      */
     public void sendUsage(String label) {
-        var displayedUsage = usage;
-        if (getPluginManager().supportsForceFlag()
-                && (name.equalsIgnoreCase("disable") || name.equalsIgnoreCase("reload")
-                || name.equalsIgnoreCase("restart") || name.equalsIgnoreCase("unload"))) {
-            displayedUsage += " [--force]";
-        }
         sender.sendMessage(false, "error.usage.command", name);
         sender.sendMessage(false, "error.usage.description", description);
-        sender.sendMessage(false, "error.usage.usage", label, displayedUsage);
+        sender.sendMessage(false, "error.usage.usage", label, usage);
     }
 
     /**

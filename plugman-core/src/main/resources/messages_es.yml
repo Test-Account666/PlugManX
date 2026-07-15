@@ -75,7 +75,6 @@ deps:
 list:
   paper: '&9Plugins Paper (&b{0}&9): {1}'
   bukkit: '&9Plugins Bukkit (&e{0}&9): {1}'
-  velocity: '&9Plugins Velocity (&a{0}&9): {1}'
 load:
   already-loaded: '&c{0} ya ha sido cargado.'
   cannot-find: '&cNo se encontró el archivo y falló la búsqueda de descripciones.'
@@ -84,7 +83,6 @@ load:
   enable-failed: '&c{0} se cargó, pero falló durante onEnable. Revisa el stacktrace anterior.'
   loaded: '&9{0} ha sido cargado y activado.'
   missing-dependencies: '&cNo se pudo cargar {0}. Dependencias requeridas faltantes: {1}'
-  rollback-restored: '&eLa recarga de {0} falló, pero el archivo JAR anterior fue restaurado y cargado.'
   plugin-dir: '&cCarpeta de plugins no encontrada.'
 lookup:
   found: '&9/{0} está registrado a {1}.'

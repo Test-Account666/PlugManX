@@ -75,7 +75,6 @@ deps:
 list:
   paper: '&9Paper 外掛 (&b{0}&9): {1}'
   bukkit: '&9Bukkit 外掛 (&e{0}&9): {1}'
-  velocity: '&9Velocity 外掛 (&a{0}&9): {1}'
 load:
   already-loaded: '&c{0} 已經載入。'
   cannot-find: '&c找不到檔案，且無法搜尋描述。'
@@ -84,7 +83,6 @@ load:
   enable-failed: '&c{0} 已載入，但在 onEnable 期間失敗。請檢查上方的堆疊追蹤。'
   loaded: '&9{0} 已載入並啟用。'
   missing-dependencies: '&c無法載入 {0}。缺少必要依賴: {1}'
-  rollback-restored: '&e重新載入 {0} 失敗，但先前的外掛 JAR 已還原並載入。'
   plugin-dir: '&c找不到外掛目錄。'
 lookup:
   found: '&9/{0} 已註冊到 {1}。'
