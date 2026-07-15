@@ -45,14 +45,20 @@ import java.util.Set;
  * @author rylinaux
  */
 public class PlugManCommandHandler implements SimpleCommand {
+    private static final String DISABLE_COMMAND = "disable";
+    private static final String RELOAD_COMMAND = "reload";
+    private static final String RESTART_COMMAND = "restart";
+    private static final String UNLOAD_COMMAND = "unload";
+
     /**
      * Valid command names.
      */
     private static final String[] COMMANDS = {
-            "check", "deps", "disable", "dump", "enable", "help", "info", "list", "load", "lookup",
-            "reload", "reloadconfig", "reloadmode", "restart", "unload", "usage"
+            "check", "deps", DISABLE_COMMAND, "dump", "enable", "help", "info", "list", "load", "lookup",
+            RELOAD_COMMAND, "reloadconfig", "reloadmode", RESTART_COMMAND, UNLOAD_COMMAND, "usage"
     };
-    private static final Set<String> FORCE_COMMANDS = Set.of("disable", "reload", "restart", "unload");
+    private static final Set<String> FORCE_COMMANDS = Set.of(
+            DISABLE_COMMAND, RELOAD_COMMAND, RESTART_COMMAND, UNLOAD_COMMAND);
 
     @Override
     public void execute(Invocation invocation) {
@@ -61,8 +67,8 @@ public class PlugManCommandHandler implements SimpleCommand {
         var commandName = rawArguments.length > 0 ? rawArguments[0].toLowerCase(Locale.ROOT) : "help";
         var parsedArguments = FORCE_COMMANDS.contains(commandName)
                 ? parseArguments(rawArguments)
-                : new ParsedArguments(rawArguments, false);
-        var args = parsedArguments.arguments();
+                : new ParsedArguments(Arrays.asList(rawArguments), false);
+        var args = parsedArguments.arguments().toArray(String[]::new);
 
         if (!isVelocityConsole(sender)) {
             // Normally unreachable because hasPermission() hides the proxy command from players.
@@ -82,10 +88,10 @@ public class PlugManCommandHandler implements SimpleCommand {
             case "usage" -> new UsageCommand(plugManSender, registry);
             case "enable" -> new EnableCommand(plugManSender, registry);
             case "load" -> new LoadCommand(plugManSender, registry);
-            case "disable" -> new DisableCommand(plugManSender, registry);
-            case "unload" -> new UnloadCommand(plugManSender, registry);
-            case "restart" -> new RestartCommand(plugManSender, registry);
-            case "reload" -> new ReloadCommand(plugManSender, registry);
+            case DISABLE_COMMAND -> new DisableCommand(plugManSender, registry);
+            case UNLOAD_COMMAND -> new UnloadCommand(plugManSender, registry);
+            case RESTART_COMMAND -> new RestartCommand(plugManSender, registry);
+            case RELOAD_COMMAND -> new ReloadCommand(plugManSender, registry);
             case "reloadconfig" -> new ReloadConfigCommand(plugManSender, registry);
             case "reloadmode" -> new ReloadModeCommand(plugManSender, registry);
             case "check" -> new CheckCommand(plugManSender, registry);
@@ -136,14 +142,17 @@ public class PlugManCommandHandler implements SimpleCommand {
     private static ParsedArguments parseArguments(String[] arguments) {
         var force = Arrays.stream(arguments)
                 .anyMatch(argument -> argument.equalsIgnoreCase("--force") || argument.equalsIgnoreCase("-f"));
-        if (!force) return new ParsedArguments(arguments, false);
+        if (!force) return new ParsedArguments(Arrays.asList(arguments), false);
         var cleaned = Arrays.stream(arguments)
                 .filter(argument -> !argument.equalsIgnoreCase("--force") && !argument.equalsIgnoreCase("-f"))
-                .toArray(String[]::new);
+                .toList();
         return new ParsedArguments(cleaned, true);
     }
 
-    private record ParsedArguments(String[] arguments, boolean force) {
+    private record ParsedArguments(List<String> arguments, boolean force) {
+        private ParsedArguments {
+            arguments = List.copyOf(arguments);
+        }
     }
 
 }

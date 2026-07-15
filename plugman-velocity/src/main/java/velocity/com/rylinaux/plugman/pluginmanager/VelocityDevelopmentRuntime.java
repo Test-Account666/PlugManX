@@ -196,7 +196,7 @@ final class VelocityDevelopmentRuntime {
             debug(debug, startedAt, "Unregistered " + commandCount + " command aliases");
         });
         cleanupStep("messaging channels", failures, debug, startedAt, () -> {
-            var channelCount = unregisterPluginChannels(server, container, classLoader);
+            var channelCount = unregisterPluginChannels(server, classLoader);
             debug(debug, startedAt, "Unregistered " + channelCount + " messaging channels");
         });
         cleanupStep("plugin threads", failures, debug, startedAt, () -> {
@@ -378,9 +378,7 @@ final class VelocityDevelopmentRuntime {
         }
     }
 
-    private int unregisterPluginChannels(ProxyServer server,
-                                         PluginContainer container,
-                                         ClassLoader classLoader) throws IllegalAccessException {
+    private int unregisterPluginChannels(ProxyServer server, ClassLoader classLoader) {
         var channels = findPluginChannels(classLoader);
         if (channels == null || channels.isEmpty()) return 0;
         server.getChannelRegistrar().unregister(channels.toArray(ChannelIdentifier[]::new));
@@ -462,7 +460,7 @@ final class VelocityDevelopmentRuntime {
         cleanupStep("rollback commands", failures, debug, startedAt,
                 () -> unregisterRollbackCommands(server, container, instance));
         cleanupStep("rollback messaging channels", failures, debug, startedAt,
-                () -> unregisterPluginChannels(server, container, classLoader));
+                () -> unregisterPluginChannels(server, classLoader));
         var leakSnapshot = captureRollbackLeakSnapshot(
                 server, container, instance, classLoader, registered, debug, startedAt);
         cleanupStep("rollback plugin registry", failures, debug, startedAt,

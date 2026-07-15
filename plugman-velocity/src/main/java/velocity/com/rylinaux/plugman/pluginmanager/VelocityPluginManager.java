@@ -636,7 +636,7 @@ public class VelocityPluginManager implements PluginManager {
     }
 
     public void runWithForce(boolean force, Runnable operation) {
-        var previous = forceRequested.get();
+        boolean previous = forceRequested.get();
         forceRequested.set(force);
         try {
             operation.run();
