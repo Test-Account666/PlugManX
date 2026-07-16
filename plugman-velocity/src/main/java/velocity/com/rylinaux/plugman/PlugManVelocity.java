@@ -28,6 +28,8 @@ package velocity.com.rylinaux.plugman;
 
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.PostOrder;
+import com.velocitypowered.api.event.command.CommandExecuteEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.Plugin;
@@ -65,6 +67,8 @@ import java.nio.file.Path;
 )
 public final class PlugManVelocity {
 
+    private static final String COMMAND_ALIAS = "plugman";
+    private static final String VELOCITY_COMMAND_ALIAS = "plugmanvelocity";
     private static final String WARNING_BORDER =
             "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
     private static final Component CONSOLE_PREFIX = Component.text("[PlugManX] ", NamedTextColor.GREEN);
@@ -106,7 +110,7 @@ public final class PlugManVelocity {
         showVelocityWarningIfNeeded();
         initializer.setupMessaging();
 
-        server.getCommandManager().register("plugman", new PlugManCommandHandler());
+        server.getCommandManager().register(VELOCITY_COMMAND_ALIAS, new PlugManCommandHandler());
 
         initializer.setupAutoFeatures();
     }
@@ -115,7 +119,29 @@ public final class PlugManVelocity {
     public void onProxyShutdown(ProxyShutdownEvent event) {
         setInstance(null);
         initializer.cleanup();
-        server.getCommandManager().unregister("plugman");
+        server.getCommandManager().unregister(VELOCITY_COMMAND_ALIAS);
+    }
+
+    @Subscribe(order = PostOrder.FIRST)
+    public void redirectConsoleCommands(CommandExecuteEvent event) {
+        if (!event.getCommandSource().equals(server.getConsoleCommandSource())
+                || !isPlugManCommand(event.getCommand())) return;
+        event.setResult(CommandExecuteEvent.CommandResult.command(toVelocityCommand(event.getCommand())));
+    }
+
+    static boolean isPlugManCommand(String command) {
+        if (command == null) return false;
+        var normalized = command.stripLeading();
+        if (normalized.startsWith("/")) normalized = normalized.substring(1);
+        var separator = normalized.indexOf(' ');
+        var root = separator < 0 ? normalized : normalized.substring(0, separator);
+        return root.equalsIgnoreCase(COMMAND_ALIAS);
+    }
+
+    static String toVelocityCommand(String command) {
+        var normalized = command.stripLeading();
+        if (normalized.startsWith("/")) normalized = normalized.substring(1);
+        return VELOCITY_COMMAND_ALIAS + normalized.substring(COMMAND_ALIAS.length());
     }
 
     private static void setInstance(PlugManVelocity plugin) {
