@@ -26,6 +26,9 @@ the need to restart the server.
 * Permissions Support - All commands default to OP.
 
 > [!WARNING]
+> The Velocity build requires **Java 25 or newer**. The Paper, Bukkit, Bungee, and Core modules continue to require
+> Java 21 or newer.
+>
 > Velocity does not expose an official runtime unload API. PlugManX
 > checks the required runtime capabilities before enabling it, but some plugins may still require a full proxy restart.
 > Velocity also has no separate enabled/disabled plugin state. On Velocity, `/plugman enable` loads a previously
