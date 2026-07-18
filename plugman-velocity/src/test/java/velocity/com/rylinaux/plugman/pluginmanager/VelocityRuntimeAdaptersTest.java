@@ -19,9 +19,9 @@ class VelocityRuntimeAdaptersTest {
 
     @ParameterizedTest(name = "Velocity {0} uses {1}")
     @CsvSource({
-            "3.4.0, Velocity 3.4 runtime adapter, false",
-            "3.5.1, Velocity 3.4 runtime adapter, false",
-            "3.6.0-SNAPSHOT, Velocity 3.4 runtime adapter, false",
+            "3.4.0, Velocity 3.4 runtime adapter, true",
+            "3.5.1, Velocity 3.4 runtime adapter, true",
+            "3.6.0-SNAPSHOT, Velocity 3.4 runtime adapter, true",
             "4.0.0, Velocity 4.0 runtime adapter, true"
     })
     void selectsAdapterForSupportedVelocityVersions(String version,
