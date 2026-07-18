@@ -48,7 +48,8 @@ public class VelocityPluginManager implements PluginManager {
     private static final String LOAD_INVALID_PLUGIN = "load.invalid-plugin";
     private static final Set<String> ALWAYS_PROTECTED_PLUGIN_IDS = Set.of("velocity");
     private static final Set<String> FORCE_PROTECTED_PLUGIN_IDS = Set.of(
-            "plugman", "plugmanx", "plugmanvelocity", "luckperms", "geyser", "geyser-velocity");
+            "plugman", "plugmanx", "plugmanvelocity", "luckperms", "geyser", "geyser-velocity",
+            "velocityscoreboardapi");
 
     private final VelocityDevelopmentRuntime runtime = VelocityDevelopmentRuntime.detect();
     private final Map<String, File> unloadedPluginFiles = new ConcurrentHashMap<>();

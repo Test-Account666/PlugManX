@@ -37,4 +37,9 @@ final class Velocity4RuntimeAdapter implements VelocityRuntimeAdapter {
     public ReflectionLayout reflectionLayout() {
         return REFLECTION_LAYOUT;
     }
+
+    @Override
+    public boolean supportsPacketRegistryCleanup() {
+        return true;
+    }
 }

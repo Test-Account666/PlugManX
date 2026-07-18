@@ -36,14 +36,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.velocitypowered</groupId>
-            <artifactId>velocity</artifactId>
-            <version>4.0.0</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/temp/velocity-4.0.0-6.jar</systemPath>
-        </dependency>
-
-        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
@@ -89,7 +81,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.38</version>
+                            <version>${lombok.version}</version>
                         </path>
                         <path>
                             <groupId>com.velocitypowered</groupId>

@@ -15,6 +15,7 @@
         <module>plugman-paper</module>
         <module>plugman-bungee</module>
         <module>plugman-assembly</module>
+        <module>plugman-velocity</module>
     </modules>
 
     <name>PlugManX</name>
@@ -51,6 +52,7 @@
         <plugman.version>3.0.5</plugman.version>
         <manifold.version>2025.1.31</manifold.version>
         <jackson.version>2.13.5</jackson.version>
+        <lombok.version>1.18.46</lombok.version>
     </properties>
 
     <build>
@@ -68,7 +70,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.38</version>
+                            <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
@@ -92,7 +94,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.38</version>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

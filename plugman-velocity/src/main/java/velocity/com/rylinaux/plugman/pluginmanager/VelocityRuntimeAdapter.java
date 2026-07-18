@@ -10,6 +10,10 @@ interface VelocityRuntimeAdapter {
 
     ReflectionLayout reflectionLayout();
 
+    default boolean supportsPacketRegistryCleanup() {
+        return false;
+    }
+
     record ReflectionLayout(
             String javaPluginLoaderClass,
             String pluginContainerClass,

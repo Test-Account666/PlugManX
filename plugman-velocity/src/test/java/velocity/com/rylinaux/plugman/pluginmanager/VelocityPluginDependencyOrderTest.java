@@ -44,7 +44,9 @@ class VelocityPluginDependencyOrderTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"PlugManX", "plugmanvelocity", "LuckPerms", "geyser", "geyser-velocity"})
+    @ValueSource(strings = {
+            "PlugManX", "plugmanvelocity", "LuckPerms", "geyser", "geyser-velocity", "VelocityScoreboardAPI"
+    })
     void marksCriticalPluginsAsForceProtected(String pluginId) {
         assertTrue(VelocityPluginManager.isForceProtectedPluginId(pluginId));
     }

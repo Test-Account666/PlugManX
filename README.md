@@ -19,6 +19,7 @@ the need to restart the server.
 * Check if a plugin is up-to-date with dev.bukkit.org
 * Load and reload modern Paper plugins that use `paper-plugin.yml`.
 * Runtime load, unload, and reload support for Velocity plugins.
+* Clean up classloader-owned Velocity 4.0 packet registrations during unload and rollback.
 * Clean up Paper plugin manager state, commands, listeners, and provider storage on unload.
 * Reload/restart dependent plugins in a safer order and optionally limit dependent reloads.
 * Confirm dangerous bulk reload/restart operations before affecting many plugins.
@@ -137,9 +138,10 @@ Building PlugManX is simple:
    mvn clean install
    ```
 
-   Velocity is built separately after the main project has installed `plugman-core`:
+   The full reactor includes the Velocity module and therefore requires JDK 25. To build only Velocity and its required
+   modules, use:
    ```bash
-   mvn -f plugman-velocity/pom.xml clean package
+   mvn -pl plugman-velocity -am clean package
    ```
 
 4. **Find the built artifacts:**

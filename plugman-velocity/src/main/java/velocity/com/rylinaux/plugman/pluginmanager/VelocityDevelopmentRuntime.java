@@ -56,6 +56,7 @@ final class VelocityDevelopmentRuntime {
     private final Method targetedFire;
     private final Field channelIdentifiers;
     private final Field pluginClassLoaders;
+    private final VelocityPacketRegistryCleaner packetRegistryCleaner;
     private final Map<ClassLoader, Set<ChannelIdentifier>> pluginChannelsByClassLoader = new ConcurrentHashMap<>();
 
     private VelocityDevelopmentRuntime(VelocityRuntimeAdapters.Selection selection) throws ReflectiveOperationException {
@@ -90,6 +91,7 @@ final class VelocityDevelopmentRuntime {
         channelIdentifiers = findOptionalField(channelRegistrarClass, List.of("identifierMap"));
         var pluginClassLoaderClass = Class.forName("com.velocitypowered.proxy.plugin.PluginClassLoader");
         pluginClassLoaders = findOptionalField(pluginClassLoaderClass, List.of("loaders"));
+        packetRegistryCleaner = createPacketRegistryCleaner(adapter);
     }
 
     static VelocityDevelopmentRuntime detect() {
@@ -199,6 +201,10 @@ final class VelocityDevelopmentRuntime {
             var channelCount = unregisterPluginChannels(server, classLoader);
             debug(debug, startedAt, "Unregistered " + channelCount + " messaging channels");
         });
+        if (packetRegistryCleaner != null) {
+            cleanupStep("packet registry", failures, debug, startedAt,
+                    () -> cleanupPacketRegistry(classLoader, debug, startedAt));
+        }
         cleanupStep("plugin threads", failures, debug, startedAt, () -> {
             var interruptedThreads = interruptOwnedThreads(classLoader);
             debug(debug, startedAt, "Interrupted " + interruptedThreads + " plugin-owned threads");
@@ -461,6 +467,10 @@ final class VelocityDevelopmentRuntime {
                 () -> unregisterRollbackCommands(server, container, instance));
         cleanupStep("rollback messaging channels", failures, debug, startedAt,
                 () -> unregisterPluginChannels(server, classLoader));
+        if (packetRegistryCleaner != null) {
+            cleanupStep("rollback packet registry", failures, debug, startedAt,
+                    () -> cleanupPacketRegistry(classLoader, debug, startedAt));
+        }
         var leakSnapshot = captureRollbackLeakSnapshot(
                 server, container, instance, classLoader, registered, debug, startedAt);
         cleanupStep("rollback plugin registry", failures, debug, startedAt,
@@ -543,6 +553,30 @@ final class VelocityDevelopmentRuntime {
             }
         }
         if (failure != null) throw failure;
+    }
+
+    private VelocityPacketRegistryCleaner createPacketRegistryCleaner(VelocityRuntimeAdapter adapter) {
+        if (!adapter.supportsPacketRegistryCleanup()) return null;
+        try {
+            return new VelocityPacketRegistryCleaner();
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            PlugManVelocity.getInstance().getLogger().warn(
+                    "Velocity packet registry cleanup is unavailable: {}", exception.toString());
+            return null;
+        }
+    }
+
+    private void cleanupPacketRegistry(ClassLoader classLoader,
+                                       Consumer<String> debug,
+                                       long startedAt) throws ReflectiveOperationException {
+        if (packetRegistryCleaner == null || classLoader == null) return;
+        var result = packetRegistryCleaner.removeOwnedMappings(classLoader);
+        debug(debug, startedAt, "Removed " + result.removedMappings()
+                + " classloader-owned packet mappings");
+        if (result.skippedMappings() > 0) {
+            throw new ReflectiveOperationException("Skipped " + result.skippedMappings()
+                    + " packet mappings because their class and supplier ownership did not match");
+        }
     }
 
     @SuppressWarnings("unchecked")
