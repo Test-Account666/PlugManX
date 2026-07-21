@@ -4,8 +4,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 final class VelocityPacketRegistryCleaner {
     private static final String STATE_REGISTRY_CLASS =
@@ -47,13 +51,51 @@ final class VelocityPacketRegistryCleaner {
         packetSupplierRemove = supplierRegistryType.getMethod("remove", int.class);
     }
 
+    RegistrySnapshot snapshot() throws ReflectiveOperationException {
+        var mappings = new LinkedHashMap<MappingKey, RegistryMapping>();
+        for (var protocolRegistry : protocolRegistries()) {
+            captureMappings(protocolRegistry, mappings);
+        }
+        return new RegistrySnapshot(Map.copyOf(mappings));
+    }
+
+    RegistryDelta addedMappings(RegistrySnapshot before, ClassLoader owner)
+            throws ReflectiveOperationException {
+        var after = snapshot();
+        var additions = after.mappings().entrySet().stream()
+                .filter(entry -> !before.mappings().containsKey(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .filter(mapping -> mapping.isOwnedBy(owner))
+                .toList();
+        return new RegistryDelta(additions);
+    }
+
+    CleanupResult removeTrackedMappings(RegistryDelta delta) throws ReflectiveOperationException {
+        var removedMappings = new ArrayList<RemovedMapping>();
+        var skippedMappings = 0;
+        try {
+            for (var mapping : delta.mappings()) {
+                if (!mapping.isStillRegistered(this)) {
+                    skippedMappings++;
+                    continue;
+                }
+                removeMapping(mapping.classToId(), mapping.suppliers(), mapping.packetClass(),
+                        mapping.packetId(), mapping.supplier());
+                removedMappings.add(mapping.asRemoved());
+            }
+            return new CleanupResult(removedMappings.size(), skippedMappings);
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            rollback(removedMappings, exception);
+            throw exception;
+        }
+    }
+
     CleanupResult removeOwnedMappings(ClassLoader owner) throws ReflectiveOperationException {
         var removedMappings = new ArrayList<RemovedMapping>();
         var skippedMappings = 0;
         try {
-            for (var stateRegistry : stateRegistries) {
-                skippedMappings += removeOwnedMappings(clientbound.get(stateRegistry), owner, removedMappings);
-                skippedMappings += removeOwnedMappings(serverbound.get(stateRegistry), owner, removedMappings);
+            for (var protocolRegistry : protocolRegistries()) {
+                skippedMappings += removeOwnedMappings(protocolRegistry, owner, removedMappings);
             }
             return new CleanupResult(removedMappings.size(), skippedMappings);
         } catch (ReflectiveOperationException | RuntimeException exception) {
@@ -63,31 +105,63 @@ final class VelocityPacketRegistryCleaner {
     }
 
     @SuppressWarnings("unchecked")
-    private int removeOwnedMappings(Object packetRegistry,
+    private void captureMappings(Object protocolRegistry,
+                                 Map<MappingKey, RegistryMapping> mappings)
+            throws ReflectiveOperationException {
+        var classToId = (Map<Class<?>, Integer>) packetClassToId.get(protocolRegistry);
+        var suppliers = packetIdToSupplier.get(protocolRegistry);
+        for (var mapping : List.copyOf(classToId.entrySet())) {
+            var packetClass = mapping.getKey();
+            var packetId = mapping.getValue();
+            var supplier = invoke(packetSupplierGet, suppliers, packetId);
+            var key = new MappingKey(protocolRegistry, packetClass);
+            mappings.put(key, new RegistryMapping(
+                    classToId, suppliers, packetClass, packetId, supplier));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private int removeOwnedMappings(Object protocolRegistry,
                                     ClassLoader owner,
                                     List<RemovedMapping> removedMappings)
             throws ReflectiveOperationException {
-        var protocolRegistries = ((Map<Object, Object>) versions.get(packetRegistry)).values();
+        var classToId = (Map<Class<?>, Integer>) packetClassToId.get(protocolRegistry);
         var skippedMappings = 0;
-        for (var protocolRegistry : protocolRegistries) {
-            var classToId = (Map<Class<?>, Integer>) packetClassToId.get(protocolRegistry);
-            for (var mapping : List.copyOf(classToId.entrySet())) {
-                var packetClass = mapping.getKey();
-                if (packetClass.getClassLoader() != owner) continue;
+        for (var mapping : List.copyOf(classToId.entrySet())) {
+            var packetClass = mapping.getKey();
+            if (packetClass.getClassLoader() != owner) continue;
 
-                var packetId = mapping.getValue();
-                var suppliers = packetIdToSupplier.get(protocolRegistry);
-                var supplier = invoke(packetSupplierGet, suppliers, packetId);
-                if (supplier == null || supplier.getClass().getClassLoader() != owner) {
-                    skippedMappings++;
-                    continue;
-                }
-
-                removeMapping(classToId, suppliers, packetClass, packetId, supplier);
-                removedMappings.add(new RemovedMapping(classToId, suppliers, packetClass, packetId, supplier));
+            var packetId = mapping.getValue();
+            var suppliers = packetIdToSupplier.get(protocolRegistry);
+            var supplier = invoke(packetSupplierGet, suppliers, packetId);
+            if (supplier == null || supplier.getClass().getClassLoader() != owner) {
+                skippedMappings++;
+                continue;
             }
+
+            removeMapping(classToId, suppliers, packetClass, packetId, supplier);
+            removedMappings.add(new RemovedMapping(classToId, suppliers, packetClass, packetId, supplier));
         }
         return skippedMappings;
+    }
+
+    private List<Object> protocolRegistries() throws ReflectiveOperationException {
+        Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        var protocolRegistries = new ArrayList<>();
+        for (var stateRegistry : stateRegistries) {
+            collectProtocolRegistries(clientbound.get(stateRegistry), visited, protocolRegistries);
+            collectProtocolRegistries(serverbound.get(stateRegistry), visited, protocolRegistries);
+        }
+        return protocolRegistries;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void collectProtocolRegistries(Object packetRegistry,
+                                           Set<Object> visited,
+                                           List<Object> protocolRegistries) throws IllegalAccessException {
+        for (var protocolRegistry : ((Map<Object, Object>) versions.get(packetRegistry)).values()) {
+            if (visited.add(protocolRegistry)) protocolRegistries.add(protocolRegistry);
+        }
     }
 
     private void removeMapping(Map<Class<?>, Integer> classToId,
@@ -143,6 +217,71 @@ final class VelocityPacketRegistryCleaner {
     }
 
     record CleanupResult(int removedMappings, int skippedMappings) {
+    }
+
+    record RegistrySnapshot(Map<MappingKey, RegistryMapping> mappings) {
+    }
+
+    record RegistryDelta(List<RegistryMapping> mappings) {
+        RegistryDelta {
+            mappings = List.copyOf(mappings);
+        }
+
+        int size() {
+            return mappings.size();
+        }
+
+        boolean isEmpty() {
+            return mappings.isEmpty();
+        }
+    }
+
+    private static final class MappingKey {
+        private final Object protocolRegistry;
+        private final Class<?> packetClass;
+
+        private MappingKey(Object protocolRegistry, Class<?> packetClass) {
+            this.protocolRegistry = protocolRegistry;
+            this.packetClass = packetClass;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            return object instanceof MappingKey other
+                    && protocolRegistry == other.protocolRegistry
+                    && packetClass == other.packetClass;
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * System.identityHashCode(protocolRegistry) + System.identityHashCode(packetClass);
+        }
+    }
+
+    private record RegistryMapping(
+            Map<Class<?>, Integer> classToId,
+            Object suppliers,
+            Class<?> packetClass,
+            int packetId,
+            Object supplier
+    ) {
+        private boolean isOwnedBy(ClassLoader owner) {
+            return packetClass.getClassLoader() == owner
+                    && supplier != null
+                    && supplier.getClass().getClassLoader() == owner;
+        }
+
+        private boolean isStillRegistered(VelocityPacketRegistryCleaner cleaner)
+                throws ReflectiveOperationException {
+            var currentId = classToId.get(packetClass);
+            return currentId != null
+                    && currentId == packetId
+                    && invoke(cleaner.packetSupplierGet, suppliers, packetId) == supplier;
+        }
+
+        private RemovedMapping asRemoved() {
+            return new RemovedMapping(classToId, suppliers, packetClass, packetId, supplier);
+        }
     }
 
     private record RemovedMapping(
