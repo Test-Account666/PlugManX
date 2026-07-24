@@ -570,14 +570,21 @@ final class VelocityDevelopmentRuntime {
         if (failure != null) throw failure;
     }
 
-    private VelocityPacketRegistryCleaner createPacketRegistryCleaner(VelocityRuntimeAdapter adapter) {
-        if (!adapter.supportsPacketRegistryCleanup()) return null;
+    private VelocityPacketRegistryCleaner createPacketRegistryCleaner(VelocityRuntimeAdapter adapter)
+            throws ReflectiveOperationException {
+        if (!adapter.supportsPacketRegistryCleanup()) {
+            throw new ReflectiveOperationException(
+                    adapter.name() + " does not provide packet registry cleanup");
+        }
+
         try {
-            return new VelocityPacketRegistryCleaner();
+            var cleaner = new VelocityPacketRegistryCleaner();
+            cleaner.validateRuntimeLayout();
+            return cleaner;
         } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
-            PlugManVelocity.getInstance().getLogger().warn(
-                    "Velocity packet registry cleanup is unavailable: {}", exception.toString());
-            return null;
+            throw new ReflectiveOperationException(
+                    "Velocity packet registry cleanup capability check failed: " + exception,
+                    exception);
         }
     }
 

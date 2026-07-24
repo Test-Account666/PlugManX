@@ -51,6 +51,22 @@ final class VelocityPacketRegistryCleaner {
         packetSupplierRemove = supplierRegistryType.getMethod("remove", int.class);
     }
 
+    void validateRuntimeLayout() throws ReflectiveOperationException {
+        if (stateRegistries.length == 0) {
+            throw new ReflectiveOperationException("Velocity exposes no protocol state registries");
+        }
+
+        var protocolRegistries = protocolRegistries();
+        if (protocolRegistries.isEmpty()) {
+            throw new ReflectiveOperationException("Velocity exposes no packet protocol registries");
+        }
+
+        var snapshot = snapshot();
+        if (snapshot.mappings().isEmpty()) {
+            throw new ReflectiveOperationException("Velocity packet registries contain no readable mappings");
+        }
+    }
+
     RegistrySnapshot snapshot() throws ReflectiveOperationException {
         var mappings = new LinkedHashMap<MappingKey, RegistryMapping>();
         for (var protocolRegistry : protocolRegistries()) {
