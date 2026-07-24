@@ -39,7 +39,6 @@ import java.util.function.Consumer;
  */
 final class VelocityDevelopmentRuntime {
     private final String adapterName;
-    private final String compatibilityWarning;
     private final Constructor<?> loaderConstructor;
     private final Constructor<?> containerConstructor;
     private final Method loadCandidate;
@@ -64,7 +63,6 @@ final class VelocityDevelopmentRuntime {
     private VelocityDevelopmentRuntime(VelocityRuntimeAdapters.Selection selection) throws ReflectiveOperationException {
         var adapter = selection.adapter();
         adapterName = adapter.name();
-        compatibilityWarning = selection.warning();
         var layout = adapter.reflectionLayout();
         var loaderClass = Class.forName(layout.javaPluginLoaderClass());
         var containerClass = Class.forName(layout.pluginContainerClass());
@@ -97,19 +95,33 @@ final class VelocityDevelopmentRuntime {
     }
 
     static VelocityDevelopmentRuntime detect() {
+        var version = PlugManVelocity.getInstance().getServer().getVersion().getVersion();
+        VelocityRuntimeAdapters.Selection selection;
         try {
-            var version = PlugManVelocity.getInstance().getServer().getVersion().getVersion();
-            var selection = VelocityRuntimeAdapters.find(version);
-            if (selection.warning() != null) {
-                PlugManVelocity.getInstance().getLogger().warn("{}", selection.warning());
-            }
-            return new VelocityDevelopmentRuntime(selection);
-        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
-            PlugManVelocity.getInstance().getLogger().warn(
-                    "Velocity development runtime is unavailable on this Velocity build: {}",
-                    exception.toString());
+            selection = VelocityRuntimeAdapters.find(version);
+        } catch (RuntimeException | LinkageError exception) {
+            logUnavailableRuntime(exception);
             return null;
         }
+
+        try {
+            return new VelocityDevelopmentRuntime(selection);
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            if (selection.newerThanTested()) {
+                PlugManVelocity.getInstance().getLogger().warn(
+                        "Velocity {} is newer than the tested 4.1.0 runtime and its runtime capability checks failed. "
+                                + "Reload compatibility is unavailable on this build.",
+                        version);
+            }
+            logUnavailableRuntime(exception);
+            return null;
+        }
+    }
+
+    private static void logUnavailableRuntime(Throwable throwable) {
+        PlugManVelocity.getInstance().getLogger().warn(
+                "Velocity development runtime is unavailable on this Velocity build: {}",
+                throwable.toString());
     }
 
     static String cleanupFailureSummary(Throwable throwable) {
@@ -120,10 +132,6 @@ final class VelocityDevelopmentRuntime {
 
     String adapterName() {
         return adapterName;
-    }
-
-    String compatibilityWarning() {
-        return compatibilityWarning;
     }
 
     PluginDescription readDescription(ProxyServer server, Path source) throws ReflectiveOperationException {

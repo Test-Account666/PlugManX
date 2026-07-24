@@ -30,7 +30,7 @@ final class Velocity4RuntimeAdapter implements VelocityRuntimeAdapter {
 
     @Override
     public String name() {
-        return "Velocity 4.0 runtime adapter";
+        return "Velocity 4.x runtime adapter";
     }
 
     @Override

@@ -198,9 +198,6 @@ public final class PlugManVelocity {
                 "This PlugManX Velocity artifact is a development build.", NamedTextColor.YELLOW));
         sendWarningLine(Component.text(
                 "Velocity runtime plugin management uses unsupported internal APIs.", NamedTextColor.YELLOW));
-        if (startupState.compatibilityWarning() != null) {
-            sendWarningLine(Component.text(startupState.compatibilityWarning(), NamedTextColor.RED));
-        }
         sendWarningLine(Component.text(
                 "If an error occurs, enable velocityReloadDebug, reproduce it,", NamedTextColor.YELLOW));
         sendWarningLine(Component.text(
@@ -219,12 +216,11 @@ public final class PlugManVelocity {
     private VelocityStartupState createVelocityStartupState() {
         var pluginManager = get(core.com.rylinaux.plugman.plugins.PluginManager.class);
         if (!(pluginManager instanceof VelocityPluginManager velocityManager)) {
-            return new VelocityStartupState(false, "unavailable", null);
+            return new VelocityStartupState(false, "unavailable");
         }
         return new VelocityStartupState(
                 velocityManager.isDevelopmentRuntimeAvailable(),
-                velocityManager.getDevelopmentRuntimeAdapterName(),
-                velocityManager.getDevelopmentRuntimeCompatibilityWarning());
+                velocityManager.getDevelopmentRuntimeAdapterName());
     }
 
     private void sendVelocityDiagnostics(PlugManConfigurationManager configurationManager,
@@ -250,6 +246,6 @@ public final class PlugManVelocity {
         server.getConsoleCommandSource().sendMessage(CONSOLE_PREFIX.append(message));
     }
 
-    private record VelocityStartupState(boolean available, String adapter, String compatibilityWarning) {
+    private record VelocityStartupState(boolean available, String adapter) {
     }
 }

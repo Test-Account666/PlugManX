@@ -24,11 +24,7 @@ final class VelocityRuntimeAdapters {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(
                         "No Velocity development runtime adapter is available for version " + version));
-        var warning = compare(version, 4, 0, 0) > 0
-                ? "Velocity " + version + " is newer than the tested 4.0.0 runtime. "
-                + "PlugManX will use the 4.0 adapter after capability checks, but reload compatibility is not guaranteed."
-                : null;
-        return new Selection(adapter, warning);
+        return new Selection(adapter, compare(version, 4, 1, 0) > 0);
     }
 
     static int compare(String version, int major, int minor, int patch) {
@@ -45,6 +41,6 @@ final class VelocityRuntimeAdapters {
         return Integer.compare(Integer.parseInt(matcher.group(3)), patch);
     }
 
-    record Selection(VelocityRuntimeAdapter adapter, String warning) {
+    record Selection(VelocityRuntimeAdapter adapter, boolean newerThanTested) {
     }
 }

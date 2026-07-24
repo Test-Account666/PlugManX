@@ -609,10 +609,6 @@ public class VelocityPluginManager implements PluginManager {
         return runtimeAvailable() ? runtime.adapterName() : "unavailable";
     }
 
-    public String getDevelopmentRuntimeCompatibilityWarning() {
-        return runtimeAvailable() ? runtime.compatibilityWarning() : null;
-    }
-
     private void debug(String message, Object... arguments) {
         if (!isVelocityRuntimeDebugEnabled()) return;
         PlugManVelocity.getInstance().getLogger().info("[PlugManDebug] " + message, arguments);
