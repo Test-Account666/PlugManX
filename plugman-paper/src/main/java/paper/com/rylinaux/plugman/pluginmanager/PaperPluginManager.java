@@ -988,12 +988,12 @@ public class PaperPluginManager extends BasePluginManager {
     }
 
     @Override
-    public void beginCommandUpdateBatch() {
+    public synchronized void beginCommandUpdateBatch() {
         _bukkitPluginManager.beginCommandUpdateBatch();
     }
 
     @Override
-    public void endCommandUpdateBatch() {
+    public synchronized void endCommandUpdateBatch() {
         _bukkitPluginManager.endCommandUpdateBatch();
     }
 
