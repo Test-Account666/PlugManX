@@ -83,6 +83,7 @@ public class PaperPluginManager extends BasePluginManager {
     private static final String PREPARE_CONTEXT_METHOD = "prepareContext";
     private static final String PREPARE_CONTEXT_LOG_PREFIX = "prepareContext method=";
     private static final String REGISTER_PROVIDERS_METHOD = "registerProviders";
+
     private static final String REGISTER_METHOD = "register";
     private static final String ENTER_METHOD = "enter";
     private static final String CURRENT_CONTEXT_FIELD = "currentContext";
@@ -105,6 +106,7 @@ public class PaperPluginManager extends BasePluginManager {
 
     public PaperPluginManager(BukkitPluginManager bukkitPluginManager) {
         _bukkitPluginManager = bukkitPluginManager;
+        _bukkitPluginManager.useServerManagedPlayerCommandSync();
 
         try {
             var pluginClassLoader = ClassAccessor.getClass("org.bukkit.plugin.java.PluginClassLoader");
@@ -977,12 +979,22 @@ public class PaperPluginManager extends BasePluginManager {
 
     @Override
     protected synchronized void scheduleCommandLoading() {
-        if (deferCommandSyncIfBatching()) return;
+        if (_bukkitPluginManager.deferCommandSync()) return;
 
         if (isFolia()) {
             var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
             foliaLib.getScheduler().runLater(this::syncCommands, 500, TimeUnit.MILLISECONDS);
         } else super.scheduleCommandLoading();
+    }
+
+    @Override
+    public void beginCommandUpdateBatch() {
+        _bukkitPluginManager.beginCommandUpdateBatch();
+    }
+
+    @Override
+    public void endCommandUpdateBatch() {
+        _bukkitPluginManager.endCommandUpdateBatch();
     }
 
 
