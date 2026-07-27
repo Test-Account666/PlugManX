@@ -106,6 +106,7 @@ public class PaperPluginManager extends BasePluginManager {
 
     public PaperPluginManager(BukkitPluginManager bukkitPluginManager) {
         _bukkitPluginManager = bukkitPluginManager;
+        _bukkitPluginManager.useServerManagedPlayerCommandSync();
 
         try {
             var pluginClassLoader = ClassAccessor.getClass("org.bukkit.plugin.java.PluginClassLoader");
@@ -988,12 +989,22 @@ public class PaperPluginManager extends BasePluginManager {
 
     @Override
     protected synchronized void scheduleCommandLoading() {
-        if (deferCommandSyncIfBatching()) return;
+        if (_bukkitPluginManager.deferCommandSync()) return;
 
         if (isFolia()) {
             var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
             foliaLib.getScheduler().runLater(this::syncCommands, 500, TimeUnit.MILLISECONDS);
         } else super.scheduleCommandLoading();
+    }
+
+    @Override
+    public synchronized void beginCommandUpdateBatch() {
+        _bukkitPluginManager.beginCommandUpdateBatch();
+    }
+
+    @Override
+    public synchronized void endCommandUpdateBatch() {
+        _bukkitPluginManager.endCommandUpdateBatch();
     }
 
 
