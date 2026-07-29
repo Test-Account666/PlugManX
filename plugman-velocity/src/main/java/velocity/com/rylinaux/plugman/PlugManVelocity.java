@@ -184,7 +184,7 @@ public final class PlugManVelocity {
     private void showVelocityWarningIfNeeded() {
         var configurationManager = get(PlugManConfigurationManager.class);
         var showDiagnostics = configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig
-                && velocityConfig.isShowVelocityWarningEnabled();
+                && velocityConfig.isVelocityReloadDebugEnabled();
         var startupState = createVelocityStartupState();
         var proxyVersion = server.getVersion();
 
@@ -193,7 +193,7 @@ public final class PlugManVelocity {
                 .append(Component.text(proxyVersion.getName() + " (" + proxyVersion.getVersion() + ")",
                         NamedTextColor.AQUA))
                 .append(Component.text(".", NamedTextColor.YELLOW)));
-        if (showDiagnostics) sendVelocityDiagnostics(configurationManager, startupState);
+        if (showDiagnostics) sendVelocityDiagnostics(startupState);
         sendWarningLine(Component.text(
                 "This PlugManX Velocity artifact is an experimental build.", NamedTextColor.YELLOW));
         sendWarningLine(Component.text(
@@ -223,18 +223,13 @@ public final class PlugManVelocity {
                 velocityManager.getExperimentalRuntimeAdapterName());
     }
 
-    private void sendVelocityDiagnostics(PlugManConfigurationManager configurationManager,
-                                         VelocityStartupState startupState) {
+    private void sendVelocityDiagnostics(VelocityStartupState startupState) {
         var proxyVersion = server.getVersion();
         sendDiagnosticLine("Detected proxy software: ", proxyVersion.getName());
         sendDiagnosticLine("Velocity version: ", proxyVersion.getVersion());
         sendDiagnosticLine("Java version: ", System.getProperty("java.version", "Unknown"));
         sendDiagnosticLine("Velocity reload strategy: ", startupState.adapter());
         sendDiagnosticLine("Runtime reload capabilities available: ", startupState.available() ? "yes" : "no");
-
-        if (!(configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig)) return;
-        sendDiagnosticLine("Velocity reload debug enabled: ",
-                velocityConfig.isVelocityReloadDebugEnabled() ? "yes" : "no");
     }
 
     private void sendDiagnosticLine(String label, String value) {
