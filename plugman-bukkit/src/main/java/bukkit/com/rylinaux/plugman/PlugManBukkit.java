@@ -75,7 +75,7 @@ public class PlugManBukkit extends JavaPlugin {
         serviceRegistry = new ServiceRegistry();
 
         if (!isSupportedServerVersion()) {
-            getLogger().severe("PlugManX 3.0.5 requires Minecraft/Paper/Spigot 1.20 or newer.");
+            getLogger().severe("PlugManX 3.1.0 requires Minecraft/Paper/Spigot 1.20 or newer.");
             getLogger().severe("Detected server version: " + Bukkit.getBukkitVersion());
             getLogger().severe("Please update your server to 1.20 or higher, or use an older PlugManX build.");
             Bukkit.getPluginManager().disablePlugin(this);
