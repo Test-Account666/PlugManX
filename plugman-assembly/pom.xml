@@ -72,6 +72,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <finalName>${project.parent.artifactId}-${project.version}</finalName>
         <plugins>
             <plugin>

@@ -1,0 +1,9 @@
+{
+  "id": "plugmanxwrongplatform",
+  "name": "PlugManX Wrong Platform",
+  "version": "${project.version}",
+  "description": "Reports when the PlugManX Paper/Bukkit build is installed on Velocity.",
+  "authors": ["rylinaux", "TestAccount666"],
+  "dependencies": [],
+  "main": "assembly.com.rylinaux.plugman.WrongPlatformVelocityPlugin"
+}
