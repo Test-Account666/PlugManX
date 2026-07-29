@@ -5,7 +5,6 @@ package assembly.com.rylinaux.plugman;
  */
 public final class WrongPlatformVelocityPlugin {
 
-    private static final System.Logger LOGGER = System.getLogger("PlugManX");
     private static final String MESSAGE =
             "Wrong PlugManX JAR! This build is for Paper or Bukkit, not Velocity. "
                     + "Download and install the Velocity build instead.";
@@ -14,7 +13,11 @@ public final class WrongPlatformVelocityPlugin {
      * Reports the platform mismatch as soon as Velocity creates the plugin.
      */
     public WrongPlatformVelocityPlugin() {
-        LOGGER.log(System.Logger.Level.ERROR, MESSAGE);
+        reportPlatformMismatch();
         throw new IllegalStateException(MESSAGE);
+    }
+
+    private void reportPlatformMismatch() {
+        System.getLogger("PlugManX").log(System.Logger.Level.ERROR, MESSAGE);
     }
 }
