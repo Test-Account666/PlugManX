@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 
 /**
  * Velocity implementation of PluginManager.
- * Runtime load and unload use development adapters because Velocity has no supported lifecycle API.
+ * Runtime load and unload use experimental adapters because Velocity has no supported lifecycle API.
  */
 public class VelocityPluginManager implements PluginManager {
     private static final String UNKNOWN_PLUGIN = "Unknown";
@@ -51,7 +51,7 @@ public class VelocityPluginManager implements PluginManager {
             "plugman", "plugmanx", "plugmanvelocity", "luckperms", "geyser", "geyser-velocity",
             "velocityscoreboardapi");
 
-    private final VelocityDevelopmentRuntime runtime = VelocityDevelopmentRuntime.detect();
+    private final VelocityExperimentalRuntime runtime = VelocityExperimentalRuntime.detect();
     private final Map<String, File> unloadedPluginFiles = new ConcurrentHashMap<>();
     private final Map<String, Plugin> unloadedPlugins = new ConcurrentHashMap<>();
     private final Map<String, ReloadBackup> reloadBackups = new ConcurrentHashMap<>();
@@ -319,7 +319,7 @@ public class VelocityPluginManager implements PluginManager {
             if (!getServer().getPluginManager().isLoaded(plugin.getName())) {
                 rememberUnloadedPlugin(velocityPlugin, file);
                 var id = plugin.getName().toLowerCase(Locale.ROOT);
-                var failedSteps = VelocityDevelopmentRuntime.cleanupFailureSummary(exception);
+                var failedSteps = VelocityExperimentalRuntime.cleanupFailureSummary(exception);
                 if (failedSteps == null) failedSteps = exception.getClass().getSimpleName();
                 pendingCleanupWarnings.put(id, failedSteps);
                 PlugManVelocity.getInstance().getLogger().warn(
@@ -601,11 +601,11 @@ public class VelocityPluginManager implements PluginManager {
         return runtime != null;
     }
 
-    public boolean isDevelopmentRuntimeAvailable() {
+    public boolean isExperimentalRuntimeAvailable() {
         return runtimeAvailable();
     }
 
-    public String getDevelopmentRuntimeAdapterName() {
+    public String getExperimentalRuntimeAdapterName() {
         return runtimeAvailable() ? runtime.adapterName() : "unavailable";
     }
 
@@ -659,7 +659,7 @@ public class VelocityPluginManager implements PluginManager {
         var cause = throwable instanceof InvocationTargetException invocation && invocation.getCause() != null
                 ? invocation.getCause() : throwable;
         PlugManVelocity.getInstance().getLogger().error(
-                "Velocity development runtime {} failed for {}", operation, plugin, cause);
+                "Experimental Velocity runtime {} failed for {}", operation, plugin, cause);
         VelocityCrashDumpWriter.write(operation + " failed for " + plugin, cause);
     }
 

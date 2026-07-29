@@ -14,7 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.UUID;
 
-/** Writes diagnostic dumps for failures in the Velocity development runtime. */
+/** Writes diagnostic dumps for failures in the experimental Velocity runtime. */
 public final class VelocityCrashDumpWriter {
     private static final DateTimeFormatter FILE_TIMESTAMP =
             DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS", Locale.ROOT);
@@ -50,7 +50,7 @@ public final class VelocityCrashDumpWriter {
         var proxyVersion = plugin.getServer().getVersion();
         var writer = new StringWriter();
         try (var printWriter = new PrintWriter(writer)) {
-            printWriter.println("PlugManX Velocity development crash dump");
+            printWriter.println("PlugManX Velocity experimental runtime crash dump");
             printWriter.println("========================================");
             printWriter.println("Time: " + HUMAN_TIMESTAMP.format(LocalDateTime.now(SERVER_ZONE)));
             printWriter.println("Context: " + (context == null || context.isBlank() ? "unknown" : context));

@@ -195,7 +195,7 @@ public final class PlugManVelocity {
                 .append(Component.text(".", NamedTextColor.YELLOW)));
         if (showDiagnostics) sendVelocityDiagnostics(configurationManager, startupState);
         sendWarningLine(Component.text(
-                "This PlugManX Velocity artifact is a development build.", NamedTextColor.YELLOW));
+                "This PlugManX Velocity artifact is an experimental build.", NamedTextColor.YELLOW));
         sendWarningLine(Component.text(
                 "Velocity runtime plugin management uses unsupported internal APIs.", NamedTextColor.YELLOW));
         sendWarningLine(Component.text(
@@ -219,8 +219,8 @@ public final class PlugManVelocity {
             return new VelocityStartupState(false, "unavailable");
         }
         return new VelocityStartupState(
-                velocityManager.isDevelopmentRuntimeAvailable(),
-                velocityManager.getDevelopmentRuntimeAdapterName());
+                velocityManager.isExperimentalRuntimeAvailable(),
+                velocityManager.getExperimentalRuntimeAdapterName());
     }
 
     private void sendVelocityDiagnostics(PlugManConfigurationManager configurationManager,

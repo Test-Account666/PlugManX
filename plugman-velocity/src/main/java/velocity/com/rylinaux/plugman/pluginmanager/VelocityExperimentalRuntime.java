@@ -37,7 +37,7 @@ import java.util.function.Consumer;
 /**
  * Capability-checked access to Velocity's unsupported runtime plugin lifecycle.
  */
-final class VelocityDevelopmentRuntime {
+final class VelocityExperimentalRuntime {
     private final String adapterName;
     private final Constructor<?> loaderConstructor;
     private final Constructor<?> containerConstructor;
@@ -60,7 +60,7 @@ final class VelocityDevelopmentRuntime {
     private final Map<ClassLoader, VelocityPacketRegistryCleaner.RegistryDelta> pluginPacketDeltasByClassLoader =
             new ConcurrentHashMap<>();
 
-    private VelocityDevelopmentRuntime(VelocityRuntimeAdapters.Selection selection) throws ReflectiveOperationException {
+    private VelocityExperimentalRuntime(VelocityRuntimeAdapters.Selection selection) throws ReflectiveOperationException {
         var adapter = selection.adapter();
         adapterName = adapter.name();
         var layout = adapter.reflectionLayout();
@@ -94,7 +94,7 @@ final class VelocityDevelopmentRuntime {
         packetRegistryCleaner = createPacketRegistryCleaner(adapter);
     }
 
-    static VelocityDevelopmentRuntime detect() {
+    static VelocityExperimentalRuntime detect() {
         var version = PlugManVelocity.getInstance().getServer().getVersion().getVersion();
         VelocityRuntimeAdapters.Selection selection;
         try {
@@ -105,7 +105,7 @@ final class VelocityDevelopmentRuntime {
         }
 
         try {
-            return new VelocityDevelopmentRuntime(selection);
+            return new VelocityExperimentalRuntime(selection);
         } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
             if (selection.newerThanTested()) {
                 PlugManVelocity.getInstance().getLogger().warn(
@@ -120,7 +120,7 @@ final class VelocityDevelopmentRuntime {
 
     private static void logUnavailableRuntime(Throwable throwable) {
         PlugManVelocity.getInstance().getLogger().warn(
-                "Velocity development runtime is unavailable on this Velocity build: {}",
+                "Experimental Velocity runtime is unavailable on this Velocity build: {}",
                 throwable.toString());
     }
 
