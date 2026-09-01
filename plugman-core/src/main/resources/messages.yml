@@ -74,6 +74,7 @@ deps:
   softdepends: '&7- SoftDepends: &a{0}'
   used-by: '&7- Used by: &a{0}'
 list:
+  bungee: '&9Bungee Plugins (&b{0}&9): {1}'
   paper: '&9Paper Plugins (&b{0}&9): {1}'
   bukkit: '&9Bukkit Plugins (&e{0}&9): {1}'
 load:

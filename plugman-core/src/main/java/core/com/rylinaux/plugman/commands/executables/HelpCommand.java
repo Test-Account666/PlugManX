@@ -28,7 +28,10 @@ package core.com.rylinaux.plugman.commands.executables;
 
 import core.com.rylinaux.plugman.commands.AbstractCommand;
 import core.com.rylinaux.plugman.commands.CommandSender;
+import core.com.rylinaux.plugman.platform.PlatformCommandAdapter;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
+
+import java.util.ArrayList;
 
 /**
  * Command that displays the help.
@@ -84,9 +87,19 @@ public class HelpCommand extends AbstractCommand {
         var config = formatter.getMessageFile().getConfig();
 
         var help = config.getConfigurationSection("help");
+        var adapter = getOptional(PlatformCommandAdapter.class).orElse(null);
 
-        for (var section : help.getKeys(false)) {
-            if (!section.equalsIgnoreCase("header") && !sender.hasPermission("plugman." + section)) continue;
+        var sections = new ArrayList<>(help.getKeys(false));
+        sections.sort((first, second) -> {
+            if (first.equalsIgnoreCase("header")) return -1;
+            if (second.equalsIgnoreCase("header")) return 1;
+            return String.CASE_INSENSITIVE_ORDER.compare(first, second);
+        });
+
+        for (var section : sections) {
+            if (adapter != null && !adapter.includeHelpSection(section)) continue;
+            var permissionSection = adapter == null ? section : adapter.helpPermissionSection(section);
+            if (!section.equalsIgnoreCase("header") && !sender.hasPermission("plugman." + permissionSection)) continue;
 
             sender.sendMessage(false, help.getName() + "." + section, label);
         }

@@ -93,9 +93,15 @@ public class BungeePluginManager implements PluginManager {
 
     @Override
     public Plugin getPluginByName(String name) {
-        name = name.trim();
+        var requestedName = name.trim();
 
-        var bungeePlugin = ProxyServer.getInstance().getPluginManager().getPlugin(name);
+        var bungeePlugin = ProxyServer.getInstance().getPluginManager().getPlugin(requestedName);
+        if (bungeePlugin == null) {
+            bungeePlugin = ProxyServer.getInstance().getPluginManager().getPlugins().stream()
+                    .filter(plugin -> plugin.getDescription().getName().equalsIgnoreCase(requestedName))
+                    .findFirst()
+                    .orElse(null);
+        }
         return bungeePlugin != null? new BungeePlugin(bungeePlugin) : null;
     }
 
@@ -130,7 +136,8 @@ public class BungeePluginManager implements PluginManager {
         var commandsByPlugin = FieldAccessor.<Multimap<net.md_5.bungee.api.plugin.Plugin, net.md_5.bungee.api.plugin.Command>>getValue(
                 net.md_5.bungee.api.plugin.PluginManager.class, "commandsByPlugin", pluginManager);
 
-        var commands = commandsByPlugin.get(plugin.getHandle());
+        Collection<net.md_5.bungee.api.plugin.Command> commands = commandsByPlugin.get(plugin.getHandle());
+        if (commands == null || commands.isEmpty()) return "usage.no-commands";
 
         var builder = new StringBuilder();
 
@@ -139,8 +146,8 @@ public class BungeePluginManager implements PluginManager {
             for (var alias : command.getAliases()) builder.append(alias).append(", ");
         }
 
+        if (builder.isEmpty()) return "usage.no-commands";
         var parsedCommands = builder.substring(0, builder.length() - 2).trim();
-        if (parsedCommands.isBlank()) return "usage.no-commands";
 
         return parsedCommands;
     }
@@ -233,19 +240,23 @@ public class BungeePluginManager implements PluginManager {
     private File findPluginFile(String name) {
         var pluginDir = new File("plugins");
         if (!pluginDir.isDirectory()) return null;
-        if (!name.toLowerCase().endsWith(".jar")) name += ".jar";
+        var requestedName = name;
+        var requestedFileName = requestedName.toLowerCase(Locale.ROOT).endsWith(".jar")
+                ? requestedName
+                : requestedName + ".jar";
 
-        var pluginFile = new File(pluginDir, name);
+        var pluginFile = new File(pluginDir, requestedFileName);
         if (pluginFile.isFile()) return pluginFile;
 
-        // Search for plugin by name in all jar files
-        for (var f : pluginDir.listFiles())
+        var files = pluginDir.listFiles();
+        if (files == null) return null;
+        for (var f : files)
             if (f.getName().endsWith(".jar")) try (var jar = new JarFile(f)) {
                 var pdf = jar.getJarEntry("bungee.yml");
                 if (pdf != null) try (var in = jar.getInputStream(pdf)) {
                     var yaml = new Yaml();
                     var desc = yaml.loadAs(in, PluginDescription.class);
-                    if (desc.getName().equalsIgnoreCase(name)) return f;
+                    if (desc != null && desc.getName() != null && desc.getName().equalsIgnoreCase(requestedName)) return f;
                 }
             } catch (Exception e) {
                 // Ignore and continue
@@ -256,15 +267,10 @@ public class BungeePluginManager implements PluginManager {
     private PluginResult loadPluginFromFile(File file) {
         var pluginManager = ProxyServer.getInstance().getPluginManager();
 
-        Yaml yaml;
-        try {
-            yaml = FieldAccessor.getValue(net.md_5.bungee.api.plugin.PluginManager.class, "yaml", pluginManager);
-        } catch (IllegalAccessException e) {
-            PlugManBungee.getInstance().getLogger().log(Level.SEVERE, "Failed to access yaml field from plugin manager", e);
-            return new PluginResult(false, "load.invalid-plugin");
-        }
-
-        if (yaml == null) return new PluginResult(false, "load.invalid-plugin");
+        // The combined PlugManX jar relocates SnakeYAML. Bungee's internal
+        // PluginManager YAML instance therefore belongs to a different class
+        // loader and cannot be cast to our relocated Yaml type.
+        var yaml = new Yaml();
 
         HashMap<String, PluginDescription> toLoad;
         try {
@@ -354,7 +360,6 @@ public class BungeePluginManager implements PluginManager {
         if (cl instanceof URLClassLoader) {
             try {
                 FieldAccessor.setValue(cl.getClass(), "plugin", cl, null);
-                FieldAccessor.setValue(cl.getClass(), "desc", cl, null);
 
                 var allLoaders = FieldAccessor.<Set<?>>getValue(cl.getClass(), "allLoaders", cl);
                 if (allLoaders != null) allLoaders.remove(cl);
