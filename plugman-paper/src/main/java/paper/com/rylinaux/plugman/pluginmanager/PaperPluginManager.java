@@ -40,13 +40,10 @@ import core.com.rylinaux.plugman.util.reflection.MethodAccessor;
 import core.com.rylinaux.plugman.util.tuples.Tuple;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import lombok.experimental.Delegate;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
-import org.bukkit.event.EventException;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.plugin.UnknownDependencyException;
 import org.yaml.snakeyaml.Yaml;
@@ -368,8 +365,6 @@ public class PaperPluginManager extends BasePluginManager {
             debugStep = "sync commands";
             syncCommands();
             debugKnownPaperCommands(target, "after sync");
-            debugStep = "replay join listeners";
-            replayJoinListenersForOnlinePlayers(target);
             return PaperLoadAttempt.loaded(new BukkitPlugin(target));
         } catch (InvocationTargetException exception) {
             var cause = exception.getTargetException() == null ? exception : exception.getTargetException();
@@ -674,31 +669,6 @@ public class PaperPluginManager extends BasePluginManager {
         } catch (NoSuchFieldException exception) {
             return null;
         }
-    }
-
-    private void replayJoinListenersForOnlinePlayers(org.bukkit.plugin.Plugin plugin) {
-        var listeners = PlayerJoinEvent.getHandlerList().getRegisteredListeners();
-        var replayed = 0;
-
-        for (var player : Bukkit.getOnlinePlayers()) {
-            var event = new PlayerJoinEvent(player, Component.empty());
-
-            for (var listener : listeners) {
-                if (listener.getPlugin() != plugin) continue;
-
-                try {
-                    listener.callEvent(event);
-                    replayed++;
-                } catch (EventException exception) {
-                    PlugManBukkit.getInstance().getLogger().log(Level.WARNING,
-                            "[PaperReloadDebug] failed to replay PlayerJoinEvent for " + plugin.getName()
-                                    + " and player " + player.getName(), exception);
-                }
-            }
-        }
-
-        debugPaperReload("replayed " + replayed + " PlayerJoinEvent listener calls for " + plugin.getName()
-                + " across " + Bukkit.getOnlinePlayers().size() + " online players");
     }
 
     private void debugKnownPaperCommands(org.bukkit.plugin.Plugin plugin, String phase) {

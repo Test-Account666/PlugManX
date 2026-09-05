@@ -27,6 +27,7 @@ package bungee.com.rylinaux.plugman;
  */
 
 import bungee.com.rylinaux.plugman.auto.BungeeAutoFeatureManager;
+import bungee.com.rylinaux.plugman.commands.BungeeCommandAdapter;
 import bungee.com.rylinaux.plugman.config.BungeeConfigurationProvider;
 import bungee.com.rylinaux.plugman.config.BungeePlugManConfigurationManager;
 import bungee.com.rylinaux.plugman.messaging.BungeeColorFormatter;
@@ -38,6 +39,7 @@ import core.com.rylinaux.plugman.config.PlugManConfigurationManager;
 import core.com.rylinaux.plugman.file.messaging.MessageFormatter;
 import core.com.rylinaux.plugman.initialization.BasePlugManInitializer;
 import core.com.rylinaux.plugman.logging.PluginLogger;
+import core.com.rylinaux.plugman.platform.PlatformCommandAdapter;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 import core.com.rylinaux.plugman.util.ThreadUtil;
@@ -90,5 +92,11 @@ public class BungeePlugManInitializer extends BasePlugManInitializer {
     @Override
     protected AutoFeatureManager createAutoFeatureManager() {
         return new BungeeAutoFeatureManager(serviceRegistry);
+    }
+
+    @Override
+    public void initializeCoreServices() {
+        super.initializeCoreServices();
+        serviceRegistry.register(PlatformCommandAdapter.class, new BungeeCommandAdapter());
     }
 }
