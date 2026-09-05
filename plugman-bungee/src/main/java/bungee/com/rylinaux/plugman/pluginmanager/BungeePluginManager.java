@@ -135,6 +135,7 @@ public class BungeePluginManager implements PluginManager {
         var pluginManager = ProxyServer.getInstance().getPluginManager();
         var commandsByPlugin = FieldAccessor.<Multimap<net.md_5.bungee.api.plugin.Plugin, net.md_5.bungee.api.plugin.Command>>getValue(
                 net.md_5.bungee.api.plugin.PluginManager.class, "commandsByPlugin", pluginManager);
+        if (commandsByPlugin == null) return "usage.no-commands";
 
         Collection<net.md_5.bungee.api.plugin.Command> commands = commandsByPlugin.get(plugin.getHandle());
         if (commands == null || commands.isEmpty()) return "usage.no-commands";
@@ -147,9 +148,7 @@ public class BungeePluginManager implements PluginManager {
         }
 
         if (builder.isEmpty()) return "usage.no-commands";
-        var parsedCommands = builder.substring(0, builder.length() - 2).trim();
-
-        return parsedCommands;
+        return builder.substring(0, builder.length() - 2).trim();
     }
 
     @Override

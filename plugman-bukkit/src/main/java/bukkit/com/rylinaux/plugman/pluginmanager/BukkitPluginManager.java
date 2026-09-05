@@ -256,7 +256,7 @@ public class BukkitPluginManager extends BasePluginManager {
         var parsedCommands = getCommandsFromPlugin(plugin).stream().map(s -> {
             var parts = s.getKey().split(":");
             // parts length equals 1 means that the key is the command
-            return parts.length == 1? parts[0] : parts[1];
+            return parts[parts.length == 1 ? 0 : 1];
         }).distinct().collect(Collectors.joining(", "));
 
 
