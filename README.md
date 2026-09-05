@@ -27,8 +27,8 @@ the need to restart the server.
 * Permissions Support - All commands default to OP.
 
 > [!WARNING]
-> The Velocity build requires **Java 25 or newer**. The Paper, Bukkit, Bungee, and Core modules continue to require
-> Java 21 or newer.
+> Building the Velocity module requires **JDK 25 or newer**, but its output targets **Java 21** and can run on a
+> Java 21 or newer Velocity proxy. The Paper, Bukkit, Bungee, and Core modules also require Java 21 or newer.
 >
 > Velocity does not expose an official runtime unload API. PlugManX
 > checks the required runtime capabilities before enabling it, but some plugins may still require a full proxy restart.
@@ -138,8 +138,8 @@ Building PlugManX is simple:
    mvn clean install
    ```
 
-   The full reactor includes the Velocity module and therefore requires JDK 25. To build only Velocity and its required
-   modules, use:
+   The full reactor includes the Velocity module and therefore requires JDK 25. The resulting Velocity JAR targets
+   Java 21. To build only Velocity and its required modules, use:
    ```bash
    mvn -pl plugman-velocity -am clean package
    ```

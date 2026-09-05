@@ -25,6 +25,7 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class BungeePluginManager implements PluginManager {
+    private static final String USAGE_NO_COMMANDS_MESSAGE = "usage.no-commands";
 
 
     @Override
@@ -135,10 +136,10 @@ public class BungeePluginManager implements PluginManager {
         var pluginManager = ProxyServer.getInstance().getPluginManager();
         var commandsByPlugin = FieldAccessor.<Multimap<net.md_5.bungee.api.plugin.Plugin, net.md_5.bungee.api.plugin.Command>>getValue(
                 net.md_5.bungee.api.plugin.PluginManager.class, "commandsByPlugin", pluginManager);
-        if (commandsByPlugin == null) return "usage.no-commands";
+        if (commandsByPlugin == null) return USAGE_NO_COMMANDS_MESSAGE;
 
         Collection<net.md_5.bungee.api.plugin.Command> commands = commandsByPlugin.get(plugin.getHandle());
-        if (commands == null || commands.isEmpty()) return "usage.no-commands";
+        if (commands == null || commands.isEmpty()) return USAGE_NO_COMMANDS_MESSAGE;
 
         var builder = new StringBuilder();
 
@@ -147,7 +148,7 @@ public class BungeePluginManager implements PluginManager {
             for (var alias : command.getAliases()) builder.append(alias).append(", ");
         }
 
-        if (builder.isEmpty()) return "usage.no-commands";
+        if (builder.isEmpty()) return USAGE_NO_COMMANDS_MESSAGE;
         return builder.substring(0, builder.length() - 2).trim();
     }
 
