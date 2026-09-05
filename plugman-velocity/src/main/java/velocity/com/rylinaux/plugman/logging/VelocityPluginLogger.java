@@ -20,12 +20,27 @@ public class VelocityPluginLogger implements PluginLogger {
     }
 
     @Override
+    public void info(String message, Throwable throwable) {
+        logger.info(message, throwable);
+    }
+
+    @Override
     public void warning(String message) {
         logger.warn(message);
     }
 
     @Override
+    public void warning(String message, Throwable throwable) {
+        logger.warn(message, throwable);
+    }
+
+    @Override
     public void severe(String message) {
         logger.error(message);
+    }
+
+    @Override
+    public void severe(String message, Throwable throwable) {
+        logger.error(message, throwable);
     }
 }

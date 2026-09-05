@@ -15,6 +15,10 @@ public interface Plugin {
 
     List<String> getSoftDepend();
 
+    default List<String> getProvides() {
+        return List.of();
+    }
+
     List<String> getAuthors();
 
     File getFile();

@@ -29,10 +29,14 @@ package velocity.com.rylinaux.plugman.commands;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import core.com.rylinaux.plugman.commands.executables.*;
+import core.com.rylinaux.plugman.plugins.PluginManager;
 import velocity.com.rylinaux.plugman.PlugManVelocity;
+import velocity.com.rylinaux.plugman.pluginmanager.VelocityPluginManager;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Velocity command handler for PlugMan commands.
@@ -41,17 +45,36 @@ import java.util.List;
  * @author rylinaux
  */
 public class PlugManCommandHandler implements SimpleCommand {
+    private static final String DISABLE_COMMAND = "disable";
+    private static final String RELOAD_COMMAND = "reload";
+    private static final String RESTART_COMMAND = "restart";
+    private static final String UNLOAD_COMMAND = "unload";
+
     /**
      * Valid command names.
      */
-    private static final String[] COMMANDS = {"check", "disable", "dump", "enable", "help", "info", "list", "load", "lookup", "reload", "restart", "unload", "usage"};
+    private static final String[] COMMANDS = {
+            "check", "deps", DISABLE_COMMAND, "dump", "enable", "help", "info", "list", "load", "lookup",
+            RELOAD_COMMAND, "reloadconfig", "reloadmode", RESTART_COMMAND, UNLOAD_COMMAND, "usage"
+    };
+    private static final Set<String> FORCE_COMMANDS = Set.of(
+            DISABLE_COMMAND, RELOAD_COMMAND, RESTART_COMMAND, UNLOAD_COMMAND);
 
     @Override
     public void execute(Invocation invocation) {
         var sender = invocation.source();
-        var args = invocation.arguments();
-        
-        var commandName = args.length > 0 ? args[0].toLowerCase() : "help";
+        var rawArguments = invocation.arguments();
+        var commandName = rawArguments.length > 0 ? rawArguments[0].toLowerCase(Locale.ROOT) : "help";
+        var parsedArguments = FORCE_COMMANDS.contains(commandName)
+                ? parseArguments(rawArguments)
+                : new ParsedArguments(Arrays.asList(rawArguments), false);
+        var args = parsedArguments.arguments().toArray(String[]::new);
+
+        if (!isVelocityConsole(sender)) {
+            // Normally unreachable because hasPermission() hides the proxy command from players.
+            // Stay silent so PlugManX never conflicts with a backend command of the same name.
+            return;
+        }
 
         var plugManSender = new VelocityCommandSender(sender);
         var registry = PlugManVelocity.getInstance().getServiceRegistry();
@@ -60,11 +83,17 @@ public class PlugManCommandHandler implements SimpleCommand {
             case "list" -> new ListCommand(plugManSender, registry);
             case "dump" -> new DumpCommand(plugManSender, registry);
             case "info" -> new InfoCommand(plugManSender, registry);
+            case "deps" -> new DepsCommand(plugManSender, registry);
             case "lookup" -> new LookupCommand(plugManSender, registry);
             case "usage" -> new UsageCommand(plugManSender, registry);
-            case "enable", "load" -> new LoadCommand(plugManSender, registry);
-            case "disable", "unload" -> new UnloadCommand(plugManSender, registry);
-            case "restart", "reload" -> new ReloadCommand(plugManSender, registry);
+            case "enable" -> new EnableCommand(plugManSender, registry);
+            case "load" -> new LoadCommand(plugManSender, registry);
+            case DISABLE_COMMAND -> new DisableCommand(plugManSender, registry);
+            case UNLOAD_COMMAND -> new UnloadCommand(plugManSender, registry);
+            case RESTART_COMMAND -> new RestartCommand(plugManSender, registry);
+            case RELOAD_COMMAND -> new ReloadCommand(plugManSender, registry);
+            case "reloadconfig" -> new ReloadConfigCommand(plugManSender, registry);
+            case "reloadmode" -> new ReloadModeCommand(plugManSender, registry);
             case "check" -> new CheckCommand(plugManSender, registry);
             default -> new HelpCommand(plugManSender, registry);
         };
@@ -74,11 +103,22 @@ public class PlugManCommandHandler implements SimpleCommand {
             return;
         }
 
-        cmd.execute(cmd.getSender(), "plugman", args);
+        if (parsedArguments.force() && (!FORCE_COMMANDS.contains(commandName) || !cmd.hasPermission("force"))) {
+            cmd.sendNoPermissionMessage();
+            return;
+        }
+
+        var pluginManager = registry.get(PluginManager.class);
+        if (pluginManager instanceof VelocityPluginManager velocityManager) {
+            velocityManager.runWithForce(parsedArguments.force(), () -> cmd.execute(cmd.getSender(), "plugman", args));
+        } else {
+            cmd.execute(cmd.getSender(), "plugman", args);
+        }
     }
 
     @Override
     public List<String> suggest(Invocation invocation) {
+        if (!isVelocityConsole(invocation.source())) return List.of();
         var args = invocation.arguments();
         
         if (args.length <= 1) {
@@ -91,6 +131,28 @@ public class PlugManCommandHandler implements SimpleCommand {
 
     @Override
     public boolean hasPermission(Invocation invocation) {
-        return invocation.source().hasPermission("plugman.admin");
+        return isVelocityConsole(invocation.source());
     }
+
+    private static boolean isVelocityConsole(CommandSource source) {
+        var plugin = PlugManVelocity.getInstance();
+        return plugin != null && source.equals(plugin.getServer().getConsoleCommandSource());
+    }
+
+    private static ParsedArguments parseArguments(String[] arguments) {
+        var force = Arrays.stream(arguments)
+                .anyMatch(argument -> argument.equalsIgnoreCase("--force") || argument.equalsIgnoreCase("-f"));
+        if (!force) return new ParsedArguments(Arrays.asList(arguments), false);
+        var cleaned = Arrays.stream(arguments)
+                .filter(argument -> !argument.equalsIgnoreCase("--force") && !argument.equalsIgnoreCase("-f"))
+                .toList();
+        return new ParsedArguments(cleaned, true);
+    }
+
+    private record ParsedArguments(List<String> arguments, boolean force) {
+        private ParsedArguments {
+            arguments = List.copyOf(arguments);
+        }
+    }
+
 }

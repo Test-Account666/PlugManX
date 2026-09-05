@@ -33,6 +33,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Delegate;
 
+import java.util.Objects;
+
 
 /**
  * Abstract command class that our commands extend.
@@ -85,7 +87,8 @@ public abstract class AbstractCommand {
      * @return does the sender have permission
      */
     public boolean hasPermission() {
-        return sender.hasPermission(permission) || isConsoleOrRemoteConsole();
+        var commandSender = Objects.requireNonNull(sender, "Command sender is unavailable");
+        return commandSender.hasPermission(permission) || commandSender.isConsole();
     }
 
     /**
@@ -155,7 +158,7 @@ public abstract class AbstractCommand {
     }
 
     /**
-     * Validates a plugin for common checks (exists, not ignored, not paper plugin).
+     * Validates a plugin for common checks (exists, not ignored).
      *
      * @param plugin the plugin to validate
      * @return true if valid, false otherwise
@@ -169,11 +172,6 @@ public abstract class AbstractCommand {
 
         if (getPluginManager().isIgnored(plugin)) {
             sender.sendMessage("error.ignored");
-            return false;
-        }
-
-        if (getPluginManager().isPaperPlugin(plugin)) {
-            sender.sendMessage("error.paper-plugin");
             return false;
         }
 

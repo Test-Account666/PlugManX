@@ -33,28 +33,29 @@ import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.util.reflection.ClassAccessor;
 import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
 import core.com.rylinaux.plugman.util.reflection.MethodAccessor;
-import io.papermc.paper.plugin.entrypoint.Entrypoint;
-import io.papermc.paper.plugin.entrypoint.LaunchEntryPointHandler;
-import io.papermc.paper.plugin.provider.PluginProvider;
-import io.papermc.paper.plugin.storage.SimpleProviderStorage;
 import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
 import org.bukkit.plugin.EventExecutor;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import paper.com.rylinaux.plugman.util.PaperReflectionNames;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 
 public class ModernPaperPluginManager extends PaperPluginManager {
     //TODO: Add paper-plugin support
 
+    public ModernPaperPluginManager(BukkitPluginManager bukkitPluginManager) {
+        super(bukkitPluginManager);
+    }
+
     @Override
-    public synchronized PluginResult unload(Plugin plugin) {
+    public PluginResult unload(Plugin plugin) {
         var result = unloadWithPaper(plugin);
         if (!result.second().success()) return result.second();
 
@@ -69,6 +70,7 @@ public class ModernPaperPluginManager extends PaperPluginManager {
         scheduleCleanupTask();
 
         syncCommands();
+        reportUnloadLeaks(plugin);
         closeClassLoader(plugin);
         System.gc();
 
@@ -77,10 +79,16 @@ public class ModernPaperPluginManager extends PaperPluginManager {
 
     @SneakyThrows
     private Object getInstanceManager() {
-        var paper = ClassAccessor.getClass("io.papermc.paper.plugin.manager.PaperPluginManagerImpl");
-        var paperPluginManagerImpl = MethodAccessor.invoke(paper, "getInstance", null);
+        var paper = Objects.requireNonNull(
+                ClassAccessor.getClass(PaperReflectionNames.PAPER_PLUGIN_MANAGER),
+                "Paper plugin manager class is unavailable");
+        var paperPluginManagerImpl = Objects.requireNonNull(
+                MethodAccessor.invoke(paper, "getInstance", null),
+                "Paper plugin manager instance is unavailable");
 
-        return FieldAccessor.getValue(paperPluginManagerImpl.getClass(), "instanceManager", paperPluginManagerImpl);
+        return Objects.requireNonNull(
+                FieldAccessor.getValue(paperPluginManagerImpl.getClass(), "instanceManager", paperPluginManagerImpl),
+                "Paper instance manager is unavailable");
     }
 
 
@@ -88,8 +96,12 @@ public class ModernPaperPluginManager extends PaperPluginManager {
         try {
             var instanceManager = getInstanceManager();
 
-            var lookupNames = FieldAccessor.<Map<String, org.bukkit.plugin.Plugin>>getValue(instanceManager.getClass(), "lookupNames", instanceManager);
-            var pluginList = FieldAccessor.<List<org.bukkit.plugin.Plugin>>getValue(instanceManager.getClass(), "plugins", instanceManager);
+            var lookupNames = Objects.requireNonNull(
+                    FieldAccessor.<Map<String, org.bukkit.plugin.Plugin>>getValue(instanceManager.getClass(), "lookupNames", instanceManager),
+                    "Paper plugin lookup map is unavailable");
+            var pluginList = Objects.requireNonNull(
+                    FieldAccessor.<List<org.bukkit.plugin.Plugin>>getValue(instanceManager.getClass(), "plugins", instanceManager),
+                    "Paper plugin list is unavailable");
 
             var eventExecutorMap = FieldAccessor.<Map<Method, Class<?>>>getValue(EventExecutor.class, "eventExecutorMap", null);
 
@@ -134,19 +146,41 @@ public class ModernPaperPluginManager extends PaperPluginManager {
     }
 
     private Object getPluginStorage() {
-        return LaunchEntryPointHandler.INSTANCE.get(Entrypoint.PLUGIN);
+        try {
+            var handlerClass = ClassAccessor.getClass(PaperReflectionNames.LAUNCH_ENTRYPOINT_HANDLER);
+            var entrypointClass = ClassAccessor.getClass(PaperReflectionNames.ENTRYPOINT);
+            if (handlerClass == null || entrypointClass == null) return null;
+
+            var handler = Objects.requireNonNull(
+                    FieldAccessor.getValue(handlerClass, PaperReflectionNames.INSTANCE_FIELD, null),
+                    "Paper launch entrypoint handler is unavailable");
+            var pluginEntrypoint = Objects.requireNonNull(
+                    FieldAccessor.getValue(entrypointClass, PaperReflectionNames.PLUGIN_FIELD, null),
+                    "Paper plugin entrypoint is unavailable");
+            return MethodAccessor.invoke(handler.getClass(), "get", handler, new Class<?>[]{entrypointClass}, pluginEntrypoint);
+        } catch (Exception exception) {
+            PlugManBukkit.getInstance().getLogger().fine("Could not resolve Paper plugin storage: " + exception.getMessage());
+            return null;
+        }
     }
 
-    private List<PluginProvider<JavaPlugin>> cloneProvidersList(Object storage) {
-        var providersIterable = ((SimpleProviderStorage) storage).getRegisteredProviders();
-        var clonedList = new ArrayList<PluginProvider<JavaPlugin>>();
-        for (var provider : providersIterable) clonedList.add((PluginProvider<JavaPlugin>) provider);
-        return clonedList;
+    private List<Object> cloneProvidersList(Object storage) {
+        try {
+            var providersIterable = Objects.requireNonNull(
+                    MethodAccessor.<Iterable<?>>invoke(storage.getClass(), "getRegisteredProviders", storage),
+                    "Paper provider collection is unavailable");
+            var clonedList = new ArrayList<Object>();
+            for (var provider : providersIterable) clonedList.add(provider);
+            return clonedList;
+        } catch (Exception exception) {
+            PlugManBukkit.getInstance().getLogger().fine("Could not clone Paper plugin providers: " + exception.getMessage());
+            return new ArrayList<>();
+        }
     }
 
-    private void removeMatchingProviders(Plugin plugin, Object storage, List<PluginProvider<JavaPlugin>> providers) {
+    private void removeMatchingProviders(Plugin plugin, Object storage, List<Object> providers) {
         for (var provider : providers) {
-            if (!provider.getMeta().getName().equalsIgnoreCase(plugin.getName())) continue;
+            if (!providerMatchesPlugin(provider, plugin)) continue;
 
             try {
                 removeProviderFromStorage(plugin, storage, provider);
@@ -158,9 +192,21 @@ public class ModernPaperPluginManager extends PaperPluginManager {
         }
     }
 
-    private void removeProviderFromStorage(Plugin plugin, Object storage, PluginProvider<JavaPlugin> provider) {
+    private boolean providerMatchesPlugin(Object provider, Plugin plugin) {
         try {
-            var providers = FieldAccessor.<List<?>>getValue(SimpleProviderStorage.class, "providers", storage);
+            var meta = MethodAccessor.invoke(provider.getClass(), "getMeta", provider);
+            var name = MethodAccessor.<String>invoke(meta.getClass(), "getName", meta);
+            return name != null && name.equalsIgnoreCase(plugin.getName());
+        } catch (Exception exception) {
+            return false;
+        }
+    }
+
+    private void removeProviderFromStorage(Plugin plugin, Object storage, Object provider) {
+        try {
+            var providers = Objects.requireNonNull(
+                    FieldAccessor.<List<?>>getValue(storage.getClass(), "providers", storage),
+                    "Paper provider list is unavailable");
             var removed = providers.remove(provider);
 
             if (removed) {
@@ -231,11 +277,15 @@ public class ModernPaperPluginManager extends PaperPluginManager {
     private boolean cleanupSafeClassDefiner(Plugin plugin) {
         try {
             // Try to unload from SafeClassDefiner
-            var cls = ClassAccessor.getClass("com.destroystokyo.paper.event.executor.asm.SafeClassDefiner");
+            var cls = ClassAccessor.getClass(PaperReflectionNames.SAFE_CLASS_DEFINER);
             if (cls == null) return true;
 
-            var instance = FieldAccessor.getValue(cls, "INSTANCE", null);
-            var loaders = FieldAccessor.<Map<?, ?>>getValue(instance.getClass(), "loaders", instance);
+            var instance = Objects.requireNonNull(
+                    FieldAccessor.getValue(cls, PaperReflectionNames.INSTANCE_FIELD, null),
+                    "SafeClassDefiner instance is unavailable");
+            var loaders = Objects.requireNonNull(
+                    FieldAccessor.<Map<?, ?>>getValue(instance.getClass(), "loaders", instance),
+                    "SafeClassDefiner loader map is unavailable");
             loaders.remove(plugin.getHandle().getClass().getClassLoader());
             return true;
         } catch (NoClassDefFoundError ignored) { // ignore this, if SafeClassDefiner doesn't exist

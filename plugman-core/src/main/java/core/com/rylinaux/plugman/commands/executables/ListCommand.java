@@ -30,10 +30,13 @@ import com.google.common.base.Joiner;
 import core.com.rylinaux.plugman.commands.AbstractCommand;
 import core.com.rylinaux.plugman.commands.CommandSender;
 import core.com.rylinaux.plugman.plugins.Plugin;
+import core.com.rylinaux.plugman.platform.PlatformCommandAdapter;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
+import core.com.rylinaux.plugman.util.FlagUtil;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -86,19 +89,27 @@ public class ListCommand extends AbstractCommand {
      */
     @Override
     public void execute(CommandSender sender, String label, String[] args) {
-        var includeVersions = core.com.rylinaux.plugman.util.FlagUtil.hasFlag(args, 'v');
+        var includeVersions = FlagUtil.parse(args, 'v').hasFlag('v');
 
-        var pluginList = new ArrayList<String>();
         var formatFunction = new PluginStringFunction(includeVersions);
+        var groups = getOptional(PlatformCommandAdapter.class)
+                .map(adapter -> adapter.groupPlugins(getPluginManager()))
+                .orElseGet(() -> List.of(
+                        new PlatformCommandAdapter.PluginGroup("list.paper", getPluginManager().getPlugins().stream()
+                                .filter(getPluginManager()::isPaperPlugin).toList()),
+                        new PlatformCommandAdapter.PluginGroup("list.bukkit", getPluginManager().getPlugins().stream()
+                                .filter(plugin -> !getPluginManager().isPaperPlugin(plugin)).toList())));
 
-        getPluginManager().getPlugins().stream().map(formatFunction).forEach(pluginList::add);
+        for (var group : groups) {
+            var plugins = group.plugins().stream().map(formatFunction).sorted(String.CASE_INSENSITIVE_ORDER)
+                    .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+            sender.sendMessage(group.messageKey(), plugins.size(), formatPluginList(plugins));
+        }
 
-        pluginList.sort(String.CASE_INSENSITIVE_ORDER);
+    }
 
-        var plugins = Joiner.on(", ").join(pluginList);
-
-        sender.sendMessage("list.list", pluginList.size(), plugins);
-
+    private String formatPluginList(ArrayList<String> plugins) {
+        return plugins.isEmpty() ? "&7None" : Joiner.on(", ").join(plugins);
     }
 
     @RequiredArgsConstructor
@@ -106,8 +117,8 @@ public class ListCommand extends AbstractCommand {
         private final boolean includeVersions;
 
         @Override
-        public String apply(Plugin test) {
-            return getPluginManager().getFormattedName(test, includeVersions);
+        public String apply(Plugin plugin) {
+            return getPluginManager().getFormattedName(plugin, includeVersions);
         }
     }
 }

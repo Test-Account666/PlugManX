@@ -6,7 +6,7 @@
 
     <groupId>com.rylinaux</groupId>
     <artifactId>PlugManX</artifactId>
-    <version>3.0.5</version>
+    <version>3.1.0</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -15,16 +15,8 @@
         <module>plugman-paper</module>
         <module>plugman-bungee</module>
         <module>plugman-assembly</module>
+        <module>plugman-velocity</module>
     </modules>
-
-    <profiles>
-        <profile>
-            <id>include-velocity</id>
-            <modules>
-                <module>plugman-velocity</module>
-            </modules>
-        </profile>
-    </profiles>
 
     <name>PlugManX</name>
     <description>Plugin manager for Bukkit servers.</description>
@@ -57,9 +49,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <plugman.version>3.0.5</plugman.version>
+        <plugman.version>3.1.0</plugman.version>
         <manifold.version>2025.1.31</manifold.version>
         <jackson.version>2.13.5</jackson.version>
+        <lombok.version>1.18.46</lombok.version>
     </properties>
 
     <build>
@@ -77,7 +70,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.38</version>
+                            <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
@@ -101,7 +94,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.38</version>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
