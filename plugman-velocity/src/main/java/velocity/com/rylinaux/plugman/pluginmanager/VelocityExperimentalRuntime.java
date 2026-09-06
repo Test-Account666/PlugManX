@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,7 @@ final class VelocityExperimentalRuntime {
     private final Method targetedFire;
     private final Field channelIdentifiers;
     private final Field pluginClassLoaders;
+    private final Field commandDispatcher;
     private final VelocityPacketRegistryCleaner packetRegistryCleaner;
     private final Map<ClassLoader, Set<ChannelIdentifier>> pluginChannelsByClassLoader = new ConcurrentHashMap<>();
     private final Map<ClassLoader, VelocityPacketRegistryCleaner.RegistryDelta> pluginPacketDeltasByClassLoader =
@@ -93,6 +95,8 @@ final class VelocityExperimentalRuntime {
         channelIdentifiers = findOptionalField(channelRegistrarClass, List.of("identifierMap"));
         var pluginClassLoaderClass = Class.forName("com.velocitypowered.proxy.plugin.PluginClassLoader");
         pluginClassLoaders = findOptionalField(pluginClassLoaderClass, List.of("loaders"));
+        commandDispatcher = findField(PlugManVelocity.getInstance().getServer()
+                .getCommandManager().getClass(), List.of("dispatcher"));
         packetRegistryCleaner = createPacketRegistryCleaner(adapter);
     }
 
@@ -454,20 +458,65 @@ final class VelocityExperimentalRuntime {
         }
     }
 
-    private int unregisterCommands(ProxyServer server, PluginContainer container, Object instance) {
+    private int unregisterCommands(ProxyServer server, PluginContainer container, Object instance)
+            throws ReflectiveOperationException {
         var commandManager = server.getCommandManager();
+        var classLoader = instance.getClass().getClassLoader();
         var removed = 0;
         for (var alias : List.copyOf(commandManager.getAliases())) {
             var meta = commandManager.getCommandMeta(alias);
             if (meta == null) continue;
 
             var owner = meta.getPlugin();
-            if (owner == container || owner == instance) {
+            if (owner == container || owner == instance
+                    || (owner != null && owner.getClass().getClassLoader() == classLoader)) {
                 commandManager.unregister(alias);
                 removed++;
             }
         }
+        return removed + unregisterCommandsFromGraph(commandManager, classLoader);
+    }
+
+    private int unregisterCommandsFromGraph(CommandManager commandManager, ClassLoader classLoader)
+            throws ReflectiveOperationException {
+        var dispatcher = commandDispatcher.get(commandManager);
+        var root = dispatcher.getClass().getMethod("getRoot").invoke(dispatcher);
+        var children = (java.util.Collection<?>) root.getClass().getMethod("getChildren").invoke(root);
+        var removeChild = root.getClass().getMethod("removeChildByName", String.class);
+        var removed = 0;
+        for (var node : List.copyOf(children)) {
+            var command = node.getClass().getMethod("getCommand").invoke(node);
+            var requirement = node.getClass().getMethod("getRequirement").invoke(node);
+            var contextRequirement = node.getClass().getMethod("getContextRequirement").invoke(node);
+            if (referencesPluginClassLoader(command, classLoader, new IdentityHashMap<>(), 4)
+                    || referencesPluginClassLoader(requirement, classLoader, new IdentityHashMap<>(), 4)
+                    || referencesPluginClassLoader(contextRequirement, classLoader, new IdentityHashMap<>(), 4)) {
+                var name = (String) node.getClass().getMethod("getName").invoke(node);
+                removeChild.invoke(root, name);
+                removed++;
+            }
+        }
         return removed;
+    }
+
+    private static boolean referencesPluginClassLoader(Object value,
+                                                       ClassLoader classLoader,
+                                                       IdentityHashMap<Object, Boolean> visited,
+                                                       int remainingDepth) {
+        if (value == null || remainingDepth < 0 || visited.put(value, Boolean.TRUE) != null) return false;
+        if (value.getClass().getClassLoader() == classLoader) return true;
+
+        for (var field : value.getClass().getDeclaredFields()) {
+            if (Modifier.isStatic(field.getModifiers()) || !field.trySetAccessible()) continue;
+            try {
+                if (referencesPluginClassLoader(field.get(value), classLoader, visited, remainingDepth - 1)) {
+                    return true;
+                }
+            } catch (IllegalAccessException ignored) {
+                // An inaccessible implementation detail cannot identify this command as plugin-owned.
+            }
+        }
+        return false;
     }
 
     private VelocityCleanupException rollbackFailedLoad(ProxyServer server,
@@ -532,7 +581,8 @@ final class VelocityExperimentalRuntime {
         }
     }
 
-    private void unregisterRollbackCommands(ProxyServer server, PluginContainer container, Object instance) {
+    private void unregisterRollbackCommands(ProxyServer server, PluginContainer container, Object instance)
+            throws ReflectiveOperationException {
         if (instance != null) unregisterCommands(server, container, instance);
     }
 
