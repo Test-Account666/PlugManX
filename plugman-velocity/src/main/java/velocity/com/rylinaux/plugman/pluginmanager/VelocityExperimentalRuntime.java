@@ -39,6 +39,7 @@ import java.util.function.Consumer;
  * Capability-checked access to Velocity's unsupported runtime plugin lifecycle.
  */
 final class VelocityExperimentalRuntime {
+    private static final String REMOVED = "Removed ";
     private final String adapterName;
     private final Constructor<?> loaderConstructor;
     private final Constructor<?> containerConstructor;
@@ -231,11 +232,11 @@ final class VelocityExperimentalRuntime {
         var leakSnapshot = captureLeakSnapshot(server, container, instance, classLoader, debug, startedAt);
         cleanupStep("plugin registry", failures, debug, startedAt, () -> {
             var removed = removePluginRegistrations(server, container);
-            debug(debug, startedAt, "Removed " + removed + " plugin registry entries");
+            debug(debug, startedAt, REMOVED + removed + " plugin registry entries");
         });
         cleanupStep("instance registry", failures, debug, startedAt, () -> {
             var removed = removeInstanceRegistrations(server, container, instance);
-            debug(debug, startedAt, "Removed " + removed + " instance registry entries");
+            debug(debug, startedAt, REMOVED + removed + " instance registry entries");
         });
         cleanupStep("plugin classloader", failures, debug, startedAt, () -> {
             if (classLoader instanceof Closeable closeable) {
@@ -605,7 +606,7 @@ final class VelocityExperimentalRuntime {
         var fallbackResult = packetRegistryCleaner.removeOwnedMappings(classLoader);
         pluginPacketDeltasByClassLoader.remove(classLoader);
 
-        debug(debug, startedAt, "Removed " + trackedResult.removedMappings()
+        debug(debug, startedAt, REMOVED + trackedResult.removedMappings()
                 + " tracked and " + fallbackResult.removedMappings()
                 + " fallback classloader-owned packet mappings");
         if (fallbackResult.skippedMappings() > 0) {
