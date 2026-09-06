@@ -94,6 +94,7 @@ public class BukkitPluginManager extends BasePluginManager {
         if (plugin.isEnabled()) return new PluginResult(false, "enable.already-enabled");
         var bukkitPlugin = plugin.<org.bukkit.plugin.Plugin>getHandle();
         Bukkit.getPluginManager().enablePlugin(bukkitPlugin);
+        if (!bukkitPlugin.isEnabled()) return new PluginResult(false, "enable.failed", plugin.getName());
         return new PluginResult(true, "enable.enabled");
     }
 
@@ -352,16 +353,29 @@ public class BukkitPluginManager extends BasePluginManager {
      */
     @Override
     public PluginResult load(String name) {
-        var pluginFile = findPluginFile(name);
-        if (pluginFile == null) return new PluginResult(false, "load.cannot-find");
+        var preflight = preflightPluginLoad(name);
+        if (!preflight.result().success()) return preflight.result();
+        if (!beginPluginLoad(preflight.descriptor())) {
+            return new PluginResult(false, "load.missing-dependencies", preflight.descriptor().name(), preflight.descriptor().name());
+        }
 
-        var target = loadAndEnablePlugin(pluginFile, false);
-        if (target == null) return new PluginResult(false, "load.invalid-plugin");
+        try {
+            var dependencyResult = loadRequiredDependencies(preflight.descriptor());
+            if (!dependencyResult.success()) return dependencyResult;
 
-        scheduleCommandLoading();
-        PlugManBukkit.getInstance().getFilePluginMap().put(pluginFile.getName(), target.getName());
+            var target = loadAndEnablePlugin(preflight.pluginFile(), false);
+            if (target == null) {
+                if (getPluginByName(preflight.descriptor().name()) != null) return new PluginResult(false, "load.enable-failed", preflight.descriptor().name());
+                return new PluginResult(false, "load.invalid-plugin", preflight.descriptor().name());
+            }
 
-        return new PluginResult(true, "load.loaded");
+            scheduleCommandLoading();
+            PlugManBukkit.getInstance().getFilePluginMap().put(preflight.pluginFile().getName(), target.getName());
+
+            return new PluginResult(true, "load.loaded");
+        } finally {
+            finishPluginLoad(preflight.descriptor());
+        }
     }
 
     @ApiStatus.Internal
@@ -372,6 +386,10 @@ public class BukkitPluginManager extends BasePluginManager {
 
             if (!skipLoad) target.onLoad();
             Bukkit.getPluginManager().enablePlugin(target);
+            if (!target.isEnabled()) {
+                PlugManBukkit.getInstance().getLogger().severe("Plugin failed to enable after loading: " + pluginFile.getName());
+                return null;
+            }
             return new BukkitPlugin(target);
         } catch (InvalidDescriptionException | InvalidPluginException exception) {
             PlugManBukkit.getInstance().getLogger().log(Level.SEVERE, "Failed to load and enable plugin: " + pluginFile.getName(), exception);
@@ -419,6 +437,7 @@ public class BukkitPluginManager extends BasePluginManager {
         if (unloadData == null) return new PluginResult(false, "unload.failed");
 
         disableAndCleanupPlugin(plugin, unloadData);
+        reportUnloadLeaks(plugin);
         closeClassLoader(plugin);
 
         // Will not work on processes started with the -XX:+DisableExplicitGC flag, but lets try it anyway.
@@ -466,11 +485,12 @@ public class BukkitPluginManager extends BasePluginManager {
 
         cleanupListeners(plugin, data.listeners(), data.reloadListeners());
         cleanupCommands(plugin, data);
+        cleanupPermissions(plugin);
         syncCommands();
         removeFromPluginLists(plugin, data);
     }
 
-    protected void cleanupCommands(Plugin plugin, CommonUnloadData data) {
+    private void cleanupCommands(Plugin plugin, CommonUnloadData data) {
         if (data.commandMap() == null) return;
 
         var modifiedKnownCommands = data.commands();
@@ -539,6 +559,8 @@ public class BukkitPluginManager extends BasePluginManager {
     @ApiStatus.Internal
     @Override
     public synchronized void syncCommands() {
+        if (deferCommandSyncIfBatching()) return;
+
         syncCommandsRunnable.run();
         Bukkit.getOnlinePlayers().forEach(Player::updateCommands);
     }

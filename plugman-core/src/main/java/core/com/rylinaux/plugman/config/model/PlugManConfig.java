@@ -18,7 +18,7 @@ public class PlugManConfig {
      * Configuration version for migration purposes
      */
     @JsonProperty("version")
-    private int version = 3;
+    private int version = 5;
 
     /**
      * Auto-load configuration settings
@@ -55,6 +55,31 @@ public class PlugManConfig {
      */
     @JsonProperty("showPaperWarning")
     private boolean showPaperWarning = true;
+
+    /**
+     * Whether to log verbose Paper runtime reload debug output
+     */
+    @JsonProperty("paperReloadDebug")
+    private boolean paperReloadDebug = false;
+
+    /**
+     * Controls which dependent plugins are automatically reloaded with a target plugin.
+     * Supported values: ALL, REQUIRED_ONLY, OFF.
+     */
+    @JsonProperty("reloadDependentsMode")
+    private String reloadDependentsMode = "REQUIRED_ONLY";
+
+    public boolean shouldReloadHardDependents() {
+        return !isReloadDependentsMode("OFF");
+    }
+
+    public boolean shouldReloadSoftDependents() {
+        return isReloadDependentsMode("ALL");
+    }
+
+    private boolean isReloadDependentsMode(String expectedMode) {
+        return reloadDependentsMode != null && reloadDependentsMode.equalsIgnoreCase(expectedMode);
+    }
 
     @Data
     public static class GenericLoadConfig {

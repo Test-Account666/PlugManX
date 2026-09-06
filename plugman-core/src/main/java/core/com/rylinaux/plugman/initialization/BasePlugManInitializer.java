@@ -34,9 +34,6 @@ import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 import core.com.rylinaux.plugman.util.ThreadUtil;
-import core.com.rylinaux.plugman.util.reflection.ClassAccessor;
-import core.com.rylinaux.plugman.util.reflection.FieldAccessor;
-import core.com.rylinaux.plugman.util.reflection.MethodAccessor;
 import lombok.Getter;
 
 import java.io.File;
@@ -114,10 +111,25 @@ public abstract class BasePlugManInitializer {
      * Cleanup resources and clear caches
      */
     public void cleanup() {
+        clearReflectionCaches();
         serviceRegistry.clear();
-        ClassAccessor.clearCache();
-        FieldAccessor.clearCache();
-        MethodAccessor.clearCache();
+    }
+
+    private void clearReflectionCaches() {
+        clearReflectionCache("class", "core.com.rylinaux.plugman.util.reflection.ClassAccessor");
+        clearReflectionCache("field", "core.com.rylinaux.plugman.util.reflection.FieldAccessor");
+        clearReflectionCache("method", "core.com.rylinaux.plugman.util.reflection.MethodAccessor");
+    }
+
+    private void clearReflectionCache(String cacheName, String accessorClassName) {
+        try {
+            var accessorClass = Class.forName(accessorClassName);
+            accessorClass.getMethod("clearCache").invoke(null);
+        } catch (LinkageError | RuntimeException exception) {
+            logger.warning("Failed to clear " + cacheName + " reflection cache during shutdown: " + exception.getMessage());
+        } catch (ReflectiveOperationException exception) {
+            logger.warning("Failed to clear " + cacheName + " reflection cache during shutdown: " + exception.getMessage());
+        }
     }
 
     /**

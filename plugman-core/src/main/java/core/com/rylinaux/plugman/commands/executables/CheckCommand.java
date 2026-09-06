@@ -88,9 +88,12 @@ public class CheckCommand extends AbstractCommand {
      */
     @Override
     public void execute(CommandSender sender, String label, String[] args) {
+        var parsedArguments = FlagUtil.parse(args, 'f');
+        args = parsedArguments.argumentArray();
+
         if (!validateArguments(label, args, 2)) return;
 
-        var toFile = FlagUtil.hasFlag(args, 'f');
+        var toFile = parsedArguments.hasFlag('f');
 
         if (args[1] == null) {
             sendSpecifyPluginMessage();
@@ -166,7 +169,7 @@ public class CheckCommand extends AbstractCommand {
             return;
         }
 
-        var pluginName = StringUtil.consolidateStrings(args, 1).replaceAll(" ", "+").replace("-[a-zA-Z]", "").replace("+null", "");
+        var pluginName = StringUtil.consolidateStrings(args, 1).replace(' ', '+');
 
         sender.sendMessage(("check.header"));
 

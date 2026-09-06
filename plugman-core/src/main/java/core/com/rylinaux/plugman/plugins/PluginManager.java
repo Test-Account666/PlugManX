@@ -164,6 +164,19 @@ public interface PluginManager {
     CommandMapWrap<?> getKnownCommands();
 
     /**
+     * Starts a batch of command-map mutations. Implementations may defer expensive
+     * command syncing until {@link #endCommandUpdateBatch()} is called.
+     */
+    default void beginCommandUpdateBatch() {
+    }
+
+    /**
+     * Ends a command-map mutation batch and flushes any deferred command sync.
+     */
+    default void endCommandUpdateBatch() {
+    }
+
+    /**
      * Loads and enables a plugin.
      *
      * @param plugin plugin to load

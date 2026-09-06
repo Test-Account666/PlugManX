@@ -26,19 +26,15 @@ package core.com.rylinaux.plugman.commands.executables;
  * #L%
  */
 
-import core.com.rylinaux.plugman.commands.AbstractCommand;
 import core.com.rylinaux.plugman.commands.CommandSender;
-import core.com.rylinaux.plugman.plugins.Plugin;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
-
-import java.util.ArrayList;
 
 /**
  * Command that reloads plugin(s).
  *
  * @author rylinaux
  */
-public class ReloadCommand extends AbstractCommand {
+public class ReloadCommand extends CascadingPluginCommand {
 
     /**
      * The name of the command.
@@ -74,74 +70,33 @@ public class ReloadCommand extends AbstractCommand {
         super(sender, NAME, DESCRIPTION, PERMISSION, SUB_PERMISSIONS, USAGE, registry);
     }
 
-    /**
-     * Execute the command.
-     *
-     * @param sender the sender of the command
-     * @param label  the name of the command
-     * @param args   the arguments supplied
-     */
     @Override
-    public void execute(CommandSender sender, String label, String[] args) {
-        if (!validateArguments(label, args, 2)) return;
-
-        if (args[1].equalsIgnoreCase("all") || args[1].equalsIgnoreCase("*")) {
-            if (!hasPermission("all")) {
-                sendNoPermissionMessage();
-                return;
-            }
-            reloadAllPlugins(sender, label);
-            return;
-        }
-
-        var target = getPluginManager().getPluginByName(args, 1);
-
-        if (!validatePlugin(label, target)) return;
-        reloadPlugin(sender, label, target);
+    protected String allSuccessMessage() {
+        return "reload.all";
     }
 
-    private void reloadAllPlugins(CommandSender sender, String label) {
-        var plugins = getPluginManager().getPlugins().stream().filter(plugin ->
-                plugin != null && !getPluginManager().isIgnored(plugin) && !getPluginManager().isPaperPlugin(plugin)).toList();
-
-        var failedPlugins = new ArrayList<String>();
-
-        for (var plugin : plugins) {
-            var success = reloadPlugin(sender, label, plugin);
-
-            if (success) continue;
-            failedPlugins.add(plugin.getName());
-        }
-
-        if (failedPlugins.isEmpty()) {
-            sender.sendMessage("reload.all");
-            return;
-        }
-
-        sender.sendMessage("reload.all-failed", String.join(", ", failedPlugins));
+    @Override
+    protected String allFailedMessage() {
+        return "reload.all-failed";
     }
 
-    private boolean reloadPlugin(CommandSender sender, String label, Plugin target) {
-        if (target == null) {
-            sendInvalidPluginMessage();
-            sendUsage(label);
-            return false;
-        }
+    @Override
+    protected String allSummaryMessage() {
+        return "reload.summary";
+    }
 
-        var result = getPluginManager().unload(target);
-        if (!result.success()) {
-            sender.sendMessage(result.messageId(), target.getName());
-            return false;
-        }
+    @Override
+    protected String pluginSuccessMessage() {
+        return "reload.reloaded";
+    }
 
-        result = getPluginManager().load(target);
-        if (!result.success()) {
-            sender.sendMessage(result.messageId(), target.getName());
-            return false;
-        }
-
-        sender.sendMessage("reload.reloaded", target.getName());
+    @Override
+    protected boolean requiresAllConfirmation() {
         return true;
     }
 
+    @Override
+    protected String allConfirmationMessage() {
+        return "reload.confirm-all";
+    }
 }

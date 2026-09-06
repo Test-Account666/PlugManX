@@ -26,7 +26,6 @@ package core.com.rylinaux.plugman.commands.executables;
  * #L%
  */
 
-import core.com.rylinaux.plugman.commands.AbstractCommand;
 import core.com.rylinaux.plugman.commands.CommandSender;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 
@@ -35,7 +34,7 @@ import core.com.rylinaux.plugman.services.ServiceRegistry;
  *
  * @author rylinaux
  */
-public class RestartCommand extends AbstractCommand {
+public class RestartCommand extends CascadingPluginCommand {
 
     /**
      * The name of the command.
@@ -71,38 +70,33 @@ public class RestartCommand extends AbstractCommand {
         super(sender, NAME, DESCRIPTION, PERMISSION, SUB_PERMISSIONS, USAGE, registry);
     }
 
-    /**
-     * Execute the command.
-     *
-     * @param sender the sender of the command
-     * @param label  the name of the command
-     * @param args   the arguments supplied
-     */
     @Override
-    public void execute(CommandSender sender, String label, String[] args) {
-        if (!validateArguments(label, args, 2)) return;
+    protected String allSuccessMessage() {
+        return "restart.all";
+    }
 
-        if (handleAllArgument(args, "all", () -> {
-            getPluginManager().disableAll();
-            getPluginManager().enableAll();
-        }, "restart.all")) return;
+    @Override
+    protected String allFailedMessage() {
+        return "restart.all-failed";
+    }
 
-        var target = getPluginManager().getPluginByName(args, 1);
+    @Override
+    protected String allSummaryMessage() {
+        return "restart.summary";
+    }
 
-        if (!validatePlugin(label, target)) return;
+    @Override
+    protected String pluginSuccessMessage() {
+        return "restart.restarted";
+    }
 
-        var result = getPluginManager().disable(target);
-        if (!result.success()) {
-            sender.sendMessage(result.messageId(), target.getName());
-            return;
-        }
+    @Override
+    protected boolean requiresAllConfirmation() {
+        return true;
+    }
 
-        result = getPluginManager().enable(target);
-        if (!result.success()) {
-            sender.sendMessage(result.messageId(), target.getName());
-            return;
-        }
-
-        sender.sendMessage("restart.restarted", target.getName());
+    @Override
+    protected String allConfirmationMessage() {
+        return "restart.confirm-all";
     }
 }

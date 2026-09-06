@@ -28,7 +28,6 @@ package core.com.rylinaux.plugman.file.messaging;
 
 import core.com.rylinaux.plugman.config.YamlConfigurationProvider;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.io.File;
 
@@ -38,8 +37,8 @@ import java.io.File;
  * @author rylinaux
  */
 @Getter
-@RequiredArgsConstructor
 public class MessageFile {
+    private final File file;
     private final YamlConfigurationProvider yamlProvider;
     private YamlConfigurationProvider config = null;
 
@@ -50,11 +49,16 @@ public class MessageFile {
      * @param yamlProvider the YAML configuration provider
      */
     public MessageFile(File file, YamlConfigurationProvider yamlProvider) {
+        this.file = file;
         this.yamlProvider = yamlProvider;
         config = yamlProvider.loadConfiguration(file);
     }
 
     public String getString(String key) {
-        return yamlProvider.getString(key, null);
+        return config.getString(key, null);
+    }
+
+    public void reload() {
+        config = yamlProvider.loadConfiguration(file);
     }
 }
