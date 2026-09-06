@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -199,6 +200,11 @@ final class VelocityExperimentalRuntime {
             var shutdownHandlers = fireForPlugin(server.getEventManager(), container, new ProxyShutdownEvent());
             debug(debug, startedAt, "Ran " + shutdownHandlers + " ProxyShutdownEvent handlers");
         });
+        // A plugin may remove itself from Velocity's internal registries while handling
+        // ProxyShutdownEvent. The public listener and scheduler APIs require that
+        // registration, although the plugin-owned resources still need to be released.
+        cleanupStep("plugin registration recovery", failures, debug, startedAt, () ->
+                restorePluginRegistration(server, container, instance, debug, startedAt));
         cleanupStep("event listeners", failures, debug, startedAt,
                 () -> server.getEventManager().unregisterListeners(instance));
         cleanupStep("scheduled tasks", failures, debug, startedAt, () -> {
@@ -224,12 +230,12 @@ final class VelocityExperimentalRuntime {
         });
         var leakSnapshot = captureLeakSnapshot(server, container, instance, classLoader, debug, startedAt);
         cleanupStep("plugin registry", failures, debug, startedAt, () -> {
-            var removed = pluginMap(server.getPluginManager()).remove(container.getDescription().getId()) != null;
-            debug(debug, startedAt, "Removed plugin registry entry: " + removed);
+            var removed = removePluginRegistrations(server, container);
+            debug(debug, startedAt, "Removed " + removed + " plugin registry entries");
         });
         cleanupStep("instance registry", failures, debug, startedAt, () -> {
-            var removed = instanceMap(server.getPluginManager()).remove(instance) != null;
-            debug(debug, startedAt, "Removed instance registry entry: " + removed);
+            var removed = removeInstanceRegistrations(server, container, instance);
+            debug(debug, startedAt, "Removed " + removed + " instance registry entries");
         });
         cleanupStep("plugin classloader", failures, debug, startedAt, () -> {
             if (classLoader instanceof Closeable closeable) {
@@ -542,12 +548,12 @@ final class VelocityExperimentalRuntime {
 
     private void removeRollbackPlugin(ProxyServer server, PluginContainer container, boolean registered)
             throws IllegalAccessException {
-        if (registered) pluginMap(server.getPluginManager()).remove(container.getDescription().getId());
+        if (registered) removePluginRegistrations(server, container);
     }
 
     private void removeRollbackInstance(ProxyServer server, Object instance, boolean registered)
             throws IllegalAccessException {
-        if (registered && instance != null) instanceMap(server.getPluginManager()).remove(instance);
+        if (registered && instance != null) removeInstanceRegistrations(server, null, instance);
     }
 
     private void closeRollbackClassLoader(ClassLoader classLoader) throws IOException {
@@ -652,9 +658,15 @@ final class VelocityExperimentalRuntime {
                 bind(EventManager.class).toInstance(server.getEventManager());
                 bind(CommandManager.class).toInstance(server.getCommandManager());
 
-                var containers = new ArrayList<>(server.getPluginManager().getPlugins());
-                containers.add(loadingContainer);
-                for (var container : containers) {
+                // A failed reload can leave an old container visible through a
+                // manager snapshot. Bind each plugin id once; the container being
+                // loaded must win for its own @Named injection binding.
+                var containersById = new LinkedHashMap<String, PluginContainer>();
+                for (var container : server.getPluginManager().getPlugins()) {
+                    containersById.put(container.getDescription().getId(), container);
+                }
+                containersById.put(loadingContainer.getDescription().getId(), loadingContainer);
+                for (var container : containersById.values()) {
                     bind(PluginContainer.class)
                             .annotatedWith(Names.named(container.getDescription().getId()))
                             .toInstance(container);
@@ -671,6 +683,41 @@ final class VelocityExperimentalRuntime {
     @SuppressWarnings("unchecked")
     private Map<Object, PluginContainer> instanceMap(PluginManager manager) throws IllegalAccessException {
         return (Map<Object, PluginContainer>) pluginInstances.get(manager);
+    }
+
+    private void restorePluginRegistration(ProxyServer server,
+                                           PluginContainer container,
+                                           Object instance,
+                                           Consumer<String> debug,
+                                           long startedAt) throws IllegalAccessException {
+        var plugins = pluginMap(server.getPluginManager());
+        var instances = instanceMap(server.getPluginManager());
+        var restoredPlugin = plugins.putIfAbsent(container.getDescription().getId(), container) == null;
+        var restoredInstance = instances.putIfAbsent(instance, container) == null;
+        if (restoredPlugin || restoredInstance) {
+            debug(debug, startedAt, "Restored plugin registration removed during ProxyShutdownEvent"
+                    + " (plugin=" + restoredPlugin + ", instance=" + restoredInstance + ")");
+        }
+    }
+
+    private int removePluginRegistrations(ProxyServer server, PluginContainer container)
+            throws IllegalAccessException {
+        var plugins = pluginMap(server.getPluginManager());
+        var pluginId = container.getDescription().getId();
+        var sizeBefore = plugins.size();
+        plugins.entrySet().removeIf(entry -> entry.getValue() == container
+                || entry.getKey().equalsIgnoreCase(pluginId));
+        return sizeBefore - plugins.size();
+    }
+
+    private int removeInstanceRegistrations(ProxyServer server,
+                                            PluginContainer container,
+                                            Object instance) throws IllegalAccessException {
+        var instances = instanceMap(server.getPluginManager());
+        var sizeBefore = instances.size();
+        instances.entrySet().removeIf(entry -> entry.getKey() == instance
+                || (container != null && entry.getValue() == container));
+        return sizeBefore - instances.size();
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

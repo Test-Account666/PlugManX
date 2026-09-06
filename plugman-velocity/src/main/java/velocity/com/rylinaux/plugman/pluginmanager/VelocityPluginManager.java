@@ -143,10 +143,14 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public Plugin getPluginByName(String name) {
-        var direct = getServer().getPluginManager().getPlugin(name);
+        var velocityPluginManager = getServer().getPluginManager();
+        var direct = velocityPluginManager.getPlugin(name);
         if (direct.isPresent()) return wrap(direct.get());
 
-        return getServer().getPluginManager().getPlugins().stream()
+        // Velocity 4.x may briefly expose a removed container through its plugin
+        // collection. Do not let that stale snapshot block a later /plugman load.
+        return velocityPluginManager.getPlugins().stream()
+                .filter(container -> velocityPluginManager.isLoaded(container.getDescription().getId()))
                 .filter(container -> container.getDescription().getName()
                         .map(value -> value.equalsIgnoreCase(name)).orElse(false))
                 .findFirst().map(this::wrap).orElse(null);
@@ -346,7 +350,9 @@ public class VelocityPluginManager implements PluginManager {
 
     @Override
     public Set<Plugin> getPlugins() {
-        return getServer().getPluginManager().getPlugins().stream()
+        var velocityPluginManager = getServer().getPluginManager();
+        return velocityPluginManager.getPlugins().stream()
+                .filter(container -> velocityPluginManager.isLoaded(container.getDescription().getId()))
                 .map(this::wrap)
                 .collect(Collectors.toCollection(HashSet::new));
     }
