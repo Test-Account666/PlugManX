@@ -195,9 +195,16 @@ public class VelocityPluginManager implements PluginManager {
         var aliases = getServer().getCommandManager().getAliases().stream()
                 .filter(alias -> findByCommand(alias).stream()
                         .anyMatch(plugin.getName()::equalsIgnoreCase))
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .toList();
-        return String.join(", ", aliases);
+                .collect(Collectors.toCollection(HashSet::new));
+        if (plugin instanceof VelocityPlugin velocityPlugin && velocityPlugin.instance() != null) {
+            try {
+                aliases.addAll(runtime.findCommandAliases(getServer(),
+                        velocityPlugin.instance().getClass().getClassLoader()));
+            } catch (ReflectiveOperationException | RuntimeException exception) {
+                debug("Could not inspect Brigadier commands for {}: {}", plugin.getName(), exception);
+            }
+        }
+        return aliases.stream().sorted(String.CASE_INSENSITIVE_ORDER).collect(Collectors.joining(", "));
     }
 
     @Override

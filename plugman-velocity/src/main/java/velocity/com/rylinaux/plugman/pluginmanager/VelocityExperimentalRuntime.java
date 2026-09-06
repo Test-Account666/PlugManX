@@ -140,6 +140,26 @@ final class VelocityExperimentalRuntime {
         return adapterName;
     }
 
+    List<String> findCommandAliases(ProxyServer server, ClassLoader classLoader)
+            throws ReflectiveOperationException {
+        var commandManager = server.getCommandManager();
+        var dispatcher = commandDispatcher.get(commandManager);
+        var root = dispatcher.getClass().getMethod("getRoot").invoke(dispatcher);
+        var children = (java.util.Collection<?>) root.getClass().getMethod("getChildren").invoke(root);
+        var aliases = new ArrayList<String>();
+        for (var node : children) {
+            var command = node.getClass().getMethod("getCommand").invoke(node);
+            var requirement = node.getClass().getMethod("getRequirement").invoke(node);
+            var contextRequirement = node.getClass().getMethod("getContextRequirement").invoke(node);
+            if (referencesPluginClassLoader(command, classLoader, new IdentityHashMap<>(), 4)
+                    || referencesPluginClassLoader(requirement, classLoader, new IdentityHashMap<>(), 4)
+                    || referencesPluginClassLoader(contextRequirement, classLoader, new IdentityHashMap<>(), 4)) {
+                aliases.add((String) node.getClass().getMethod("getName").invoke(node));
+            }
+        }
+        return aliases;
+    }
+
     PluginDescription readDescription(ProxyServer server, Path source) throws ReflectiveOperationException {
         var loader = loaderConstructor.newInstance(server, source.getParent());
         return (PluginDescription) loadCandidate.invoke(loader, source);
