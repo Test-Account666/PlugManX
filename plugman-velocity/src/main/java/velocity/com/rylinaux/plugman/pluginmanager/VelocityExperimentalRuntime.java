@@ -233,7 +233,7 @@ final class VelocityExperimentalRuntime {
         cleanupStep("event listeners", failures, debug, startedAt,
                 () -> server.getEventManager().unregisterListeners(instance));
         cleanupStep("scheduled tasks", failures, debug, startedAt, () -> {
-            var tasks = List.copyOf(server.getScheduler().tasksByPlugin(instance));
+            List<ScheduledTask> tasks = new ArrayList<>(server.getScheduler().tasksByPlugin(instance));
             for (ScheduledTask task : tasks) task.cancel();
             debug(debug, startedAt, "Cancelled " + tasks.size() + " scheduled tasks");
         });
@@ -596,7 +596,8 @@ final class VelocityExperimentalRuntime {
 
     private void cancelRollbackTasks(ProxyServer server, Object instance) {
         if (instance == null) return;
-        for (ScheduledTask task : List.copyOf(server.getScheduler().tasksByPlugin(instance))) {
+        List<ScheduledTask> tasks = new ArrayList<>(server.getScheduler().tasksByPlugin(instance));
+        for (ScheduledTask task : tasks) {
             task.cancel();
         }
     }
