@@ -186,6 +186,9 @@
                                 <copy file="${project.build.directory}/${project.build.finalName}-standalone.jar"
                                       tofile="${project.build.directory}/PlugManX-${project.version}.jar"
                                       overwrite="true"/>
+                                <copy file="${project.build.directory}/${project.build.finalName}-standalone.jar"
+                                      tofile="${project.build.directory}/PlugManX-Velocity.jar"
+                                      overwrite="true"/>
                             </target>
                         </configuration>
                     </execution>
