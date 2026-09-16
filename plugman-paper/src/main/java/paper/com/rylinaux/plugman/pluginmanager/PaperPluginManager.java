@@ -40,13 +40,10 @@ import core.com.rylinaux.plugman.util.reflection.MethodAccessor;
 import core.com.rylinaux.plugman.util.tuples.Tuple;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import lombok.experimental.Delegate;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
-import org.bukkit.event.EventException;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.plugin.UnknownDependencyException;
 import org.yaml.snakeyaml.Yaml;
@@ -68,6 +65,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -105,6 +103,7 @@ public class PaperPluginManager extends BasePluginManager {
 
     public PaperPluginManager(BukkitPluginManager bukkitPluginManager) {
         _bukkitPluginManager = bukkitPluginManager;
+        _bukkitPluginManager.useServerManagedPlayerCommandSync();
 
         try {
             var pluginClassLoader = ClassAccessor.getClass("org.bukkit.plugin.java.PluginClassLoader");
@@ -142,7 +141,9 @@ public class PaperPluginManager extends BasePluginManager {
             var launchEntryPointHandlerClass = ClassAccessor.getClass(PaperReflectionNames.LAUNCH_ENTRYPOINT_HANDLER);
             if (launchEntryPointHandlerClass == null) return false;
 
-            var instance = FieldAccessor.getValue(launchEntryPointHandlerClass, PaperReflectionNames.INSTANCE_FIELD, null);
+            var instance = Objects.requireNonNull(
+                    FieldAccessor.getValue(launchEntryPointHandlerClass, PaperReflectionNames.INSTANCE_FIELD, null),
+                    "Paper launch entrypoint handler is unavailable");
 
             var getMethod = MethodAccessor.findMethodByName(instance.getClass(), "get");
 
@@ -269,11 +270,17 @@ public class PaperPluginManager extends BasePluginManager {
             var paper = ClassAccessor.getClass(PaperReflectionNames.PAPER_PLUGIN_MANAGER);
             if (paper == null) return PaperLoadAttempt.empty();
 
-            var paperPluginManagerImpl = MethodAccessor.invoke(paper, "getInstance", null);
+            var paperPluginManagerImpl = Objects.requireNonNull(
+                    MethodAccessor.invoke(paper, "getInstance", null),
+                    "Paper plugin manager instance is unavailable");
 
-            var instanceManager = FieldAccessor.getValue(paperPluginManagerImpl.getClass(), "instanceManager", paperPluginManagerImpl);
+            var instanceManager = Objects.requireNonNull(
+                    FieldAccessor.getValue(paperPluginManagerImpl.getClass(), "instanceManager", paperPluginManagerImpl),
+                    "Paper instance manager is unavailable");
 
-            var target = MethodAccessor.<org.bukkit.plugin.Plugin>invoke(instanceManager.getClass(), "loadPlugin", instanceManager, new Class<?>[]{Path.class}, pluginFile.toPath());
+            var target = Objects.requireNonNull(
+                    MethodAccessor.<org.bukkit.plugin.Plugin>invoke(instanceManager.getClass(), "loadPlugin", instanceManager, new Class<?>[]{Path.class}, pluginFile.toPath()),
+                    "Paper returned no plugin after loading " + pluginFile.getName());
 
             enablePluginWithPaperCommandContext(target, () ->
                     invokePaperInstanceManagerEnable(instanceManager, target));
@@ -358,8 +365,6 @@ public class PaperPluginManager extends BasePluginManager {
             debugStep = "sync commands";
             syncCommands();
             debugKnownPaperCommands(target, "after sync");
-            debugStep = "replay join listeners";
-            replayJoinListenersForOnlinePlayers(target);
             return PaperLoadAttempt.loaded(new BukkitPlugin(target));
         } catch (InvocationTargetException exception) {
             var cause = exception.getTargetException() == null ? exception : exception.getTargetException();
@@ -476,7 +481,9 @@ public class PaperPluginManager extends BasePluginManager {
             var handlerClass = ClassAccessor.getClass(PaperReflectionNames.LAUNCH_ENTRYPOINT_HANDLER);
             if (handlerClass == null || entrypoint == null) return null;
 
-            var handler = FieldAccessor.getValue(handlerClass, PaperReflectionNames.INSTANCE_FIELD, null);
+            var handler = Objects.requireNonNull(
+                    FieldAccessor.getValue(handlerClass, PaperReflectionNames.INSTANCE_FIELD, null),
+                    "Paper launch entrypoint handler is unavailable");
             return MethodAccessor.invoke(handler.getClass(), "get", handler, new Class<?>[]{entrypointClass}, entrypoint);
         } catch (Exception exception) {
             debugPaperReload("failed to resolve launch entrypoint storage: " + exception.getMessage());
@@ -662,31 +669,6 @@ public class PaperPluginManager extends BasePluginManager {
         } catch (NoSuchFieldException exception) {
             return null;
         }
-    }
-
-    private void replayJoinListenersForOnlinePlayers(org.bukkit.plugin.Plugin plugin) {
-        var listeners = PlayerJoinEvent.getHandlerList().getRegisteredListeners();
-        var replayed = 0;
-
-        for (var player : Bukkit.getOnlinePlayers()) {
-            var event = new PlayerJoinEvent(player, Component.empty());
-
-            for (var listener : listeners) {
-                if (listener.getPlugin() != plugin) continue;
-
-                try {
-                    listener.callEvent(event);
-                    replayed++;
-                } catch (EventException exception) {
-                    PlugManBukkit.getInstance().getLogger().log(Level.WARNING,
-                            "[PaperReloadDebug] failed to replay PlayerJoinEvent for " + plugin.getName()
-                                    + " and player " + player.getName(), exception);
-                }
-            }
-        }
-
-        debugPaperReload("replayed " + replayed + " PlayerJoinEvent listener calls for " + plugin.getName()
-                + " across " + Bukkit.getOnlinePlayers().size() + " online players");
     }
 
     private void debugKnownPaperCommands(org.bukkit.plugin.Plugin plugin, String phase) {
@@ -977,12 +959,22 @@ public class PaperPluginManager extends BasePluginManager {
 
     @Override
     protected synchronized void scheduleCommandLoading() {
-        if (deferCommandSyncIfBatching()) return;
+        if (_bukkitPluginManager.deferCommandSync()) return;
 
         if (isFolia()) {
             var foliaLib = new com.tcoded.folialib.FoliaLib(PlugManBukkit.getInstance());
             foliaLib.getScheduler().runLater(this::syncCommands, 500, TimeUnit.MILLISECONDS);
         } else super.scheduleCommandLoading();
+    }
+
+    @Override
+    public synchronized void beginCommandUpdateBatch() {
+        _bukkitPluginManager.beginCommandUpdateBatch();
+    }
+
+    @Override
+    public synchronized void endCommandUpdateBatch() {
+        _bukkitPluginManager.endCommandUpdateBatch();
     }
 
 
@@ -1286,17 +1278,25 @@ public class PaperPluginManager extends BasePluginManager {
             var paper = ClassAccessor.getClass(PaperReflectionNames.PAPER_PLUGIN_MANAGER);
             if (paper == null) return;
 
-            var paperPluginManagerImpl = MethodAccessor.invoke(paper, "getInstance", null);
+            var paperPluginManagerImpl = Objects.requireNonNull(
+                    MethodAccessor.invoke(paper, "getInstance", null),
+                    "Paper plugin manager instance is unavailable");
 
-            var instanceManager = FieldAccessor.getValue(paperPluginManagerImpl.getClass(), "instanceManager", paperPluginManagerImpl);
+            var instanceManager = Objects.requireNonNull(
+                    FieldAccessor.getValue(paperPluginManagerImpl.getClass(), "instanceManager", paperPluginManagerImpl),
+                    "Paper instance manager is unavailable");
 
-            var lookupNames = FieldAccessor.<Map<String, org.bukkit.plugin.Plugin>>getValue(instanceManager.getClass(), "lookupNames", instanceManager);
+            var lookupNames = Objects.requireNonNull(
+                    FieldAccessor.<Map<String, org.bukkit.plugin.Plugin>>getValue(instanceManager.getClass(), "lookupNames", instanceManager),
+                    "Paper plugin lookup map is unavailable");
 
             MethodAccessor.invoke(instanceManager.getClass(), "disablePlugin", instanceManager, new Class<?>[]{org.bukkit.plugin.Plugin.class}, plugin.<org.bukkit.plugin.Plugin>getHandle());
 
             lookupNames.remove(plugin.getName().toLowerCase());
 
-            var pluginList = FieldAccessor.<List<org.bukkit.plugin.Plugin>>getValue(instanceManager.getClass(), "plugins", instanceManager);
+            var pluginList = Objects.requireNonNull(
+                    FieldAccessor.<List<org.bukkit.plugin.Plugin>>getValue(instanceManager.getClass(), "plugins", instanceManager),
+                    "Paper plugin list is unavailable");
             pluginList.remove(plugin.<org.bukkit.plugin.Plugin>getHandle());
         } catch (Exception ignore) {
             // Paper most likely not loaded

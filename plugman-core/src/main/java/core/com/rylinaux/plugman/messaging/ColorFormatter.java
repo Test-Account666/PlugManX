@@ -37,7 +37,7 @@ public interface ColorFormatter {
     /**
      * Translate alternate color codes in a message
      *
-     * @param altColorChar the alternate color code character (e.g., '&')
+     * @param altColorChar the alternate color code character (e.g., {@code '&'})
      * @param textToTranslate the text containing color codes
      * @return the formatted text with color codes translated
      */

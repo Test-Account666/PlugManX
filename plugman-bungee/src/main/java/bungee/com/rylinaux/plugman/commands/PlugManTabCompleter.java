@@ -107,15 +107,12 @@ public class PlugManTabCompleter implements TabExecutor {
                 var yaml = new Yaml();
                 var desc = yaml.loadAs(stream, PluginDescription.class);
 
-                for (var plugin : ProxyServer.getInstance().getPluginManager().getPlugins()) {
-                    if (!plugin.getDescription().getName().equalsIgnoreCase(desc.getName())) continue;
-                    return true;
-                }
+                return ProxyServer.getInstance().getPluginManager().getPlugins().stream()
+                        .anyMatch(plugin -> plugin.getDescription().getName().equalsIgnoreCase(desc.getName()));
             }
         } catch (IOException exception) {
             return false;
         }
-        return false;
     }
 
     private void completeKnownCommands(String partialCommand, List<String> completions) {

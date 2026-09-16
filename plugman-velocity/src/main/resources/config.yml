@@ -1,0 +1,21 @@
+###
+# A list of plugins that PlugManX should ignore when running management commands.
+#
+# This takes the form of a comma separated list enclosed within the brackets.
+###
+ignored-plugins: [ PlugMan,PlugManX,PlugManVelocity,ViaVersion,ViaBackwards,ViaRewind ]
+notify-on-broken-command-removal: true
+auto-load:
+  enabled: false
+  check-every-seconds: 10
+auto-unload:
+  enabled: false
+  check-every-seconds: 10
+auto-reload:
+  enabled: false
+  check-every-seconds: 10
+showVelocityWarning: true
+velocityReloadDebug: false
+
+# Do not change this value
+version: 6

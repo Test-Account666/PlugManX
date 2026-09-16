@@ -46,6 +46,8 @@ public class PlugManCommandHandler extends Command implements TabExecutor {
     private TabExecutor tabCompleter = new PlugManTabCompleter();
 
     public PlugManCommandHandler() {
+        // Keep the proxy command separate from backend PlugMan commands. Bungee
+        // does not expose a console-only command interception event like Velocity.
         super("plugmanbungee", "plugman.admin", "plmb");
     }
 

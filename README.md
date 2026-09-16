@@ -18,11 +18,24 @@ the need to restart the server.
 * Dump plugin list with versions to a file.
 * Check if a plugin is up-to-date with dev.bukkit.org
 * Load and reload modern Paper plugins that use `paper-plugin.yml`.
+* Runtime load, unload, and reload support for Velocity plugins.
+* Clean up classloader-owned Velocity 3.4+ packet registrations during unload and rollback.
 * Clean up Paper plugin manager state, commands, listeners, and provider storage on unload.
 * Reload/restart dependent plugins in a safer order and optionally limit dependent reloads.
 * Confirm dangerous bulk reload/restart operations before affecting many plugins.
 * Optional Paper reload diagnostics with `paperReloadDebug`.
 * Permissions Support - All commands default to OP.
+
+> [!WARNING]
+> Building the Velocity module requires **JDK 25 or newer**, but its output targets **Java 21** and can run on a
+> Java 21 or newer Velocity proxy. The Paper, Bukkit, Bungee, and Core modules also require Java 21 or newer.
+>
+> Velocity does not expose an official runtime unload API. PlugManX
+> checks the required runtime capabilities before enabling it, but some plugins may still require a full proxy restart.
+> Velocity also has no separate enabled/disabled plugin state. On Velocity, `/plugman enable` loads a previously
+> unloaded plugin and `/plugman disable` fully unloads it. All PlugManX Velocity commands are restricted to the proxy
+> console. The proxy command is hidden from players so `/plugman` can be forwarded to a backend Paper server that also
+> runs PlugManX.
 
 ## Commands
 
@@ -35,11 +48,11 @@ the need to restart the server.
 | /plugman usage [plugin]               | List commands that a plugin has registered.                       |
 | /plugman deps [plugin]                | Show dependencies and dependent plugins for a plugin.             |
 | /plugman lookup [command]             | Find the plugin a command is registered to.                       |
-| /plugman enable [plugin&#124;all]     | Enable a plugin.                                                  |
-| /plugman disable [plugin&#124;all]    | Disable a plugin.                                                 |
-| /plugman restart [plugin&#124;all]    | Restart (disable/enable) a plugin.                                |
+| /plugman enable [plugin&#124;all]     | Enable a plugin; on Velocity, this loads it.                       |
+| /plugman disable [plugin&#124;all] | Disable a plugin; on Velocity, this fully unloads it.             |
+| /plugman restart [plugin&#124;all] | Restart a plugin; on Velocity, this performs unload/load.         |
 | /plugman load [plugin]                | Load a plugin.                                                    |
-| /plugman reload [plugin&#124;all]     | Reload (unload/load) a plugin.                                    |
+| /plugman reload [plugin&#124;all]  | Reload (unload/load) a plugin.                                    |
 | /plugman reloadconfig                 | Reload PlugMan config and messages.                               |
 | /plugman reloadmode [mode]            | View or change dependent reload mode.                             |
 | /plugman unload [plugin]              | Unload a plugin.                                                  |
@@ -54,6 +67,9 @@ the need to restart the server.
 | ALL           | Reload plugins with hard `depend` and `softdepend` links. |
 | REQUIRED_ONLY | Reload only plugins with a required `depend` link.        |
 | OFF           | Do not reload dependent plugins automatically.            |
+
+On Velocity, critical plugins such as PlugManX, LuckPerms, and Geyser are protected by default. Reloading,
+restarting, disabling, or unloading them requires `--force` and the matching `<command>.force` permission.
 
 ## Permissions
 
@@ -94,6 +110,7 @@ Important options:
 | Option               | Default       | Description                                                        |
 |----------------------|---------------|--------------------------------------------------------------------|
 | ignored-plugins      | See config    | Plugins PlugManX should not manage.                                |
+| showVelocityWarning  | true          | Shows the Velocity runtime warning at startup.                     |
 | paperReloadDebug     | false         | Enables extra Paper reload diagnostics in console.                 |
 | reloadDependentsMode | REQUIRED_ONLY | Controls dependent reload behavior for reload/restart operations.  |
 
@@ -121,8 +138,15 @@ Building PlugManX is simple:
    mvn clean install
    ```
 
+   The full reactor includes the Velocity module and therefore requires JDK 25. The resulting Velocity JAR targets
+   Java 21. To build only Velocity and its required modules, use:
+   ```bash
+   mvn -pl plugman-velocity -am clean package
+   ```
+
 4. **Find the built artifacts:**
     - Individual module JARs will be in each module's `target/` directory
+    - For Velocity, use `plugman-velocity/target/PlugManX-<version>.jar`
     - The assembled distribution will be in `plugman-assembly/target/`
 
 ## Version Management

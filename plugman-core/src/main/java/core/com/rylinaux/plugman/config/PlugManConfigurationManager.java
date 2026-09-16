@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.io.File;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Platform-agnostic configuration manager for PlugMan including config validation, migration, and resource mapping.
@@ -41,7 +42,7 @@ public class PlugManConfigurationManager {
      * Initialize and validate configuration
      */
     public void initializeConfiguration() {
-        configProvider.saveDefaultConfig();
+        Objects.requireNonNull(configProvider, "Configuration provider is unavailable").saveDefaultConfig();
         loadJacksonConfigurations();
         validateAndMigrateConfig();
         loadIgnoredPlugins();

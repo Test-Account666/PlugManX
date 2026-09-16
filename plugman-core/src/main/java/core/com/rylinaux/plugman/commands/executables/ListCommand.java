@@ -30,11 +30,13 @@ import com.google.common.base.Joiner;
 import core.com.rylinaux.plugman.commands.AbstractCommand;
 import core.com.rylinaux.plugman.commands.CommandSender;
 import core.com.rylinaux.plugman.plugins.Plugin;
+import core.com.rylinaux.plugman.platform.PlatformCommandAdapter;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 import core.com.rylinaux.plugman.util.FlagUtil;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -90,19 +92,19 @@ public class ListCommand extends AbstractCommand {
         var includeVersions = FlagUtil.parse(args, 'v').hasFlag('v');
 
         var formatFunction = new PluginStringFunction(includeVersions);
-        var paperPlugins = new ArrayList<String>();
-        var bukkitPlugins = new ArrayList<String>();
+        var groups = getOptional(PlatformCommandAdapter.class)
+                .map(adapter -> adapter.groupPlugins(getPluginManager()))
+                .orElseGet(() -> List.of(
+                        new PlatformCommandAdapter.PluginGroup("list.paper", getPluginManager().getPlugins().stream()
+                                .filter(getPluginManager()::isPaperPlugin).toList()),
+                        new PlatformCommandAdapter.PluginGroup("list.bukkit", getPluginManager().getPlugins().stream()
+                                .filter(plugin -> !getPluginManager().isPaperPlugin(plugin)).toList())));
 
-        getPluginManager().getPlugins().forEach(plugin -> {
-            var pluginList = getPluginManager().isPaperPlugin(plugin) ? paperPlugins : bukkitPlugins;
-            pluginList.add(formatFunction.apply(plugin));
-        });
-
-        paperPlugins.sort(String.CASE_INSENSITIVE_ORDER);
-        bukkitPlugins.sort(String.CASE_INSENSITIVE_ORDER);
-
-        sender.sendMessage("list.paper", paperPlugins.size(), formatPluginList(paperPlugins));
-        sender.sendMessage("list.bukkit", bukkitPlugins.size(), formatPluginList(bukkitPlugins));
+        for (var group : groups) {
+            var plugins = group.plugins().stream().map(formatFunction).sorted(String.CASE_INSENSITIVE_ORDER)
+                    .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+            sender.sendMessage(group.messageKey(), plugins.size(), formatPluginList(plugins));
+        }
 
     }
 

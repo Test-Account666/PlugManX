@@ -1,6 +1,7 @@
 package core.com.rylinaux.plugman.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import core.com.rylinaux.plugman.config.model.PlugManConfig;
 import core.com.rylinaux.plugman.config.model.ResourceMappingsConfig;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class JacksonConfigurationService {
      */
     public JacksonConfigurationService() {
         objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         yaml = new Yaml();
     }
 
