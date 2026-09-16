@@ -70,6 +70,7 @@ public class BukkitPluginManager extends BasePluginManager {
 
     private final Class<?> pluginClassLoaderClass;
     private final Function<ClassLoader, org.bukkit.plugin.Plugin> getPluginFromClassLoader;
+    private boolean serverManagesPlayerCommandSync;
 
     public BukkitPluginManager() {
         pluginClassLoaderClass = ClassAccessor.getClass("org.bukkit.plugin.java.PluginClassLoader");
@@ -255,7 +256,7 @@ public class BukkitPluginManager extends BasePluginManager {
         var parsedCommands = getCommandsFromPlugin(plugin).stream().map(s -> {
             var parts = s.getKey().split(":");
             // parts length equals 1 means that the key is the command
-            return parts.length == 1? parts[0] : parts[1];
+            return parts[parts.length == 1 ? 0 : 1];
         }).distinct().collect(Collectors.joining(", "));
 
 
@@ -562,6 +563,18 @@ public class BukkitPluginManager extends BasePluginManager {
         if (deferCommandSyncIfBatching()) return;
 
         syncCommandsRunnable.run();
-        Bukkit.getOnlinePlayers().forEach(Player::updateCommands);
+        if (!serverManagesPlayerCommandSync) {
+            Bukkit.getOnlinePlayers().forEach(Player::updateCommands);
+        }
+    }
+
+    @ApiStatus.Internal
+    public void useServerManagedPlayerCommandSync() {
+        serverManagesPlayerCommandSync = true;
+    }
+
+    @ApiStatus.Internal
+    public synchronized boolean deferCommandSync() {
+        return deferCommandSyncIfBatching();
     }
 }

@@ -33,6 +33,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Delegate;
 
+import java.util.Objects;
+
 
 /**
  * Abstract command class that our commands extend.
@@ -85,7 +87,8 @@ public abstract class AbstractCommand {
      * @return does the sender have permission
      */
     public boolean hasPermission() {
-        return sender.hasPermission(permission) || isConsoleOrRemoteConsole();
+        var commandSender = Objects.requireNonNull(sender, "Command sender is unavailable");
+        return commandSender.hasPermission(permission) || commandSender.isConsole();
     }
 
     /**

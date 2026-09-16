@@ -35,8 +35,11 @@ import core.com.rylinaux.plugman.plugins.PluginManager;
 import core.com.rylinaux.plugman.services.ServiceRegistry;
 import core.com.rylinaux.plugman.util.ThreadUtil;
 import velocity.com.rylinaux.plugman.auto.VelocityAutoFeatureManager;
+import velocity.com.rylinaux.plugman.commands.VelocityCommandAdapter;
+import core.com.rylinaux.plugman.platform.PlatformCommandAdapter;
 import velocity.com.rylinaux.plugman.config.VelocityConfigurationProvider;
 import velocity.com.rylinaux.plugman.config.VelocityPlugManConfigurationManager;
+import velocity.com.rylinaux.plugman.config.VelocityMessageMigrationService;
 import velocity.com.rylinaux.plugman.messaging.VelocityColorFormatter;
 import velocity.com.rylinaux.plugman.pluginmanager.VelocityPluginManager;
 import velocity.com.rylinaux.plugman.util.VelocityThreadUtil;
@@ -65,7 +68,6 @@ public class VelocityPlugManInitializer extends BasePlugManInitializer {
     protected PlugManConfigurationManager createConfigurationManager() {
         var configurationManager = VelocityPlugManConfigurationManager.of(plugin);
         configurationManager.initializeConfiguration();
-        configurationManager.getIgnoredPlugins().add("PlugManVelocity");
         return configurationManager;
     }
 
@@ -90,6 +92,8 @@ public class VelocityPlugManInitializer extends BasePlugManInitializer {
             }
         }
 
+        new VelocityMessageMigrationService(getDataFolder().toPath(), logger).migrate();
+
         var configProvider = new VelocityConfigurationProvider(messagesFile);
         var colorFormatter = new VelocityColorFormatter();
         return new MessageFormatter(configProvider, colorFormatter);
@@ -103,5 +107,11 @@ public class VelocityPlugManInitializer extends BasePlugManInitializer {
     @Override
     public File getDataFolder() {
         return plugin.getDataDirectory().toFile();
+    }
+
+    @Override
+    public void initializeCoreServices() {
+        super.initializeCoreServices();
+        serviceRegistry.register(PlatformCommandAdapter.class, new VelocityCommandAdapter());
     }
 }
