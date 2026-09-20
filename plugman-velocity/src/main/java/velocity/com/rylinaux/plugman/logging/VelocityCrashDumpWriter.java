@@ -14,7 +14,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.UUID;
 
-/** Writes diagnostic dumps for failures in the experimental Velocity runtime. */
+/**
+ * Writes diagnostic dumps for failures in the experimental Velocity runtime.
+ */
 public final class VelocityCrashDumpWriter {
     private static final DateTimeFormatter FILE_TIMESTAMP =
             DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS", Locale.ROOT);
@@ -31,8 +33,9 @@ public final class VelocityCrashDumpWriter {
         var plugin = PlugManVelocity.getInstance();
         if (plugin == null) return null;
 
-        var dumpId = "PMX-VEL-" + FILE_TIMESTAMP.format(LocalDateTime.now(SERVER_ZONE))
-                + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
+        var dumpId = ("PMX-VEL-" + FILE_TIMESTAMP.format(LocalDateTime.now(SERVER_ZONE))
+                + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT)
+        );
         var dumpFile = plugin.getDataDirectory().resolve("crash-dumps").resolve(dumpId + ".log");
         try {
             Files.createDirectories(dumpFile.getParent());
@@ -56,10 +59,8 @@ public final class VelocityCrashDumpWriter {
             printWriter.println("Context: " + (context == null || context.isBlank() ? "unknown" : context));
             printWriter.println("Thread: " + Thread.currentThread().getName());
             printWriter.println("Proxy: " + proxyVersion.getName() + " " + proxyVersion.getVersion());
-            printWriter.println("Java: " + System.getProperty("java.version") + " ("
-                    + System.getProperty("java.vendor") + ")");
-            printWriter.println("OS: " + System.getProperty("os.name") + " "
-                    + System.getProperty("os.version") + " " + System.getProperty("os.arch"));
+            printWriter.println("Java: " + System.getProperty("java.version") + " (" + System.getProperty("java.vendor") + ")");
+            printWriter.println("OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version") + " " + System.getProperty("os.arch"));
             printWriter.println();
             appendThrowable(printWriter, throwable, "");
         }

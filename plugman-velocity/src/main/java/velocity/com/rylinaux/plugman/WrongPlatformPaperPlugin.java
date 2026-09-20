@@ -9,9 +9,7 @@ public final class WrongPlatformPaperPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        getLogger().severe(
-                "Wrong PlugManX JAR! This build is for Velocity, not Paper or Bukkit. "
-                        + "Download and install the Paper build instead.");
+        getLogger().severe("Wrong PlugManX JAR! This build is for Velocity, not Paper or Bukkit. Download and install the Paper build instead.");
         getServer().getPluginManager().disablePlugin(this);
     }
 }

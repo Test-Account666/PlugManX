@@ -9,12 +9,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * SnakeYAML-backed configuration provider for Velocity.
@@ -213,7 +208,8 @@ public class VelocityConfigurationProvider implements YamlConfigurationProvider 
         for (var entry : source.entrySet()) {
             var value = entry.getValue();
             copy.put(String.valueOf(entry.getKey()),
-                    value instanceof Map<?, ?> child ? copyMap(child) : value);
+                    value instanceof Map<?, ?> child ? copyMap(child) : value
+            );
         }
         return copy;
     }

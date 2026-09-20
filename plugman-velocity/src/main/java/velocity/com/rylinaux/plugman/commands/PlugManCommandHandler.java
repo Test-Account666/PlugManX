@@ -65,9 +65,11 @@ public class PlugManCommandHandler implements SimpleCommand {
         var sender = invocation.source();
         var rawArguments = invocation.arguments();
         var commandName = rawArguments.length > 0 ? rawArguments[0].toLowerCase(Locale.ROOT) : "help";
-        var parsedArguments = FORCE_COMMANDS.contains(commandName)
-                ? parseArguments(rawArguments)
-                : new ParsedArguments(Arrays.asList(rawArguments), false);
+        var parsedArguments = (
+                FORCE_COMMANDS.contains(commandName)
+                        ? parseArguments(rawArguments)
+                        : new ParsedArguments(Arrays.asList(rawArguments), false)
+        );
         var args = parsedArguments.arguments().toArray(String[]::new);
 
         if (!isVelocityConsole(sender)) {
@@ -111,20 +113,16 @@ public class PlugManCommandHandler implements SimpleCommand {
         var pluginManager = registry.get(PluginManager.class);
         if (pluginManager instanceof VelocityPluginManager velocityManager) {
             velocityManager.runWithForce(parsedArguments.force(), () -> cmd.execute(cmd.getSender(), "plugman", args));
-        } else {
-            cmd.execute(cmd.getSender(), "plugman", args);
-        }
+        } else cmd.execute(cmd.getSender(), "plugman", args);
     }
 
     @Override
     public List<String> suggest(Invocation invocation) {
         if (!isVelocityConsole(invocation.source())) return List.of();
         var args = invocation.arguments();
-        
-        if (args.length <= 1) {
-            return Arrays.asList(COMMANDS);
-        }
-        
+
+        if (args.length <= 1) return Arrays.asList(COMMANDS);
+
         // For now, return empty list for sub-command suggestions
         return List.of();
     }
@@ -140,12 +138,14 @@ public class PlugManCommandHandler implements SimpleCommand {
     }
 
     private static ParsedArguments parseArguments(String[] arguments) {
-        var force = Arrays.stream(arguments)
-                .anyMatch(argument -> argument.equalsIgnoreCase("--force") || argument.equalsIgnoreCase("-f"));
+        var force = (Arrays.stream(arguments)
+                .anyMatch(argument -> argument.equalsIgnoreCase("--force") || argument.equalsIgnoreCase("-f"))
+        );
         if (!force) return new ParsedArguments(Arrays.asList(arguments), false);
-        var cleaned = Arrays.stream(arguments)
+        var cleaned = (Arrays.stream(arguments)
                 .filter(argument -> !argument.equalsIgnoreCase("--force") && !argument.equalsIgnoreCase("-f"))
-                .toList();
+                .toList()
+        );
         return new ParsedArguments(cleaned, true);
     }
 

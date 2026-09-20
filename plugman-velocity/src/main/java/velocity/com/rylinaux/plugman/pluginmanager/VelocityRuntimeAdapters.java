@@ -15,15 +15,13 @@ final class VelocityRuntimeAdapters {
 
     static Selection find(String version) {
         if (compare(version, 3, 4, 0) < 0) {
-            throw new IllegalStateException(
-                    "The experimental Velocity runtime requires Velocity 3.4.0 or newer; detected " + version);
+            throw new IllegalStateException("The experimental Velocity runtime requires Velocity 3.4.0 or newer; detected " + version);
         }
 
         var adapter = ADAPTERS.stream()
                 .filter(candidate -> candidate.supports(version))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "No experimental Velocity runtime adapter is available for version " + version));
+                .orElseThrow(() -> new IllegalStateException("No experimental Velocity runtime adapter is available for version " + version));
         return new Selection(adapter, compare(version, 4, 1, 0) > 0);
     }
 

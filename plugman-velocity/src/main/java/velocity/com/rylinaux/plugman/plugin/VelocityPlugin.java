@@ -52,8 +52,7 @@ public record VelocityPlugin(PluginContainer pluginContainer, Object instance) i
     public File getFile() {
         var source = pluginContainer.getDescription().getSource();
         if (source.isPresent()) return source.get().toFile();
-        return Path.of(instance().getClass().getProtectionDomain()
-                .getCodeSource().getLocation().toURI()).toFile();
+        return Path.of(instance().getClass().getProtectionDomain().getCodeSource().getLocation().toURI()).toFile();
     }
 
     @SuppressWarnings("unchecked")

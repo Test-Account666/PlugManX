@@ -49,12 +49,9 @@ public class VelocityPlugManConfigurationManager extends PlugManConfigurationMan
     }
 
     private void ensureVelocityOptions() {
-        if (!configProvider.contains(SHOW_VELOCITY_WARNING_KEY)) {
-            configProvider.set(SHOW_VELOCITY_WARNING_KEY, true);
-        }
-        if (!configProvider.contains(VELOCITY_RELOAD_DEBUG_KEY)) {
-            configProvider.set(VELOCITY_RELOAD_DEBUG_KEY, false);
-        }
+        if (!configProvider.contains(SHOW_VELOCITY_WARNING_KEY)) configProvider.set(SHOW_VELOCITY_WARNING_KEY, true);
+        if (!configProvider.contains(VELOCITY_RELOAD_DEBUG_KEY)) configProvider.set(VELOCITY_RELOAD_DEBUG_KEY, false);
+
         removeLegacyDevOptions(configProvider);
         configProvider.save();
     }

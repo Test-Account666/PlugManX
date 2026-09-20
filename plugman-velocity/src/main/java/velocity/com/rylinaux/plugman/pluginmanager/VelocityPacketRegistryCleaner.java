@@ -3,21 +3,12 @@ package velocity.com.rylinaux.plugman.pluginmanager;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 final class VelocityPacketRegistryCleaner {
-    private static final String STATE_REGISTRY_CLASS =
-            "com.velocitypowered.proxy.protocol.StateRegistry";
-    private static final String PACKET_REGISTRY_CLASS =
-            "com.velocitypowered.proxy.protocol.StateRegistry$PacketRegistry";
-    private static final String PROTOCOL_REGISTRY_CLASS =
-            "com.velocitypowered.proxy.protocol.StateRegistry$PacketRegistry$ProtocolRegistry";
+    private static final String STATE_REGISTRY_CLASS = "com.velocitypowered.proxy.protocol.StateRegistry";
+    private static final String PACKET_REGISTRY_CLASS = "com.velocitypowered.proxy.protocol.StateRegistry$PacketRegistry";
+    private static final String PROTOCOL_REGISTRY_CLASS = "com.velocitypowered.proxy.protocol.StateRegistry$PacketRegistry$ProtocolRegistry";
 
     private final Object[] stateRegistries;
     private final Field clientbound;
@@ -35,9 +26,8 @@ final class VelocityPacketRegistryCleaner {
         var protocolRegistryClass = Class.forName(PROTOCOL_REGISTRY_CLASS);
 
         stateRegistries = stateRegistryClass.getEnumConstants();
-        if (stateRegistries == null) {
-            throw new ReflectiveOperationException(STATE_REGISTRY_CLASS + " is not an enum");
-        }
+        if (stateRegistries == null) throw new ReflectiveOperationException(STATE_REGISTRY_CLASS + " is not an enum");
+
 
         clientbound = accessible(stateRegistryClass.getDeclaredField("clientbound"));
         serverbound = accessible(stateRegistryClass.getDeclaredField("serverbound"));
@@ -69,20 +59,18 @@ final class VelocityPacketRegistryCleaner {
 
     RegistrySnapshot snapshot() throws ReflectiveOperationException {
         var mappings = new LinkedHashMap<MappingKey, RegistryMapping>();
-        for (var protocolRegistry : protocolRegistries()) {
-            captureMappings(protocolRegistry, mappings);
-        }
+        for (var protocolRegistry : protocolRegistries()) captureMappings(protocolRegistry, mappings);
         return new RegistrySnapshot(Map.copyOf(mappings));
     }
 
-    RegistryDelta addedMappings(RegistrySnapshot before, ClassLoader owner)
-            throws ReflectiveOperationException {
+    RegistryDelta addedMappings(RegistrySnapshot before, ClassLoader owner) throws ReflectiveOperationException {
         var after = snapshot();
-        var additions = after.mappings().entrySet().stream()
+        var additions = (after.mappings().entrySet().stream()
                 .filter(entry -> !before.mappings().containsKey(entry.getKey()))
                 .map(Map.Entry::getValue)
                 .filter(mapping -> mapping.isOwnedBy(owner))
-                .toList();
+                .toList()
+        );
         return new RegistryDelta(additions);
     }
 
@@ -95,8 +83,7 @@ final class VelocityPacketRegistryCleaner {
                     skippedMappings++;
                     continue;
                 }
-                removeMapping(mapping.classToId(), mapping.suppliers(), mapping.packetClass(),
-                        mapping.packetId(), mapping.supplier());
+                removeMapping(mapping.classToId(), mapping.suppliers(), mapping.packetClass(), mapping.packetId(), mapping.supplier());
                 removedMappings.add(mapping.asRemoved());
             }
             return new CleanupResult(removedMappings.size(), skippedMappings);
@@ -121,9 +108,7 @@ final class VelocityPacketRegistryCleaner {
     }
 
     @SuppressWarnings("unchecked")
-    private void captureMappings(Object protocolRegistry,
-                                 Map<MappingKey, RegistryMapping> mappings)
-            throws ReflectiveOperationException {
+    private void captureMappings(Object protocolRegistry, Map<MappingKey, RegistryMapping> mappings) throws ReflectiveOperationException {
         var classToId = (Map<Class<?>, Integer>) packetClassToId.get(protocolRegistry);
         var suppliers = packetIdToSupplier.get(protocolRegistry);
         for (var mapping : List.copyOf(classToId.entrySet())) {
@@ -131,16 +116,12 @@ final class VelocityPacketRegistryCleaner {
             var packetId = mapping.getValue();
             var supplier = invoke(packetSupplierGet, suppliers, packetId);
             var key = new MappingKey(protocolRegistry, packetClass);
-            mappings.put(key, new RegistryMapping(
-                    classToId, suppliers, packetClass, packetId, supplier));
+            mappings.put(key, new RegistryMapping(classToId, suppliers, packetClass, packetId, supplier));
         }
     }
 
     @SuppressWarnings("unchecked")
-    private int removeOwnedMappings(Object protocolRegistry,
-                                    ClassLoader owner,
-                                    List<RemovedMapping> removedMappings)
-            throws ReflectiveOperationException {
+    private int removeOwnedMappings(Object protocolRegistry, ClassLoader owner, List<RemovedMapping> removedMappings) throws ReflectiveOperationException {
         var classToId = (Map<Class<?>, Integer>) packetClassToId.get(protocolRegistry);
         var skippedMappings = 0;
         for (var mapping : List.copyOf(classToId.entrySet())) {
@@ -162,7 +143,7 @@ final class VelocityPacketRegistryCleaner {
     }
 
     private List<Object> protocolRegistries() throws ReflectiveOperationException {
-        Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        var visited = Collections.newSetFromMap(new IdentityHashMap<>());
         var protocolRegistries = new ArrayList<>();
         for (var stateRegistry : stateRegistries) {
             collectProtocolRegistries(clientbound.get(stateRegistry), visited, protocolRegistries);
@@ -172,19 +153,20 @@ final class VelocityPacketRegistryCleaner {
     }
 
     @SuppressWarnings("unchecked")
-    private void collectProtocolRegistries(Object packetRegistry,
-                                           Set<Object> visited,
-                                           List<Object> protocolRegistries) throws IllegalAccessException {
+    private void collectProtocolRegistries(Object packetRegistry, Set<Object> visited, List<Object> protocolRegistries) throws IllegalAccessException {
         for (var protocolRegistry : ((Map<Object, Object>) versions.get(packetRegistry)).values()) {
-            if (visited.add(protocolRegistry)) protocolRegistries.add(protocolRegistry);
+            if (!visited.add(protocolRegistry)) continue;
+            protocolRegistries.add(protocolRegistry);
         }
     }
 
-    private void removeMapping(Map<Class<?>, Integer> classToId,
-                               Object suppliers,
-                               Class<?> packetClass,
-                               int packetId,
-                               Object expectedSupplier) throws ReflectiveOperationException {
+    private void removeMapping(
+            Map<Class<?>, Integer> classToId,
+            Object suppliers,
+            Class<?> packetClass,
+            int packetId,
+            Object expectedSupplier
+    ) throws ReflectiveOperationException {
         var removedId = classToId.remove(packetClass);
         Object removedSupplier;
         try {
@@ -213,8 +195,7 @@ final class VelocityPacketRegistryCleaner {
         }
     }
 
-    private static Object invoke(Method method, Object target, Object... arguments)
-            throws ReflectiveOperationException {
+    private static Object invoke(Method method, Object target, Object... arguments) throws ReflectiveOperationException {
         try {
             return method.invoke(target, arguments);
         } catch (InvocationTargetException exception) {
@@ -287,8 +268,7 @@ final class VelocityPacketRegistryCleaner {
                     && supplier.getClass().getClassLoader() == owner;
         }
 
-        private boolean isStillRegistered(VelocityPacketRegistryCleaner cleaner)
-                throws ReflectiveOperationException {
+        private boolean isStillRegistered(VelocityPacketRegistryCleaner cleaner) throws ReflectiveOperationException {
             var currentId = classToId.get(packetClass);
             return currentId != null
                     && currentId == packetId
