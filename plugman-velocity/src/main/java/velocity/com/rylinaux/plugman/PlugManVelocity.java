@@ -62,7 +62,7 @@ import java.nio.file.Path;
 @Plugin(
         id = "plugmanvelocity",
         name = "PlugManVelocity",
-        version = "3.2.0",
+        version = "3.2.1",
         description = "Plugin manager for Velocity servers.",
         authors = {"rylinaux", "TestAccount666"}
 )
