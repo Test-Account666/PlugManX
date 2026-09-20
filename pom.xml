@@ -50,7 +50,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <plugman.version>3.2.0</plugman.version>
-        <manifold.version>2025.1.31</manifold.version>
         <jackson.version>2.13.5</jackson.version>
         <lombok.version>1.18.46</lombok.version>
     </properties>
@@ -95,12 +94,6 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>systems.manifold</groupId>
-            <artifactId>manifold-rt</artifactId>
-            <version>${manifold.version}</version>
             <scope>provided</scope>
         </dependency>
 
