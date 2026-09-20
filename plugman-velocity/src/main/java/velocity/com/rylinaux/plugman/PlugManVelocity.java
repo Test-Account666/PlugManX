@@ -186,6 +186,14 @@ public final class PlugManVelocity {
         var showDiagnostics = configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig
                 && velocityConfig.isVelocityReloadDebugEnabled();
         var startupState = createVelocityStartupState();
+        if (!(configurationManager instanceof VelocityPlugManConfigurationManager velocityConfig)) {
+            logger.warn("PlugManConfigurationManager not instance of VelocityPlugManConfigurationManager! This WILL cause unexpected behavior.");
+            return;
+        }
+
+
+        if (velocityConfig.isVelocityReloadDebugEnabled()) sendVelocityDiagnostics(createVelocityStartupState());
+        if (!velocityConfig.isShowVelocityWarningEnabled()) return;
         var proxyVersion = server.getVersion();
 
         sendWarningLine(Component.text(WARNING_BORDER, NamedTextColor.DARK_GRAY));
