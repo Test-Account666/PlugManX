@@ -40,6 +40,7 @@ final class VelocityExperimentalRuntime {
     private final Method registerPlugin;
     private final Field pluginsById;
     private final Field pluginInstances;
+    private final Field pluginSet;
     private final Method registerInternally;
     private final Field handlersByType;
     private final Field handlerComparator;
@@ -62,7 +63,7 @@ final class VelocityExperimentalRuntime {
         var pluginManagerClass = Class.forName(layout.pluginManagerClass());
         var eventManagerClass = Class.forName(layout.eventManagerClass());
 
-        loaderConstructor = accessible(loaderClass.getDeclaredConstructor(ProxyServer.class, Path.class));
+        loaderConstructor = findLoaderConstructor(loaderClass, PlugManVelocity.getInstance().getServer().getClass());
         containerConstructor = accessible(containerClass.getDeclaredConstructor(PluginDescription.class));
         loadCandidate = findMethod(loaderClass, layout.loadCandidateMethods(), Path.class);
         createPluginFromCandidate = findMethod(loaderClass, layout.createPluginFromCandidateMethods(), PluginDescription.class);
@@ -71,6 +72,7 @@ final class VelocityExperimentalRuntime {
         registerPlugin = findMethod(pluginManagerClass, layout.registerPluginMethods(), PluginContainer.class);
         pluginsById = findField(pluginManagerClass, layout.pluginMapFields());
         pluginInstances = findField(pluginManagerClass, layout.instanceMapFields());
+        pluginSet = findPluginSetField(pluginManagerClass, pluginsById);
         registerInternally = findMethod(eventManagerClass, layout.registerInternallyMethods(), PluginContainer.class, Object.class);
         handlersByType = findField(eventManagerClass, layout.handlersByTypeFields());
         handlerComparator = findField(eventManagerClass, layout.handlerComparatorFields());
@@ -773,6 +775,10 @@ final class VelocityExperimentalRuntime {
         var plugins = pluginMap(server.getPluginManager());
         var instances = instanceMap(server.getPluginManager());
         var restoredPlugin = plugins.putIfAbsent(container.getDescription().getId(), container) == null;
+        var pluginCollection = pluginCollection(server.getPluginManager());
+        if (pluginCollection != null && pluginCollection.stream().noneMatch(registered -> registered == container)) {
+            restoredPlugin |= pluginCollection.add(container);
+        }
         var restoredInstance = instances.putIfAbsent(instance, container) == null;
         if (!restoredPlugin && !restoredInstance) return;
         debug(debug, startedAt, "Restored plugin registration removed during ProxyShutdownEvent"
@@ -787,7 +793,30 @@ final class VelocityExperimentalRuntime {
         plugins.entrySet().removeIf(entry -> entry.getValue() == container
                 || entry.getKey().equalsIgnoreCase(pluginId)
         );
-        return sizeBefore - plugins.size();
+        var removed = sizeBefore - plugins.size();
+
+        // Some Velocity forks keep a separate plugin collection that backs getPlugins().
+        var pluginCollection = pluginCollection(server.getPluginManager());
+        if (pluginCollection != null) {
+            var collectionSizeBefore = pluginCollection.size();
+            pluginCollection.removeIf(registered -> registered == container
+                    || registered.getDescription().getId().equalsIgnoreCase(pluginId)
+            );
+            removed += collectionSizeBefore - pluginCollection.size();
+        }
+        return removed;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Collection<PluginContainer> pluginCollection(PluginManager manager) throws IllegalAccessException {
+        if (pluginSet == null) return null;
+        return (Collection<PluginContainer>) pluginSet.get(manager);
+    }
+
+    private static Field findPluginSetField(Class<?> pluginManagerClass, Field pluginMapField) {
+        var field = findOptionalField(pluginManagerClass, List.of("plugins"));
+        if (field == null || field.equals(pluginMapField) || !Collection.class.isAssignableFrom(field.getType())) return null;
+        return field;
     }
 
     private int removeInstanceRegistrations(
@@ -834,6 +863,22 @@ final class VelocityExperimentalRuntime {
     private static void debug(Consumer<String> consumer, long startedAt, String message) {
         if (consumer == null) return;
         consumer.accept(message + " after " + ((System.nanoTime() - startedAt) / 1_000_000L) + " ms");
+    }
+
+    static Constructor<?> findLoaderConstructor(Class<?> loaderClass, Class<?> serverClass) throws NoSuchMethodException {
+        // Upstream Velocity takes (ProxyServer, Path); some forks take the concrete server class instead.
+        try {
+            return accessible(loaderClass.getDeclaredConstructor(ProxyServer.class, Path.class));
+        } catch (NoSuchMethodException ignored) {
+            // Fall back to a constructor that accepts the running server implementation.
+        }
+        for (var constructor : loaderClass.getDeclaredConstructors()) {
+            var parameters = constructor.getParameterTypes();
+            if (parameters.length == 2 && parameters[0].isAssignableFrom(serverClass) && parameters[1] == Path.class) {
+                return accessible(constructor);
+            }
+        }
+        throw new NoSuchMethodException(loaderClass.getName() + ".<init>(" + serverClass.getName() + ", " + Path.class.getName() + ")");
     }
 
     private static Method findTargetedFire(Class<?> type, Class<?> handlerClass, List<String> names) throws NoSuchMethodException {

@@ -18,7 +18,7 @@ final class Velocity4RuntimeAdapter implements VelocityRuntimeAdapter {
             List.of("pluginsById", "plugins"),
             List.of("pluginInstances"),
             List.of("handlersByType"),
-            List.of("handlerComparator"),
+            List.of("handlerComparator", "HANDLER_COMPARATOR"),
             List.of("plugin"),
             List.of("fire")
     );
